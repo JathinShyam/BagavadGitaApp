@@ -7,16 +7,32 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { chapter1 } from "../verse/chapter1";
+import { chapter2 } from "../verse/chapter2";
+import { chapterstyles } from "../styles";
 
 // This would eventually come from your data source
-const getChapterData = (id: string) => ({
-  id: parseInt(id),
-  name: "Arjuna's Dilemma",
-  sanskrit_name: "अर्जुनविषादयोग",
-  description:
-    "The first chapter of the Bhagavad Gita introduces the setting of the epic dialogue...",
-  verses: chapter1,
-});
+const getChapterData = (id: string) => {
+  const chapters = [
+    {
+      id: 1,
+      chapter_number: "1వ అధ్యాయము",
+      yogam_name: "అర్జున విషాద యోగము",
+      description:
+        "The first chapter of the Bhagavad Gita introduces the setting of the epic dialogue...",
+      verses: chapter1,
+    },
+    {
+      id: 2,
+      chapter_number: "2వ అధ్యాయము",
+      yogam_name: "సాంఖ్య యోగము",
+      description:
+        "The second chapter of the Bhagavad Gita introduces the setting of the epic dialogue...",
+      verses: chapter2,
+    },
+  ];
+
+  return chapters.find((chapter) => chapter.id === parseInt(id));
+};
 
 export default function ChapterScreen() {
   const { id } = useLocalSearchParams();
@@ -26,29 +42,42 @@ export default function ChapterScreen() {
     item,
   }: {
     item: {
-      id: number;
+      id: string;
       chapter: number;
       verse_number: number;
       teluguSloka: string;
       meaning: string;
-      word_meanings: string;
+      word_meanings: { word: string; meaning: string }[];
       commentary: string;
     };
-  }) => (
-    <Link href={`/verse/${chapter.id}-${item.verse_number}`} asChild>
-      <Pressable style={styles.verseCard}>
-        <View style={styles.verseContent}>
-          <Text style={styles.verseNumber}>Verse {item.verse_number}</Text>
-          {/* <Text style={styles.sanskritText}>{item.sanskrit}</Text> */}
-          <Text style={styles.teluguSloka}>{item.teluguSloka}</Text>
-          {/* <Text style={styles.translation}>{item.translation}</Text> */}
-        </View>
-      </Pressable>
-    </Link>
-  );
+  }) => {
+    if (!chapter) return null;
+    return (
+      <Link href={`/verse/${chapter.id}-${item.verse_number}`} asChild>
+        <Pressable style={chapterstyles.verseCard}>
+          <View style={chapterstyles.verseContent}>
+            <Text style={chapterstyles.verseNumber}>
+              Verse {item.verse_number}
+            </Text>
+            {/* <Text style={chapterstyles.sanskritText}>{item.sanskrit}</Text> */}
+            <Text style={chapterstyles.teluguSloka}>{item.teluguSloka}</Text>
+            {/* <Text style={chapterstyles.translation}>{item.translation}</Text> */}
+          </View>
+        </Pressable>
+      </Link>
+    );
+  };
+
+  if (!chapter) {
+    return (
+      <SafeAreaView style={chapterstyles.container}>
+        <Text>Chapter not found</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={chapterstyles.container}>
       <Stack.Screen
         options={{
           headerTitle: `Chapter ${chapter.id}`,
@@ -60,84 +89,18 @@ export default function ChapterScreen() {
         }}
       />
 
-      <View style={styles.header}>
-        <Text style={styles.sanskritName}>{chapter.sanskrit_name}</Text>
-        <Text style={styles.chapterName}>{chapter.name}</Text>
-        <Text style={styles.description}>{chapter.description}</Text>
+      <View style={chapterstyles.header}>
+        <Text style={chapterstyles.chapterName}>{chapter.chapter_number}</Text>
+        <Text style={chapterstyles.sanskritName}>{chapter.yogam_name}</Text>
+        <Text style={chapterstyles.description}>{chapter.description}</Text>
       </View>
 
       <FlatList
         data={chapter.verses}
         renderItem={renderVerse}
         keyExtractor={(item) => item.verse_number.toString()}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={chapterstyles.listContainer}
       />
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FFF8E7",
-  },
-  header: {
-    padding: 20,
-    backgroundColor: "#FFF8E7",
-  },
-  sanskritName: {
-    fontSize: 24,
-    color: "#4A3200",
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  chapterName: {
-    fontSize: 18,
-    color: "#4A3200",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  description: {
-    fontSize: 14,
-    color: "#666666",
-    lineHeight: 20,
-    textAlign: "justify",
-  },
-  listContainer: {
-    padding: 16,
-  },
-  verseCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    marginBottom: 16,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  verseContent: {
-    padding: 16,
-  },
-  verseNumber: {
-    fontSize: 16,
-    color: "#666666",
-    marginBottom: 8,
-  },
-  //   sanskritText: {
-  //     fontSize: 18,
-  //     color: "#4A3200",
-  //     marginBottom: 8,
-  //   },
-  teluguSloka: {
-    fontSize: 14,
-    color: "#666666",
-    fontStyle: "italic",
-    marginBottom: 8,
-  },
-  translation: {
-    fontSize: 16,
-    color: "#333333",
-    lineHeight: 24,
-  },
-});
