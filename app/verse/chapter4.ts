@@ -2,9 +2,9 @@ export const chapter4 = [
   {
     id: "4-1",
     chapter: 4,
-    verse_number: 1,
+    verse_number: "1",
     teluguSloka:
-      "శ్రీ భగవానువాచ |\nఇమం వివస్వతే యోగం ప్రోక్తవానహమవ్యయమ్ |\nవివస్వాన్మనవే ప్రాహ మనురిక్ష్వాకవేఽబ్రవీత్ ।। 1 ।।",
+      "శ్రీ భగవానువాచ |\n ఇమం వివస్వతే యోగం ప్రోక్తవానహమవ్యయమ్ |\nవివస్వాన్మనవే ప్రాహ మనురిక్ష్వాకవేఽబ్రవీత్ ।। 1 ।।",
     meaning:
       "BG 4.1: పరమేశ్వరుడైన శ్రీ కృష్ణ భగవానుడు ఇలా అన్నాడు: నేను ఈ యొక్క సనాతనమైన యోగ శాస్త్రమును సూర్య భగవానుడైన వివస్వానుడికి చెప్పాను. అతను మనువుకి, మనువు ఇక్ష్వాకునికి దీనిని ఉపదేశించారు.",
     word_meanings: [
@@ -31,7 +31,7 @@ export const chapter4 = [
   {
     id: "4-2",
     chapter: 4,
-    verse_number: 2,
+    verse_number: "2",
     teluguSloka:
       "ఏవం పరంపరాప్రాప్తమిమం రాజర్షయో విదుః |\nస కాలేనేహ మహతా యోగో నష్టః పరంతప ।। 2 ।।",
     meaning:
@@ -57,7 +57,7 @@ export const chapter4 = [
   {
     id: "4-3",
     chapter: 4,
-    verse_number: 3,
+    verse_number: "3",
     teluguSloka:
       "స ఏవాయం మయా తేఽద్య యోగః ప్రోక్తః పురాతనః |\nభక్తోఽసి మే సఖా చేతి రహస్యం హ్యేతదుత్తమమ్ ।। 3 ।。",
     meaning:
@@ -89,7 +89,7 @@ export const chapter4 = [
   {
     id: "4-4",
     chapter: 4,
-    verse_number: 4,
+    verse_number: "4",
     teluguSloka:
       "అర్జున ఉవాచ |\nఅపరం భవతో జన్మ పరం జన్మ వివస్వతః |\nకథమేతద్విజానీయాం త్వమాదౌ ప్రోక్తవానితి ।। 4 ।।",
     meaning:
@@ -116,7 +116,7 @@ export const chapter4 = [
   {
     id: "4-5",
     chapter: 4,
-    verse_number: 5,
+    verse_number: "5",
     teluguSloka:
       "శ్రీ భగవానువాచ |\nబహూని మే వ్యతీతాని జన్మాని తవ చార్జున |\nతాన్యహం వేద సర్వాణి న త్వం వేత్థ పరంతప ।। 5 ।।",
     meaning:
@@ -145,7 +145,7 @@ export const chapter4 = [
   {
     id: "4-6",
     chapter: 4,
-    verse_number: 6,
+    verse_number: "6",
     teluguSloka:
       "అజోఽపి సన్నవ్యయాత్మా భూతానామీశ్వరోఽపి సన్ |\nప్రకృతిం స్వామధిష్ఠాయ సంభవామ్యాత్మమాయయా ।। 6 ।।",
     meaning:
@@ -171,7 +171,7 @@ export const chapter4 = [
   {
     id: "4-7",
     chapter: 4,
-    verse_number: 7,
+    verse_number: "7",
     teluguSloka:
       "యదా యదా హి ధర్మస్య గ్లానిర్భవతి భారత |\nఅభ్యుత్థానమధర్మస్య తదాత్మానం సృజామ్యహమ్ ।। 7 ।।",
     meaning:
@@ -196,7 +196,7 @@ export const chapter4 = [
   {
     id: "4-8",
     chapter: 4,
-    verse_number: 8,
+    verse_number: "8",
     teluguSloka:
       "పరిత్రాణాయ సాధూనాం వినాశాయ చ దుష్కృతామ్ |\nధర్మసంస్థాపనార్థాయ సంభవామి యుగే యుగే ।। 8 ।।",
     meaning:
@@ -218,7 +218,7 @@ export const chapter4 = [
   {
     id: "4-9",
     chapter: 4,
-    verse_number: 9,
+    verse_number: "9",
     teluguSloka:
       "జన్మ కర్మ చ మే దివ్యమ్ ఏవం యో వేత్తి తత్త్వతః |\nత్యక్త్వా దేహం పునర్జన్మ నైతి మామేతి సోఽర్జున ।। 9 ।。",
     meaning:
@@ -248,7 +248,7 @@ export const chapter4 = [
   {
     id: "4-10",
     chapter: 4,
-    verse_number: 10,
+    verse_number: "10",
     teluguSloka:
       "వీతరాగభయక్రోధా మన్మయా మాముపాశ్రితాః |\nబహవో జ్ఞానతపసా పూతా మద్భావమాగతాః || 10 ||",
     meaning:
@@ -274,7 +274,7 @@ export const chapter4 = [
   {
     id: "4-11",
     chapter: 4,
-    verse_number: 11,
+    verse_number: "11",
     teluguSloka:
       "యే యథా మాం ప్రపద్యంతే తాంస్తథైవ భజామ్యహమ్ |\nమమ వర్త్మానువర్తంతే మనుష్యాః పార్థ సర్వశః || 11 ||",
     meaning:
@@ -302,7 +302,7 @@ export const chapter4 = [
   {
     id: "4-12",
     chapter: 4,
-    verse_number: 12,
+    verse_number: "12",
     teluguSloka:
       "కాంక్షంతః కర్మణాం సిద్ధిం యజంత ఇహ దేవతాః |\nక్షిప్రం హి మానుషే లోకే సిద్ధిర్భవతి కర్మజా || 12 ||",
     meaning:
@@ -328,7 +328,7 @@ export const chapter4 = [
   {
     id: "4-13",
     chapter: 4,
-    verse_number: 13,
+    verse_number: "13",
     teluguSloka:
       "చాతుర్వర్ణ్యం మయా సృష్టం గుణకర్మవిభాగశః |\nతస్య కర్తారమపి మాం విద్ధ్యకర్తారమవ్యయమ్ || 13 ||",
     meaning:
@@ -354,7 +354,7 @@ export const chapter4 = [
   {
     id: "4-14",
     chapter: 4,
-    verse_number: 14,
+    verse_number: "14",
     teluguSloka:
       "న మాం కర్మాణి లింపంతి న మే కర్మఫలే స్పృహా |\nఇతి మాం యోఽభిజానాతి కర్మభిర్న స బధ్యతే || 14 ||",
     meaning:
@@ -383,7 +383,7 @@ export const chapter4 = [
   {
     id: "4-15",
     chapter: 4,
-    verse_number: 15,
+    verse_number: "15",
     teluguSloka:
       "ఏవం జ్ఞాత్వా కృతం కర్మ పూర్వైరపి ముముక్షుభిః |\nకురు కర్మైవ తస్మాత్త్వం పూర్వైః పూర్వతరం కృతమ్ || 15 ||",
     meaning:
@@ -411,7 +411,7 @@ export const chapter4 = [
   {
     id: "4-16",
     chapter: 4,
-    verse_number: 16,
+    verse_number: "16",
     teluguSloka:
       "కిం కర్మ కిమకర్మేతి కవయోఽప్యత్ర మోహితాః |\nతత్తే కర్మ ప్రవక్ష్యామి యద్ జ్ఞాత్వా మోక్ష్యసేఽశుభాత్ || 16 ||",
     meaning:
@@ -441,7 +441,7 @@ export const chapter4 = [
   {
     id: "4-17",
     chapter: 4,
-    verse_number: 17,
+    verse_number: "17",
     teluguSloka:
       "కర్మణో హ్యపి బోద్ధవ్యం బోద్ధవ్యం చ వికర్మణః |\nఅకర్మణశ్చ బోద్ధవ్యం గహనా కర్మణో గతిః || 17 ||",
     meaning:
@@ -467,7 +467,7 @@ export const chapter4 = [
   {
     id: "4-18",
     chapter: 4,
-    verse_number: 18,
+    verse_number: "18",
     teluguSloka:
       "కర్మణ్యకర్మ యః పశ్యేత్ అకర్మణి చ కర్మ యః |\nస బుద్ధిమాన్మనుష్యేషు స యుక్తః కృత్స్నకర్మకృత్ || 18 ||",
     meaning:
@@ -494,7 +494,7 @@ export const chapter4 = [
   {
     id: "4-19",
     chapter: 4,
-    verse_number: 19,
+    verse_number: "19",
     teluguSloka:
       "యస్య సర్వే సమారంభాః కామసంకల్పవర్జితాః |\nజ్ఞానాగ్నిదగ్ధకర్మాణం తమాహుః పండితం బుధాః || 19 ||",
     meaning:
@@ -521,7 +521,7 @@ export const chapter4 = [
   {
     id: "4-20",
     chapter: 4,
-    verse_number: 20,
+    verse_number: "20",
     teluguSloka:
       "త్యక్త్వా కర్మఫలాసంగం నిత్యతృప్తో నిరాశ్రయః |\nకర్మణ్యభిప్రవృత్తోఽపి నైవ కించిత్ కరోతి సః || 20 ||",
     meaning:
@@ -547,7 +547,7 @@ export const chapter4 = [
   {
     id: "4-21",
     chapter: 4,
-    verse_number: 21,
+    verse_number: "21",
     teluguSloka:
       "నిరాశీర్యతచిత్తాత్మా త్యక్తసర్వపరిగ్రహః |\nశారీరం కేవలం కర్మ కుర్వన్నాప్నోతి కిల్బిషమ్ || 21 ||",
     meaning:
@@ -572,7 +572,7 @@ export const chapter4 = [
   {
     id: "4-22",
     chapter: 4,
-    verse_number: 22,
+    verse_number: "22",
     teluguSloka:
       "యదృచ్ఛాలాభసంతుష్టో ద్వంద్వాతీతో విమత్సరః |\nసమః సిద్ధావసిద్దౌ చ కృత్వాపి న నిబధ్యతే || 22 ||",
     meaning:
@@ -598,7 +598,7 @@ export const chapter4 = [
   {
     id: "4-23",
     chapter: 4,
-    verse_number: 23,
+    verse_number: "23",
     teluguSloka:
       "గతసంగస్య ముక్తస్య జ్ఞానావస్థితచేతసః |\nయజ్ఞాయాచరతః కర్మ సమగ్రం ప్రవిలీయతే || 23 ||",
     meaning:
@@ -620,7 +620,7 @@ export const chapter4 = [
   {
     id: "4-24",
     chapter: 4,
-    verse_number: 24,
+    verse_number: "24",
     teluguSloka:
       "బ్రహ్మార్పణం బ్రహ్మ హవిర్బ్రహ్మాగ్నౌ బ్రహ్మణా హుతమ్ |\nబ్రహ్మైవ తేన గంతవ్యం బ్రహ్మకర్మసమాధినా || 24 ||",
     meaning:
@@ -642,7 +642,7 @@ export const chapter4 = [
   {
     id: "4-25",
     chapter: 4,
-    verse_number: 25,
+    verse_number: "25",
     teluguSloka:
       "దైవమేవాపరే యజ్ఞం యోగినః పర్యుపాసతే |\nబ్రహ్మాగ్నావపరే యజ్ఞం యజ్ఞేనైవోపజుహ్వతి || 25 ||",
     meaning:
@@ -668,7 +668,7 @@ export const chapter4 = [
   {
     id: "4-26",
     chapter: 4,
-    verse_number: 26,
+    verse_number: "26",
     teluguSloka:
       "శ్రోత్రాదీనీంద్రియాణ్యన్యే సంయమాగ్నిషు జుహ్వతి |\nశబ్దాదీన్విషయానన్య ఇంద్రియాగ్నిషు జుహ్వతి || 26 ||",
     meaning:
@@ -693,7 +693,7 @@ export const chapter4 = [
   {
     id: "4-27",
     chapter: 4,
-    verse_number: 27,
+    verse_number: "27",
     teluguSloka:
       "సర్వాణీంద్రియకర్మాణి ప్రాణకర్మాణి చాపరే |\nఆత్మసంయమయోగాగ్నౌ జుహ్వతి జ్ఞానదీపితే || 27 ||",
     meaning:
@@ -718,7 +718,7 @@ export const chapter4 = [
   {
     id: "4-28",
     chapter: 4,
-    verse_number: 28,
+    verse_number: "28",
     teluguSloka:
       "ద్రవ్యయజ్ఞాస్తపోయజ్ఞా యోగయజ్ఞాస్తథాపరే |\nస్వాధ్యాయజ్ఞానయజ్ఞాశ్చ యతయః సంశితవ్రతాః || 28 ||",
     meaning:
@@ -747,7 +747,7 @@ export const chapter4 = [
   {
     id: "4-29",
     chapter: 4,
-    verse_number: 29,
+    verse_number: "29",
     teluguSloka:
       "అపానే జుహ్వతి ప్రాణం ప్రాణేఽపానం తథాపరే |\nప్రాణాపానగతీ రుధ్వా ప్రాణాయామపరాయణాః || 29 ||",
     meaning:
@@ -774,7 +774,7 @@ export const chapter4 = [
   {
     id: "4-30",
     chapter: 4,
-    verse_number: 30,
+    verse_number: "30",
     teluguSloka:
       "అపరే నియతాహారాః ప్రాణాన్ ప్రాణేషు జుహ్వతి |\nసర్వేఽప్యేతే యజ్ఞవిదో యజ్ఞక్షపిత కల్మషాః || 30 ||",
     meaning:
@@ -799,7 +799,7 @@ export const chapter4 = [
   {
     id: "4-31",
     chapter: 4,
-    verse_number: 31,
+    verse_number: "31",
     teluguSloka:
       "యజ్ఞశిష్టామృతభుజో యాంతి బ్రహ్మ సనాతనమ్ |\nనాయం లోకోఽస్త్యయజ్ఞస్య కuthoఽన్యః కురుసత్తమ || 31 ||",
     meaning:
@@ -825,7 +825,7 @@ export const chapter4 = [
   {
     id: "4-32",
     chapter: 4,
-    verse_number: 32,
+    verse_number: "32",
     teluguSloka:
       "ఏవం బహువిధా యజ్ఞా వితతా బ్రహ్మణో ముఖే |\nకర్మజాన్ విద్ధి తాన్ సర్వాన్ ఏవం జ్ఞాత్వా విమోక్ష్యసే || 32 ||",
     meaning:
@@ -851,7 +851,7 @@ export const chapter4 = [
   {
     id: "4-33",
     chapter: 4,
-    verse_number: 33,
+    verse_number: "33",
     teluguSloka:
       "శ్రేయాన్ ద్రవ్యమయాద్యజ్ఞాత్ జ్ఞానయజ్ఞః పరంతప |\nసర్వం కర్మాఖిలం పార్థ జ్ఞానే పరిసమాప్యతే || 33 ||",
     meaning:
@@ -875,7 +875,7 @@ export const chapter4 = [
   {
     id: "4-34",
     chapter: 4,
-    verse_number: 34,
+    verse_number: "34",
     teluguSloka:
       "తద్విద్ధి ప్రణిపాతేన పరిప్రశ్నేన సేవయా |\nఉపదేక్ష్యంతి తే జ్ఞానం జ్ఞానినస్తత్త్వదర్శినః || 34 ||",
     meaning:
@@ -898,7 +898,7 @@ export const chapter4 = [
   {
     id: "4-35",
     chapter: 4,
-    verse_number: 35,
+    verse_number: "35",
     teluguSloka:
       "యద్ జ్ఞాత్వా న పునర్మోహమ్ ఏవం యాస్యసి పాండవ |\nయేన భూతాన్యశేషేణ ద్రక్ష్యస్యాత్మన్యథో మయి || 35 ||",
     meaning:
@@ -926,7 +926,7 @@ export const chapter4 = [
   {
     id: "4-36",
     chapter: 4,
-    verse_number: 36,
+    verse_number: "36",
     teluguSloka:
       "అపి చేదసి పాపేభ్యః సర్వేభ్యః పాపకృత్తమః |\nసర్వం జ్ఞానప్లవేనైవ వృజినం సంతరిష్యసి || 36 ||",
     meaning:
@@ -950,7 +950,7 @@ export const chapter4 = [
   {
     id: "4-37",
     chapter: 4,
-    verse_number: 37,
+    verse_number: "37",
     teluguSloka:
       "యథైధాంసి సమిద్ధోఽగ్నిః భస్మసాత్కురుతే ఽర్జున |\nజ్ఞానాగ్నిః సర్వకర్మాణి భస్మసాత్కురుతే తథా || 37 ||",
     meaning:
@@ -978,7 +978,7 @@ export const chapter4 = [
   {
     id: "4-38",
     chapter: 4,
-    verse_number: 38,
+    verse_number: "38",
     teluguSloka:
       "న హి జ్ఞానేన సదృశం పవిత్రమిహ విద్యతే |\nతత్స్వయం యోగసంసిద్ధః కాలేనాత్మని విందతి || 38 ||",
     meaning:
@@ -1005,7 +1005,7 @@ export const chapter4 = [
   {
     id: "4-39",
     chapter: 4,
-    verse_number: 39,
+    verse_number: "39",
     teluguSloka:
       "శ్రద్ధావాన్ లభతే జ్ఞానం తత్పరః సంయతేంద్రియః |\nజ్ఞానం లబ్ధ్వా పరామ్ శాంతిమచిరేణాధిగచ్ఛతి || 39 ||",
     meaning:
@@ -1030,7 +1030,7 @@ export const chapter4 = [
   {
     id: "4-40",
     chapter: 4,
-    verse_number: 40,
+    verse_number: "40",
     teluguSloka:
       "అజ్ఞశ్చాశ్రద్ధధానశ్చ సంశయాత్మా వినశ్యతి |\nనాయం లోకోఽస్తి న పరో న సుఖం సంశయాత్మనః || 40 ||",
     meaning:
@@ -1057,7 +1057,7 @@ export const chapter4 = [
   {
     id: "4-41",
     chapter: 4,
-    verse_number: 41,
+    verse_number: "41",
     teluguSloka:
       "యోగసన్న్యస్తకర్మాణం జ్ఞానసంఛిన్నసంశయమ్ |\nఆత్మవంతం న కర్మాణి నిబధ్నంతి ధనంజయ || 41 ||",
     meaning:
@@ -1083,7 +1083,7 @@ export const chapter4 = [
   {
     id: "4-42",
     chapter: 4,
-    verse_number: 42,
+    verse_number: "42",
     teluguSloka:
       "తస్మాదజ్ఞానసంభూతం హృత్-స్థం జ్ఞానాసినాత్మనః |\nఛిత్త్వైనం సంశయం యోగమాతిష్ఠోత్తిష్ఠ భారత || 42 ||",
     meaning:

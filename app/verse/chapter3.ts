@@ -2,7 +2,7 @@ export const chapter3 = [
   {
     id: "3-1",
     chapter: 3,
-    verse_number: 1,
+    verse_number: "1",
     teluguSloka:
       "అర్జున ఉవాచ ।\nజ్యాయసీ చేత్కర్మణస్తే మతా బుద్ధిర్జనార్దన ।\nతత్కిం కర్మణి ఘోరే మాం నియోజయసి కేశవ ।। 1 ।।",
     meaning:
@@ -30,7 +30,7 @@ export const chapter3 = [
   {
     id: "3-2",
     chapter: 3,
-    verse_number: 2,
+    verse_number: "2",
     teluguSloka:
       "వ్యామిశ్రేణేవ వాక్యేన బుద్ధిం మోహయసీవ మే ।\nతదేకం వద నిశ్చిత్య యేన శ్రేయోఽహమాప్నుయామ్ ।। 2 ।।",
     meaning:
@@ -56,7 +56,7 @@ export const chapter3 = [
   {
     id: "3-3",
     chapter: 3,
-    verse_number: 3,
+    verse_number: "3",
     teluguSloka:
       "శ్రీ భగవానువాచ ।\nలోకేఽస్మిన్ ద్వివిధా నిష్ఠా పురా ప్రోక్తా మయానఘ ।\nజ్ఞానయోగేన సాంఖ్యానాం కర్మయోగేన యోగినామ్ ।। 3 ।।",
     meaning:
@@ -82,7 +82,7 @@ export const chapter3 = [
   {
     id: "3-4",
     chapter: 3,
-    verse_number: 4,
+    verse_number: "4",
     teluguSloka:
       "న కర్మణామనారంభాన్నైష్కర్మ్యం పురుషోఽశ్నుతే ।\nన చ సన్న్యసనాదేవ సిద్ధిం సమధిగచ్ఛతి ।। 4 ।।",
     meaning:
@@ -107,7 +107,7 @@ export const chapter3 = [
   {
     id: "3-5",
     chapter: 3,
-    verse_number: 5,
+    verse_number: "5",
     teluguSloka:
       "న హి కశ్చిత్ క్షణమపి జాతు తిష్ఠత్యకర్మకృత్ ।\nకార్యతే హ్యవశః కర్మ సర్వః ప్రకృతిజైర్గుణైః ।। 5 ।।",
     meaning:
@@ -135,7 +135,7 @@ export const chapter3 = [
   {
     id: "3-6",
     chapter: 3,
-    verse_number: 6,
+    verse_number: "6",
     teluguSloka:
       "కర్మేంద్రియాణి సంయమ్య య ఆస్తే మనసా స్మరన్ ।\n ఇంద్రియార్థాన్ విమూఢాత్మా మిథ్యాచారః స ఉచ్యతే ।। 6 ।।",
     meaning:
@@ -159,7 +159,7 @@ export const chapter3 = [
   {
     id: "3-7",
     chapter: 3,
-    verse_number: 7,
+    verse_number: "7",
     teluguSloka:
       "యస్త్వింద్రియాణి మనసా నియమ్యారభతేఽర్జున ।\nకర్మేంద్రియైః కర్మయోగమసక్తః స విశిష్యతే ।। 7 ।।",
     meaning:
@@ -184,7 +184,7 @@ export const chapter3 = [
   {
     id: "3-8",
     chapter: 3,
-    verse_number: 8,
+    verse_number: "8",
     teluguSloka:
       "నియతం కురు కర్మ త్వం కర్మ జ్యాయో హ్యకర్మణః ।\nశరీరయాత్రాపి చ తే న ప్రసిద్ధ్యేదకర్మణః ।। 8 ।।",
     meaning:
@@ -212,7 +212,7 @@ export const chapter3 = [
   {
     id: "3-9",
     chapter: 3,
-    verse_number: 9,
+    verse_number: "9",
     teluguSloka:
       "యజ్ఞార్థాత్ కర్మణోఽన్యత్ర లోకోఽయం కర్మబంధనః ।\nతదర్థం కర్మ కౌంతేయ ముక్తసంగః సమాచర ।। 9 ।।",
     meaning:
@@ -237,7 +237,7 @@ export const chapter3 = [
   {
     id: "3-10",
     chapter: 3,
-    verse_number: 10,
+    verse_number: "10",
     teluguSloka:
       "సహయజ్ఞాః ప్రజాః సృష్ట్వా పురోవాచ ప్రజాపతిః ।\nఅనేన ప్రసవిష్యధ్వమేష వోఽస్త్విష్టకామధుక్ ।। 10 ।।",
     meaning:
@@ -262,7 +262,7 @@ export const chapter3 = [
   {
     id: "3-11",
     chapter: 3,
-    verse_number: 11,
+    verse_number: "11",
     teluguSloka:
       "దేవాన్భావయతానేన తే దేవా భావయంతు వః ।\nపరస్పరం భావయంతః శ్రేయః పరమవాప్స్యథ ।। 11 ।।",
     meaning:
@@ -287,7 +287,7 @@ export const chapter3 = [
   {
     id: "3-12",
     chapter: 3,
-    verse_number: 12,
+    verse_number: "12",
     teluguSloka:
       "ఇష్టాన్భోగాన్హి వో దేవా దాస్యంతే యజ్ఞభావితాః ।\nతైర్దత్తానప్రదాయైభ్యో యో భుంక్తే స్తేన ఏవ సః ।। 12 ।।",
     meaning:
@@ -316,7 +316,7 @@ export const chapter3 = [
   {
     id: "3-13",
     chapter: 3,
-    verse_number: 13,
+    verse_number: "13",
     teluguSloka:
       "యజ్ఞశిష్టాశినః సంతో ముచ్యంతే సర్వకిల్బిషైః ।\nభుంజతే తే త్వఘం పాపా యే పచంత్యాత్మకారణాత్ ।। 13 ।।",
     meaning:
@@ -345,7 +345,7 @@ export const chapter3 = [
   {
     id: "3-14",
     chapter: 3,
-    verse_number: 14,
+    verse_number: "14",
     teluguSloka:
       "అన్నాద్భవంతి భూతాని పర్జన్యాదన్నసంభవః ।\nయజ్ఞాద్భవతి పర్జన్యో యజ్ఞః కర్మసముద్భవః ।। 14 ।。",
     meaning:
@@ -370,7 +370,7 @@ export const chapter3 = [
   {
     id: "3-15",
     chapter: 3,
-    verse_number: 15,
+    verse_number: "15",
     teluguSloka:
       "కర్మ బ్రహ్మోద్భవం విద్ధి బ్రహ్మాక్షరసముధ్భవమ్ ।\nతస్మాత్ సర్వగతం బ్రహ్మ నిత్యం యజ్ఞే ప్రతిష్ఠితమ్ ।। 15 ।。",
     meaning:
@@ -396,7 +396,7 @@ export const chapter3 = [
   {
     id: "3-16",
     chapter: 3,
-    verse_number: 16,
+    verse_number: "16",
     teluguSloka:
       "ఏవం ప్రవర్తితం చక్రం నానువర్తయతీహ యః ।\nఅఘాయురింద్రియారామో మోఘం పార్థ స జీవతి ।। 16 ।।",
     meaning:
@@ -421,7 +421,7 @@ export const chapter3 = [
   {
     id: "3-17",
     chapter: 3,
-    verse_number: 17,
+    verse_number: "17",
     teluguSloka:
       "యస్త్వాత్మరతిరేవ స్యాదాత్మతృప్తశ్చ మానవః ।\nఆత్మన్యేవ చ సంతుష్టస్తస్య కార్యం న విద్యతే ।। 17 ।।",
     meaning:
@@ -449,7 +449,7 @@ export const chapter3 = [
   {
     id: "3-18",
     chapter: 3,
-    verse_number: 18,
+    verse_number: "18",
     teluguSloka:
       "నైవ తస్య కృతేనార్థో నాకృతేనేహ కశ్చన ।\nన చాస్య సర్వభూతేషు కశ్చిదర్థవ్యపాశ్రయః ।। 18 ।。",
     meaning:
@@ -477,7 +477,7 @@ export const chapter3 = [
   {
     id: "3-19",
     chapter: 3,
-    verse_number: 19,
+    verse_number: "19",
     teluguSloka:
       "తస్మాదసక్తః సతతం కార్యం కర్మ సమాచర ।\nఅసక్తో హ్యాచరన్ కర్మ పరమాప్నోతి పూరుషః ।। 19 ।।",
     meaning:
@@ -502,7 +502,7 @@ export const chapter3 = [
   {
     id: "3-20",
     chapter: 3,
-    verse_number: 20,
+    verse_number: "20",
     teluguSloka:
       "కర్మణైవ హి సంసిద్ధిమాస్థితా జనకాదయః ।\nలోకసంగ్రహమేవాపి సంపశ్యన్కర్తుమర్హసి ।। 20 ।。",
     meaning:
@@ -526,7 +526,7 @@ export const chapter3 = [
   {
     id: "3-21",
     chapter: 3,
-    verse_number: 21,
+    verse_number: "21",
     teluguSloka:
       "యద్యదాచరతి శ్రేష్ఠస్తత్త దేవేతరో జనః ।\nస యత్ప్రమాణం కురుతే లోకస్తదనువర్తతే ।। 21 ।。",
     meaning:
@@ -552,7 +552,7 @@ export const chapter3 = [
   {
     id: "3-22",
     chapter: 3,
-    verse_number: 22,
+    verse_number: "22",
     teluguSloka:
       "న మే పార్థాస్తి కర్తవ్యం త్రిషు లోకేషు కించన ।\nనానవాప్తమవాప్తవ్యం వర్త ఏవ చ కర్మణి ।। 22 ।。",
     meaning:
@@ -580,7 +580,7 @@ export const chapter3 = [
   {
     id: "3-23",
     chapter: 3,
-    verse_number: 23,
+    verse_number: "23",
     teluguSloka:
       "యది హ్యయం న వర్తేయం జాతు కర్మణ్యతంద్రితః ।\nమమ వర్త్మానువర్తంతే మనుష్యాః పార్థ సర్వశః ।। 23 ।。",
     meaning:
@@ -607,7 +607,7 @@ export const chapter3 = [
   {
     id: "3-24",
     chapter: 3,
-    verse_number: 24,
+    verse_number: "24",
     teluguSloka:
       "ఉత్సీదేయురిమే లోకా న కుర్యాం కర్మ చేదహమ్ ।\nసంకరస్య చ కర్తా స్యాముపహన్యామిమాః ప్రజాః ।। 24 ।。",
     meaning:
@@ -635,7 +635,7 @@ export const chapter3 = [
   {
     id: "3-25",
     chapter: 3,
-    verse_number: 25,
+    verse_number: "25",
     teluguSloka:
       "సక్తాః కర్మణ్యవిద్వాంసో యథా కుర్వంతి భారత ।\nకుర్యాద్విద్వాంస్తథాసక్తః చికీర్షుర్లోకసంగ్రహమ్ ।। 25 ।。",
     meaning:
@@ -660,7 +660,7 @@ export const chapter3 = [
   {
     id: "3-26",
     chapter: 3,
-    verse_number: 26,
+    verse_number: "26",
     teluguSloka:
       "న బుద్ధిభేదం జనయేదజ్ఞానాం కర్మసంగినామ్ ।\nజోషయేత్సర్వకర్మాణి విద్వాన్యుక్తః సమచరన్ ।। 26 ।।",
     meaning:
@@ -684,7 +684,7 @@ export const chapter3 = [
   {
     id: "3-27",
     chapter: 3,
-    verse_number: 27,
+    verse_number: "27",
     teluguSloka:
       "ప్రకృతేః క్రియమాణాని గుణైః కర్మాణి సర్వశః ।\nఅహంకారవిమూఢాత్మా కర్తాఽహమితి మన్యతే ।। 27 ।।",
     meaning:
@@ -710,7 +710,7 @@ export const chapter3 = [
   {
     id: "3-28",
     chapter: 3,
-    verse_number: 28,
+    verse_number: "28",
     teluguSloka:
       "తత్త్వవిత్తు మహాబాహో గుణకర్మవిభాగయోః ।\nగుణా గుణేషు వర్తంత ఇతి మత్వా న సజ్జతే ।। 28 ।。",
     meaning:
@@ -736,7 +736,7 @@ export const chapter3 = [
   {
     id: "3-29",
     chapter: 3,
-    verse_number: 29,
+    verse_number: "29",
     teluguSloka:
       "ప్రకృతేర్గుణ సమ్మూఢాః సజ్జంతే గుణకర్మసు ।\nతానకృత్స్నవిదో మందాన్కృత్స్నవిన్న విచాలయేత్ ।। 29 ।।",
     meaning:
@@ -759,7 +759,7 @@ export const chapter3 = [
   {
     id: "3-30",
     chapter: 3,
-    verse_number: 30,
+    verse_number: "30",
     teluguSloka:
       "మయి సర్వాణి కర్మాణి సంన్యస్యాధ్యాత్మచేతసా ।\nనిరాశీర్నిర్మమో భూత్వా యుధ్యస్వ విగతజ్వరః ।। 30 ।。",
     meaning:
@@ -782,7 +782,7 @@ export const chapter3 = [
   {
     id: "3-31",
     chapter: 3,
-    verse_number: 31,
+    verse_number: "31",
     teluguSloka:
       "యే మే మతమిదం నిత్యమనుతిష్ఠంతి మానవాః ।\nశ్రద్ధావంతోఽనసూయంతో ముచ్యంతే తేఽపి కర్మభిః ।। 31 ।।",
     meaning:
@@ -808,7 +808,7 @@ export const chapter3 = [
   {
     id: "3-32",
     chapter: 3,
-    verse_number: 32,
+    verse_number: "32",
     teluguSloka:
       "యే త్వేతదభ్యసూయంతో నానుతిష్ఠంతి మే మతమ్ ।\nసర్వజ్ఞాన విమూఢాంస్తాన్విద్ధి నష్టానచేతసః ।। 32 ।。",
     meaning:
@@ -834,7 +834,7 @@ export const chapter3 = [
   {
     id: "3-33",
     chapter: 3,
-    verse_number: 33,
+    verse_number: "33",
     teluguSloka:
       "సదృశం చేష్టతే స్వస్యాః ప్రకృతేః జ్ఞానవానపి ।\nప్రకృతిం యాంతి భూతాని నిగ్రహః కిం కరిష్యతి ।। 33 ।。",
     meaning:
@@ -859,7 +859,7 @@ export const chapter3 = [
   {
     id: "3-34",
     chapter: 3,
-    verse_number: 34,
+    verse_number: "34",
     teluguSloka:
       "ఇంద్రియస్యేంద్రియస్యార్థే రాగద్వేషౌ వ్యవస్థితౌ ।\nతయోర్న వశమాగచ్చేత్తౌ హ్యస్య పరిపన్థినౌ ।। 34 ।。",
     meaning:
@@ -885,7 +885,7 @@ export const chapter3 = [
   {
     id: "3-35",
     chapter: 3,
-    verse_number: 35,
+    verse_number: "35",
     teluguSloka:
       "శ్రేయాన్ స్వధర్మో విగుణః పరధర్మాత్ స్వనుష్ఠితాత్ ।\nస్వధర్మే నిధనం శ్రేయః పరధర్మో భయావహః ।। 35 ।。",
     meaning:
@@ -908,7 +908,7 @@ export const chapter3 = [
   {
     id: "3-36",
     chapter: 3,
-    verse_number: 36,
+    verse_number: "36",
     teluguSloka:
       "అర్జున ఉవాచ ।\nఅథ కేన ప్రయుక్తోఽయం పాపం చరతి పూరుషః ।\nఅనిచ్ఛన్నపి వార్ష్ణేయ బలాదివ నియోజితః ।। 36 ।।",
     meaning:
@@ -934,7 +934,7 @@ export const chapter3 = [
   {
     id: "3-37",
     chapter: 3,
-    verse_number: 37,
+    verse_number: "37",
     teluguSloka:
       "శ్రీ భగవానువాచ ।\nకామ ఏష క్రోధ ఏష రజోగుణసముధ్భవః ।\nమహాశనో మహాపాప్మా విధ్ధ్యేనమిహ వైరిణమ్ ।। 37 ।。",
     meaning:
@@ -960,7 +960,7 @@ export const chapter3 = [
   {
     id: "3-38",
     chapter: 3,
-    verse_number: 38,
+    verse_number: "38",
     teluguSloka:
       "ధూమేనావ్రియతే వహ్నిర్యథాదర్శో మలేన చ ।\nయథోల్బేనావృతో గర్భస్తథా తేనేదమావృతమ్ ।। 38 ।。",
     meaning:
@@ -988,7 +988,7 @@ export const chapter3 = [
   {
     id: "3-39",
     chapter: 3,
-    verse_number: 39,
+    verse_number: "39",
     teluguSloka:
       "ఆవృతం జ్ఞానమేతేన జ్ఞానినో నిత్యవైరిణా ।\nకామరూపేణ కౌంతేయ దుష్పూరేణానలేన చ ।। 39 ।。",
     meaning:
@@ -1011,7 +1011,7 @@ export const chapter3 = [
   {
     id: "3-40",
     chapter: 3,
-    verse_number: 40,
+    verse_number: "40",
     teluguSloka:
       "ఇంద్రియాణి మనో బుద్ధిరస్యాధిష్ఠానముచ్యతే ।\nఏతైర్విమోహయత్యేష జ్ఞానమావృత్య దేహినమ్ ।। 40 ।।",
     meaning:
@@ -1036,7 +1036,7 @@ export const chapter3 = [
   {
     id: "3-41",
     chapter: 3,
-    verse_number: 41,
+    verse_number: "41",
     teluguSloka:
       "తస్మాత్ త్వమింద్రియాణ్యాదౌ నియమ్య భరతర్షభ ।\nపాప్మానం ప్రజహి హ్యేనం జ్ఞానవిజ్ఞాననాశనమ్ ।। 41 ।।",
     meaning:
@@ -1062,7 +1062,7 @@ export const chapter3 = [
   {
     id: "3-42",
     chapter: 3,
-    verse_number: 42,
+    verse_number: "42",
     teluguSloka:
       "ఇంద్రియాణి పరాణ్యాహుః ఇంద్రియేభ్యః పరం మనః ।\nమనసస్తు పరా బుద్ధిః యో బుద్ధేః పరతస్తు సః ।। 42 ।।",
     meaning:
@@ -1090,7 +1090,7 @@ export const chapter3 = [
   {
     id: "3-43",
     chapter: 3,
-    verse_number: 43,
+    verse_number: "43",
     teluguSloka:
       "ఏవం బుద్ధేః పరం బుద్ధ్వా సంస్తభ్యాత్మానమాత్మనా ।\nజహి శత్రుం మహాబాహో కామరూపం దురాసదమ్ ।। 43 ।।",
     meaning:

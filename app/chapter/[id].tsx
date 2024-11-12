@@ -6,10 +6,14 @@ import { useLocalSearchParams, Link, Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+// Chapters
 import { chapter1 } from "../verse/chapter1";
 import { chapter2 } from "../verse/chapter2";
 import { chapter3 } from "../verse/chapter3";
 import { chapter4 } from "../verse/chapter4";
+import { chapter5 } from "../verse/chapter5";
+
+// Styles
 import { chapterstyles } from "../styles";
 
 // This would eventually come from your data source
@@ -47,6 +51,14 @@ const getChapterData = (id: string) => {
         "The second chapter of the Bhagavad Gita introduces the setting of the epic dialogue...",
       verses: chapter4,
     },
+    {
+      id: 5,
+      chapter_number: "5వ అధ్యాయము",
+      yogam_name: "కర్మ సన్యాస యోగము",
+      description:
+        "The second chapter of the Bhagavad Gita introduces the setting of the epic dialogue...",
+      verses: chapter5,
+    },
   ];
 
   return chapters.find((chapter) => chapter.id === parseInt(id));
@@ -62,7 +74,7 @@ export default function ChapterScreen() {
     item: {
       id: string;
       chapter: number;
-      verse_number: number;
+      verse_number: string;
       teluguSloka: string;
       meaning: string;
       word_meanings: { word: string; meaning: string }[];

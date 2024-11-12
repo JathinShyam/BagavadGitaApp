@@ -2,7 +2,7 @@ export const chapter2 = [
   {
     id: "2-1",
     chapter: 2,
-    verse_number: 1,
+    verse_number: "1",
     teluguSloka:
       "సంజయ ఉవాచ ।\n తం తథా కృపయావిష్టమశ్రుపూర్ణాకులేక్షణమ్ ।\n విషీదంతమిదం వాక్యమువాచ మధుసూదనః ।। 1 ।।",
     meaning:
@@ -28,7 +28,7 @@ export const chapter2 = [
   {
     id: "2-2",
     chapter: 2,
-    verse_number: 2,
+    verse_number: "2",
     teluguSloka:
       "శ్రీ భగవానువాచ ।\nకుతస్త్వాకశ్మలమిదం విషమే సముపస్థితమ్ ।\nఅనార్యజుష్టమస్వర్గ్యమ్ అకీర్తికరమర్జున ।। 2 ।।",
     meaning:
@@ -53,7 +53,7 @@ export const chapter2 = [
   {
     id: "2-3",
     chapter: 2,
-    verse_number: 3,
+    verse_number: "3",
     teluguSloka:
       "క్లైబ్యం మా స్మ గమః పార్థ నైతత్త్వయ్యుపపద్యతే ।\nక్ షుద్రం హృదయదౌర్బల్యం త్యక్త్వోత్తిష్ఠ పరంతప ।। 3 ।।",
     meaning:
@@ -80,7 +80,7 @@ export const chapter2 = [
   {
     id: "2-4",
     chapter: 2,
-    verse_number: 4,
+    verse_number: "4",
     teluguSloka:
       "అర్జున ఉవాచ ।\n కథం భీష్మమహం సంఖ్యే ద్రోణం చ మధుసూదన ।\nఇషుభిః ప్రతియోత్స్యామి పూజార్హావరిసూదన ।। 4 ।।",
     meaning:
@@ -108,7 +108,7 @@ export const chapter2 = [
   {
     id: "2-5",
     chapter: 2,
-    verse_number: 5,
+    verse_number: "5",
     teluguSloka:
       "గురూనహత్వా హి మహానుభావాన్\nశ్రేయో భోక్తుం భైక్ష్యమపీహ లోకే ।\nహత్వార్థకామాంస్తు గురూనిహైవ\nభుంజీయ భోగాన్ రుధిరప్రదిగ్ధాన్ ।। 5 ।।",
     meaning:
@@ -141,7 +141,7 @@ export const chapter2 = [
   {
     id: "2-6",
     chapter: 2,
-    verse_number: 6,
+    verse_number: "6",
     teluguSloka:
       "న చైతద్విద్మః కతరన్నో గరీయో\nయద్వా జయేమ యది వా నో జయేయుః ।\nయానేవ హత్వా న జిజీవిషామః\nతేఽవస్థితాః ప్రముఖే ధార్తరాష్ట్రాః ।। 6 ।।",
     meaning:
@@ -175,7 +175,7 @@ export const chapter2 = [
   {
     id: "2-7",
     chapter: 2,
-    verse_number: 7,
+    verse_number: "7",
     teluguSloka:
       "కార్పణ్యదోషోపహతస్వభావః\nపృచ్ఛామి త్వాం ధర్మసమ్మూఢచేతాః ।\nయచ్ఛ్రేయః స్యాన్నిశ్చితం బ్రూహి తన్మే\nశిష్యస్తే'హం శాధి మాం త్వాం ప్రపన్నమ్ ।। 7 ।।",
     meaning:
@@ -208,7 +208,7 @@ export const chapter2 = [
   {
     id: "2-8",
     chapter: 2,
-    verse_number: 8,
+    verse_number: "8",
     teluguSloka:
       "న హి ప్రపశ్యామి మమాపనుద్యాద్\nయచ్ఛోకముచ్ఛోషణమింద్రియాణామ్ ।\nఅవాప్య భూమావసపత్నమృద్ధం\nరాజ్యం సురాణామపి చాధిపత్యమ్ ।। 8 ।।",
     meaning:
@@ -239,7 +239,7 @@ export const chapter2 = [
   {
     id: "2-9",
     chapter: 2,
-    verse_number: 9,
+    verse_number: "9",
     teluguSloka:
       "సంజయ ఉవాచ ।\nఏవముక్త్వా హృషీకేశం గుడాకేశః పరంతప ।\nన యోత్స్య ఇతి గోవిందముక్త్వా తూష్ణీం బభూవ హ ।। 9 ।।",
     meaning:
@@ -265,7 +265,7 @@ export const chapter2 = [
   {
     id: "2-10",
     chapter: 2,
-    verse_number: 10,
+    verse_number: "10",
     teluguSloka:
       "తమువాచ హృషికేశః ప్రహసన్నివ భారత ।\nసేనయోరుభయోర్మధ్యే విషీదంతమిదం వచః ।। 10 ।।",
     meaning:
@@ -290,7 +290,7 @@ export const chapter2 = [
   {
     id: "2-11",
     chapter: 2,
-    verse_number: 11,
+    verse_number: "11",
     teluguSloka:
       "శ్రీ భగవానువాచ |\nఅశోచ్యానన్వశోచస్త్వం ప్రజ్ఞావాదాంశ్చ భాషసే |\nగతాసూనగతాసూంశ్చ నానుశోచంతి పండితాః ।। 11 ।।",
     meaning:
@@ -316,7 +316,7 @@ export const chapter2 = [
   {
     id: "2-12",
     chapter: 2,
-    verse_number: 12,
+    verse_number: "12",
     teluguSloka:
       "న త్వేవాహం జాతు నాసం న త్వం నేమే జనాధిపాః |\nన చైవ న భవిష్యామః సర్వే వయమతః పరమ్ ।। 12 ।।",
     meaning:
@@ -349,7 +349,7 @@ export const chapter2 = [
   {
     id: "2-13",
     chapter: 2,
-    verse_number: 13,
+    verse_number: "13",
     teluguSloka:
       "దేహినోఽస్మిన్ యథా దేహే కౌమారం యౌవనం జరా |\nతథా దేహాంతరప్రాప్తిః ధీరస్తత్ర న ముహ్యతి ।। 13 ।。",
     meaning:
@@ -376,7 +376,7 @@ export const chapter2 = [
   {
     id: "2-14",
     chapter: 2,
-    verse_number: 14,
+    verse_number: "14",
     teluguSloka:
       "మాత్రాస్పర్శాస్తు కౌంతేయ శీతోష్ణసుఖదుఃఖదాః |\nఆగమాపాయినోఽనిత్యాః తాంస్తితిక్షస్వ భారత ।। 14 ।।",
     meaning:
@@ -405,7 +405,7 @@ export const chapter2 = [
   {
     id: "2-15",
     chapter: 2,
-    verse_number: 15,
+    verse_number: "15",
     teluguSloka:
       "యం హి న వ్యథయంత్యేతే పురుషం పురుషర్షభ |\nసమదుఃఖసుఖం ధీరం సోఽమృతత్వాయ కల్పతే ।। 15 ।।",
     meaning:
@@ -431,7 +431,7 @@ export const chapter2 = [
   {
     id: "2-16",
     chapter: 2,
-    verse_number: 16,
+    verse_number: "16",
     teluguSloka:
       "నాసతో విద్యతే భావో నాభావో విద్యతే సతః |\nఉభయోరపి దృష్టోఽన్తః త్వనయోస్తత్త్వదర్శిభిః ।। 16 ।।",
     meaning:
@@ -460,7 +460,7 @@ export const chapter2 = [
   {
     id: "2-17",
     chapter: 2,
-    verse_number: 17,
+    verse_number: "17",
     teluguSloka:
       "అవినాశి తు తద్విద్ధి యేన సర్వమిదం తతమ్ |\nవినాశమవ్యయస్యాస్య న కశ్చిత్కర్తుమర్హతి ।। 17 ।।",
     meaning:
@@ -488,7 +488,7 @@ export const chapter2 = [
   {
     id: "2-18",
     chapter: 2,
-    verse_number: 18,
+    verse_number: "18",
     teluguSloka:
       "అంతవంత ఇమే దేహా నిత్యస్యోక్తాః శరీరిణః |\nఅనాశినోఽప్రమేయస్య తస్మాద్యుధ్యస్వ భారత ।। 18 ।।",
     meaning:
@@ -512,7 +512,7 @@ export const chapter2 = [
   {
     id: "2-19",
     chapter: 2,
-    verse_number: 19,
+    verse_number: "19",
     teluguSloka:
       "య ఏనం వేత్తి హంతారం యశ్చైనం మన్యతే హతమ్ |\nఉభౌ తౌ న విజానీతో నాయం హంతి న హన్యతే ।। 19 ।।",
     meaning:
@@ -541,7 +541,7 @@ export const chapter2 = [
   {
     id: "2-20",
     chapter: 2,
-    verse_number: 20,
+    verse_number: "20",
     teluguSloka:
       "న జాయతే మ్రియతే వా కదాచిత్ నాయం భూత్వా భవితా వా న భూయః |\nఅజో నిత్యః శాశ్వతోఽయం పురాణో న హన్యతే హన్యమానే శరీరే ।। 20 ।।",
     meaning:
@@ -575,7 +575,7 @@ export const chapter2 = [
   {
     id: "2-21",
     chapter: 2,
-    verse_number: 21,
+    verse_number: "21",
     teluguSloka:
       "వేదావినాశినం నిత్యం య యేనమజమవ్యయమ్ |\nకథం స పురుషః పార్థ కం ఘాతయతి హంతి కమ్ ।। 21 ।।",
     meaning:
@@ -603,7 +603,7 @@ export const chapter2 = [
   {
     id: "2-22",
     chapter: 2,
-    verse_number: 22,
+    verse_number: "22",
     teluguSloka:
       "వాసాంసి జీర్ణాని యథా విహాయ నవాని గృహ్ణాతి నరోఽపరాణి |\nతథా శరీరాణి విహాయ జీర్ణా న్యన్యాని సంయాతి నవాని దేహీ ।। 22 ।।",
     meaning:
@@ -632,7 +632,7 @@ export const chapter2 = [
   {
     id: "2-23",
     chapter: 2,
-    verse_number: 23,
+    verse_number: "23",
     teluguSloka:
       "నైనం ఛిందంతి శస్త్రాణి నైనం దహతి పావకః |\nన చైనం క్లేదయంత్యాపో న శోషయతి మారుతః ।। 23 ।।",
     meaning:
@@ -661,7 +661,7 @@ export const chapter2 = [
   {
     id: "2-24",
     chapter: 2,
-    verse_number: 24,
+    verse_number: "24",
     teluguSloka:
       "అచ్ఛేద్యోఽయమదాహ్యోఽయమ్ అక్లేద్యోఽశోష్య ఏవ చ |\nనిత్యః సర్వగతః స్థాణురచలోఽయం సనాతనః ।। 24 ।。",
     meaning:
@@ -688,7 +688,7 @@ export const chapter2 = [
   {
     id: "2-25",
     chapter: 2,
-    verse_number: 25,
+    verse_number: "25",
     teluguSloka:
       "అవ్యక్తోఽయమచింత్యోఽయమవికార్యోఽయముచ్యతే |\nతస్మాదేవం విదిత్వైనం నానుశోచితుమర్హసి ।। 25 ।。",
     meaning:
@@ -715,7 +715,7 @@ export const chapter2 = [
   {
     id: "2-26",
     chapter: 2,
-    verse_number: 26,
+    verse_number: "26",
     teluguSloka:
       "అథ చైనం నిత్యజాతం నిత్యం వా మన్యసే మృతమ్ |\nతథాపి త్వం మహాబాహో నైవం శోచితుమర్హసి ।। 26 ।。",
     meaning:
@@ -743,7 +743,7 @@ export const chapter2 = [
   {
     id: "2-27",
     chapter: 2,
-    verse_number: 27,
+    verse_number: "27",
     teluguSloka:
       "జాతస్య హి ధ్రువో మృత్యుః ధ్రువం జన్మ మృతస్య చ |\nతస్మాదపరిహార్యేఽర్థే న త్వం శోచితుమర్హసి ।। 27 ।。",
     meaning:
@@ -771,7 +771,7 @@ export const chapter2 = [
   {
     id: "2-28",
     chapter: 2,
-    verse_number: 28,
+    verse_number: "28",
     teluguSloka:
       "అవ్యక్తాదీని భూతాని వ్యక్తమధ్యాని భారత |\nఅవ్యక్తనిధనాన్యేవ తత్ర కా పరిదేవనా ।। 28 ।。",
     meaning:
@@ -798,7 +798,7 @@ export const chapter2 = [
   {
     id: "2-29",
     chapter: 2,
-    verse_number: 29,
+    verse_number: "29",
     teluguSloka:
       "ఆశ్చర్యవత్పశ్యతి కశ్చిదేన\nమాశ్చర్యవద్వదతి తథైవ చాన్యః |\nఆశ్చర్యవచ్చైనమన్యః శృణోతి\nశ్రుత్వాప్యేనం వేద న చైవ కశ్చిత్ ।। 29 ।。",
     meaning:
@@ -833,7 +833,7 @@ export const chapter2 = [
   {
     id: "2-30",
     chapter: 2,
-    verse_number: 30,
+    verse_number: "30",
     teluguSloka:
       "దేహీ నిత్యమవధ్యోఽయం దేహే సర్వస్య భారత |\nతస్మాత్ సర్వాణి భూతాని న త్వం శోచితుమర్హసి ।। 30 ।。",
     meaning:
@@ -860,7 +860,7 @@ export const chapter2 = [
   {
     id: "2-31",
     chapter: 2,
-    verse_number: 31,
+    verse_number: "31",
     teluguSloka:
       "స్వధర్మమపి చావేక్ష్య న వికంపితుమర్హసి |\nధర్మ్యాద్ధి యుద్ధాచ్ఛ్రేయోఽన్యత్ క్షత్రియస్య న విద్యతే ।। 31 ।。",
     meaning:
@@ -888,7 +888,7 @@ export const chapter2 = [
   {
     id: "2-32",
     chapter: 2,
-    verse_number: 32,
+    verse_number: "32",
     teluguSloka:
       "యదృచ్ఛయా చోపపన్నం స్వర్గద్వారమపావృతమ్ |\nసుఖినః క్షత్రియాః పార్థ లభంతే యుద్ధమీదృశమ్ ।। 32 ।。",
     meaning:
@@ -913,7 +913,7 @@ export const chapter2 = [
   {
     id: "2-33",
     chapter: 2,
-    verse_number: 33,
+    verse_number: "33",
     teluguSloka:
       "అథ చేత్త్వమిమం ధర్మ్యం సంగ్రామం న కరిష్యసి |\nతతః స్వధర్మం కీర్తిం చ హిత్వా పాపమవాప్స్యసి ।। 33 ।。",
     meaning:
@@ -940,7 +940,7 @@ export const chapter2 = [
   {
     id: "2-34",
     chapter: 2,
-    verse_number: 34,
+    verse_number: "34",
     teluguSloka:
       "అకీర్తిం చాపి భూతాని కథయిష్యంతి తేఽవ్యయామ్ |\nసంభావితస్య చాకీర్తిః మరణాదతిరిచ్యతే ।। 34 ।।",
     meaning:
@@ -965,7 +965,7 @@ export const chapter2 = [
   {
     id: "2-35",
     chapter: 2,
-    verse_number: 35,
+    verse_number: "35",
     teluguSloka:
       "భయాద్రణాదుపరతం మంస్యంతే త్వాం మహారథాః |\nయేషాం చ త్వం బహుమతో భూత్వా యాస్యసి లాఘవమ్ ।। 35 ।।",
     meaning:
@@ -994,7 +994,7 @@ export const chapter2 = [
   {
     id: "2-36",
     chapter: 2,
-    verse_number: 36,
+    verse_number: "36",
     teluguSloka:
       "అవాచ్యవాదాంశ్చ బహూన్ వదిష్యంతి తవాహితాః |\nనిందంతస్తవ సామర్థ్యం తతో దుఃఖతరం ను కిమ్ ।। 36 ।।",
     meaning:
@@ -1020,7 +1020,7 @@ export const chapter2 = [
   {
     id: "2-37",
     chapter: 2,
-    verse_number: 37,
+    verse_number: "37",
     teluguSloka:
       "హతో వా ప్రాప్స్యసి స్వర్గం జిత్వా వా భోక్షసే మహీమ్ |\nతస్మాదుత్తిష్ఠ కౌంతేయ యుద్ధాయ కృతనిశ్చయః ।। 37 ।।",
     meaning:
@@ -1046,7 +1046,7 @@ export const chapter2 = [
   {
     id: "2-38",
     chapter: 2,
-    verse_number: 38,
+    verse_number: "38",
     teluguSloka:
       "సుఖదుఃఖే సమే కృత్వా లాభాలాభౌ జయాజయౌ |\nతతో యుద్ధాయ యుజ్యస్వ నైవం పాపమవాప్స్యసి ।। 38 ।。",
     meaning:
@@ -1071,7 +1071,7 @@ export const chapter2 = [
   {
     id: "2-39",
     chapter: 2,
-    verse_number: 39,
+    verse_number: "39",
     teluguSloka:
       "ఏషా తే'అభిహితా సాంఖ్యే బుద్ధిర్యోగే త్విమాం శృణు |\nబుధ్ధ్యా యుక్తో యయా పార్థ కర్మబంధం ప్రహాస్యసి ।। 39 ।।",
     meaning:
@@ -1098,7 +1098,7 @@ export const chapter2 = [
   {
     id: "2-40",
     chapter: 2,
-    verse_number: 40,
+    verse_number: "40",
     teluguSloka:
       "నేహాభిక్రమనాశోఽస్తి ప్రత్యవాయో న విద్యతే |\nస్వల్పమప్యస్య ధర్మస్య త్రాయతే మహతో భయాత్ ।। 40 ।।",
     meaning:
@@ -1126,7 +1126,7 @@ export const chapter2 = [
   {
     id: "2-41",
     chapter: 2,
-    verse_number: 41,
+    verse_number: "41",
     teluguSloka:
       "వ్యవసాయాత్మికా బుద్ధిరేకేహ కురునందన |\nబహుశాఖా హ్యనంతాశ్చ బుద్ధయోఽవ్యవసాయినామ్ ।। 41 ।。",
     meaning:
@@ -1150,7 +1150,7 @@ export const chapter2 = [
   {
     id: "2-42",
     chapter: 2,
-    verse_number: 42,
+    verse_number: "42",
     teluguSloka:
       "యామిమాం పుష్పితాం వాచం ప్రవదంత్యవిపశ్చితః |\nవేదవాదరతాః పార్థ నాన్యదస్తీతి వాదినః ।। 42 ।。",
     meaning:
@@ -1172,7 +1172,7 @@ export const chapter2 = [
   {
     id: "2-43",
     chapter: 2,
-    verse_number: 43,
+    verse_number: "43",
     teluguSloka:
       "కామాత్మానః స్వర్గపరా జన్మకర్మఫలప్రదామ్ |\nక్రియావిశేషబహులాం భోగైశ్వర్యగతిం ప్రతి ।। 43 ।。",
     meaning:
@@ -1195,7 +1195,7 @@ export const chapter2 = [
   {
     id: "2-44",
     chapter: 2,
-    verse_number: 44,
+    verse_number: "44",
     teluguSloka:
       "భోగైశ్వర్యప్రసక్తానాం తయాపహృతచేతసామ్ |\nవ్యవసాయాత్మికా బుద్ధిః సమాధౌ న విధీయతే ।। 44 ।।",
     meaning:
@@ -1218,7 +1218,7 @@ export const chapter2 = [
   {
     id: "2-45",
     chapter: 2,
-    verse_number: 45,
+    verse_number: "45",
     teluguSloka:
       "త్రైగుణ్యవిషయా వేదా నిస్త్రైగుణ్యో భవార్జున |\nనిర్ద్వంద్వో నిత్యసత్త్వస్థో నిర్యోగక్షేమ ఆత్మవాన్ ।। 45 ।。",
     meaning:
@@ -1241,7 +1241,7 @@ export const chapter2 = [
   {
     id: "2-46",
     chapter: 2,
-    verse_number: 46,
+    verse_number: "46",
     teluguSloka:
       "యావాన్‌ర్థ ఉదపానే సర్వతః సంప్లుతోదకే |\nతావాన్సర్వేషు వేదేషు బ్రాహ్మణస్య విజానతః ।। 46 ।।",
     meaning:
@@ -1267,7 +1267,7 @@ export const chapter2 = [
   {
     id: "2-47",
     chapter: 2,
-    verse_number: 47,
+    verse_number: "47",
     teluguSloka:
       "కర్మణ్యేవాధికారస్తే మా ఫలేషు కదాచన |\nమా కర్మఫలహేతుర్భూః మా తే సంగోఽస్త్వకర్మణి ।। 47 ।।",
     meaning:
@@ -1293,7 +1293,7 @@ export const chapter2 = [
   {
     id: "2-48",
     chapter: 2,
-    verse_number: 48,
+    verse_number: "48",
     teluguSloka:
       "యోగస్థః కురు కర్మాణి సంగం త్యక్త్వా ధనంజయ |\nసిద్ధ్యసిద్ధ్యోః సమో భూత్వా సమత్వం యోగ ఉచ్యతే ।। 48 ।।",
     meaning:
@@ -1318,7 +1318,7 @@ export const chapter2 = [
   {
     id: "2-49",
     chapter: 2,
-    verse_number: 49,
+    verse_number: "49",
     teluguSloka:
       "దూరేణ హ్యవరం కర్మ బుద్ధియోగాద్ధనంజయ |\nబుద్ధౌ శరణమన్విచ్ఛ కృపణాః ఫలహేతవః ।। 49 ।।",
     meaning:
@@ -1345,7 +1345,7 @@ export const chapter2 = [
   {
     id: "2-50",
     chapter: 2,
-    verse_number: 50,
+    verse_number: "50",
     teluguSloka:
       "బుద్ధియుక్తో జహాతీహ ఉభే సుకృతదుష్కృతే |\nతస్మాద్యోగాయ యుజ్యస్వ యోగః కర్మసు కౌశలమ్ ।। 50 ।।",
     meaning:
@@ -1368,7 +1368,7 @@ export const chapter2 = [
   {
     id: "2-51",
     chapter: 2,
-    verse_number: 51,
+    verse_number: "51",
     teluguSloka:
       "కర్మజం బుద్ధియుక్తా హి ఫలం త్యక్త్వా మనీషిణః |\nజన్మబంధవినిర్ముక్తాః పదం గచ్ఛంత్యనామయమ్ ।। 51 ।。",
     meaning:
@@ -1394,7 +1394,7 @@ export const chapter2 = [
   {
     id: "2-52",
     chapter: 2,
-    verse_number: 52,
+    verse_number: "52",
     teluguSloka:
       "యదా తే మోహకలిలం బుద్ధిర్వ్యతితరిష్యతి |\nతదా గంతాసి నిర్వేదం శ్రోతవ్యస్య శ్రుతస్య చ ।। 52 ।。",
     meaning:
@@ -1419,7 +1419,7 @@ export const chapter2 = [
   {
     id: "2-53",
     chapter: 2,
-    verse_number: 53,
+    verse_number: "53",
     teluguSloka:
       "శ్రుతివిప్రతిపన్నా తే యదా స్థాస్యతి నిశ్చలా |\nసమాధావచలా బుద్ధిస్తదా యోగమవాప్స్యసి ।। 53 ।。",
     meaning:
@@ -1446,7 +1446,7 @@ export const chapter2 = [
   {
     id: "2-54",
     chapter: 2,
-    verse_number: 54,
+    verse_number: "54",
     teluguSloka:
       "అర్జున ఉవాచ |\nస్థితప్రజ్ఞస్య కా భాషా సమాధిస్థస్య కేశవ |\nస్థితధీః కిం ప్రభాషేత కిమాసీత వ్రజేత కిమ్ ।। 54 ।。",
     meaning:
@@ -1475,7 +1475,7 @@ export const chapter2 = [
   {
     id: "2-55",
     chapter: 2,
-    verse_number: 55,
+    verse_number: "55",
     teluguSloka:
       "శ్రీ భగవానువాచ |\nప్రజహాతి యదా కామాన్ సర్వాన్ పార్థ మనోగతాన్ |\nఆత్మన్యేవాత్మనా తుష్టః స్థితప్రజ్ఞస్తదోచ్యతే ।। 55 ।。",
     meaning:
@@ -1504,7 +1504,7 @@ export const chapter2 = [
   {
     id: "2-56",
     chapter: 2,
-    verse_number: 56,
+    verse_number: "56",
     teluguSloka:
       "దుఃఖేష్వనుద్విగ్నమనాః సుఖేషు విగతస్పృహః |\nవీతరాగభయక్రోధః స్థితధీర్మునిరుచ్యతే ।। 56 ।।",
     meaning:
@@ -1531,7 +1531,7 @@ export const chapter2 = [
   {
     id: "2-57",
     chapter: 2,
-    verse_number: 57,
+    verse_number: "57",
     teluguSloka:
       "యః సర్వత్రానభిస్నేహః తత్తత్ ప్రాప్య శుభాశుభమ్ |\nనాభినందతి న ద్వేష్టి తస్య ప్రజ్ఞా ప్రతిష్ఠితా ।। 57 ।।",
     meaning:
@@ -1558,7 +1558,7 @@ export const chapter2 = [
   {
     id: "2-58",
     chapter: 2,
-    verse_number: 58,
+    verse_number: "58",
     teluguSloka:
       "యదా సంహరతే చాయం కూర్మోఽఙ్గానీవ సర్వశః |\nఇంద్రియాణీంద్రియార్థేభ్యః తస్య ప్రజ్ఞా ప్రతిష్ఠితా ।। 58 ।।",
     meaning:
@@ -1584,7 +1584,7 @@ export const chapter2 = [
   {
     id: "2-59",
     chapter: 2,
-    verse_number: 59,
+    verse_number: "59",
     teluguSloka:
       "విషయా వినివర్తంతే నిరాహారస్య దేహినః |\nరసవర్జం రసోఽప్యస్య పరం దృష్ట్వా నివర్తతే ।। 59 ।।",
     meaning:
@@ -1608,7 +1608,7 @@ export const chapter2 = [
   {
     id: "2-60",
     chapter: 2,
-    verse_number: 60,
+    verse_number: "60",
     teluguSloka:
       "యతతో హ్యపి కౌంతేయ పురుషస్య విపశ్చితః |\nఇంద్రియాణి ప్రమాథీని హరంతి ప్రసభం మనః ।। 60 ।।",
     meaning:
@@ -1632,7 +1632,7 @@ export const chapter2 = [
   {
     id: "2-61",
     chapter: 2,
-    verse_number: 61,
+    verse_number: "61",
     teluguSloka:
       "తాని సర్వాణి సంయమ్య యుక్త ఆసీత మత్పరః |\nవశే హి యస్యేంద్రియాణి తస్య ప్రజ్ఞా ప్రతిష్ఠితా ।। 61 ।。",
     meaning:
@@ -1658,7 +1658,7 @@ export const chapter2 = [
   {
     id: "2-62",
     chapter: 2,
-    verse_number: 62,
+    verse_number: "62",
     teluguSloka:
       "ధ్యాయతో విషయాన్ పుంసః సంగస్తేషూపజాయతే |\nసంగాత్ సంజాయతే కామః కామాత్ క్రోధోఽభిజాయతే ।। 62 ।।",
     meaning:
@@ -1683,7 +1683,7 @@ export const chapter2 = [
   {
     id: "2-63",
     chapter: 2,
-    verse_number: 63,
+    verse_number: "63",
     teluguSloka:
       "క్రోధాద్భవతి సమ్మోహః సమ్మోహాత్ స్మృతివిభ్రమః |\nస్మృతిభ్రంశాద్ బుద్ధి నాశో బుద్ధినాశాత్ ప్రణశ్యతి ।। 63 ।।",
     meaning:
@@ -1706,7 +1706,7 @@ export const chapter2 = [
   {
     id: "2-64",
     chapter: 2,
-    verse_number: 64,
+    verse_number: "64",
     teluguSloka:
       "రాగద్వేషవియుక్తైస్తు విషయానింద్రియైశ్చరన్ |\nఆత్మవశ్యైర్విధేయాత్మా ప్రసాదమధిగచ్ఛతి ।। 64 ।。",
     meaning:
@@ -1730,7 +1730,7 @@ export const chapter2 = [
   {
     id: "2-65",
     chapter: 2,
-    verse_number: 65,
+    verse_number: "65",
     teluguSloka:
       "ప్రసాదే సర్వదుఃఖానాం హానిరస్యోపజాయతే |\nప్రసన్నచేతసో హ్యాశు బుద్ధిః పర్యవతిష్ఠతే ।। 65 ।。",
     meaning:
@@ -1754,7 +1754,7 @@ export const chapter2 = [
   {
     id: "2-66",
     chapter: 2,
-    verse_number: 66,
+    verse_number: "66",
     teluguSloka:
       "నాస్తి బుద్ధిరయుక్తస్య న చాయుక్తస్య భావనా |\nన చాభావయతః శాంతిః అశాంతస్య కుతః సుఖమ్ ।। 66 ।।",
     meaning:
@@ -1781,7 +1781,7 @@ export const chapter2 = [
   {
     id: "2-67",
     chapter: 2,
-    verse_number: 67,
+    verse_number: "67",
     teluguSloka:
       "ఇంద్రియాణాం హి చరతాం యన్మనోఽనువిధీయతే |\nతదస్య హరతి ప్రజ్ఞాం వాయుర్నావమివాంభసి ।। 67 ।।",
     meaning:
@@ -1808,7 +1808,7 @@ export const chapter2 = [
   {
     id: "2-68",
     chapter: 2,
-    verse_number: 68,
+    verse_number: "68",
     teluguSloka:
       "తస్మాద్యస్య మహాబాహో నిగృహీతాని సర్వశః |\nఇంద్రియాణీంద్రియార్థేభ్యః తస్య ప్రజ్ఞా ప్రతిష్ఠితా ।। 68 ।।",
     meaning:
@@ -1831,7 +1831,7 @@ export const chapter2 = [
   {
     id: "2-69",
     chapter: 2,
-    verse_number: 69,
+    verse_number: "69",
     teluguSloka:
       "యా నిశా సర్వభూతానాం తస్యాం జాగర్తి సంయమీ |\nయస్యాం జాగ్రతి భూతాని సా నిశా పశ్యతో మునేః ।। 69 ।।",
     meaning:
@@ -1857,7 +1857,7 @@ export const chapter2 = [
   {
     id: "2-70",
     chapter: 2,
-    verse_number: 70,
+    verse_number: "70",
     teluguSloka:
       "ఆపూర్యమాణమచలప్రతిష్ఠం\nసముద్రమాపః ప్రవిశంతి యద్వత్\nతద్వత్ కామా యం ప్రవిశంతి సర్వే\nస శాంతిమాప్నోతి న కామకామీ ।। 70 ।।",
     meaning:
@@ -1886,7 +1886,7 @@ export const chapter2 = [
   {
     id: "2-71",
     chapter: 2,
-    verse_number: 71,
+    verse_number: "71",
     teluguSloka:
       "విహాయ కామాన్యః సర్వాన్పుమాంశ్చరతి నిఃస్పృహః ।\nనిర్మమో నిరహంకారః స శాంతిమధిగచ్ఛతి ।। 71 ।।",
     meaning:
@@ -1911,7 +1911,7 @@ export const chapter2 = [
   {
     id: "2-72",
     chapter: 2,
-    verse_number: 72,
+    verse_number: "72",
     teluguSloka:
       "ఏషా బ్రాహ్మీ స్థితిః పార్థ నైనాం ప్రాప్య విముహ్యతి ।\nస్థిత్వాస్యామంతకాలేఽపి బ్రహ్మనిర్వాణమృచ్ఛతి ।। 72 ।।",
     meaning:
