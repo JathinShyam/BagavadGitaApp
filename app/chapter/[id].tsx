@@ -9,6 +9,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { chapter1 } from "../verse/chapter1";
 import { chapter2 } from "../verse/chapter2";
 import { chapter3 } from "../verse/chapter3";
+import { chapter4 } from "../verse/chapter4";
 import { chapterstyles } from "../styles";
 
 // This would eventually come from your data source
@@ -37,6 +38,14 @@ const getChapterData = (id: string) => {
       description:
         "The second chapter of the Bhagavad Gita introduces the setting of the epic dialogue...",
       verses: chapter3,
+    },
+    {
+      id: 4,
+      chapter_number: "4వ అధ్యాయము",
+      yogam_name: "జ్ఞాన, కర్మ, సన్న్యాస యోగము",
+      description:
+        "The second chapter of the Bhagavad Gita introduces the setting of the epic dialogue...",
+      verses: chapter4,
     },
   ];
 

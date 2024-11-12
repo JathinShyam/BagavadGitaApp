@@ -10,10 +10,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { chapter1 } from "./chapter1";
 import { chapter2 } from "./chapter2";
 import { chapter3 } from "./chapter3";
+import { chapter4 } from "./chapter4";
 import { versestyles } from "../styles";
 
 const getVerseData = (id: string) => {
-  const allVerses = [...chapter1, ...chapter2, ...chapter3];
+  const allVerses = [...chapter1, ...chapter2, ...chapter3, ...chapter4];
   return allVerses.find((verse: { id: string }) => verse.id === id);
 };
 
