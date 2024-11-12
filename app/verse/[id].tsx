@@ -9,10 +9,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { chapter1 } from "./chapter1";
 import { chapter2 } from "./chapter2";
+import { chapter3 } from "./chapter3";
 import { versestyles } from "../styles";
 
 const getVerseData = (id: string) => {
-  const allVerses = [...chapter1, ...chapter2];
+  const allVerses = [...chapter1, ...chapter2, ...chapter3];
   return allVerses.find((verse: { id: string }) => verse.id === id);
 };
 
