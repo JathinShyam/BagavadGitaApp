@@ -24,34 +24,33 @@ TODO:
 const chapters = [
   {
     id: 1,
-    name: "Arjuna's Dilemma",
     sanskrit_name: "అర్జున విషాద యోగము",
-    telugu_name: "అర్జున విషాద యోగము",
     verses: 47,
   },
   {
     id: 2,
-    name: "Transcendental Knowledge",
     sanskrit_name: "సాంఖ్య యోగము",
     verses: 72,
   },
   {
     id: 3,
-    name: "",
     sanskrit_name: "కర్మ యోగము",
     verses: 43,
   },
   {
     id: 4,
-    name: "",
     sanskrit_name: "జ్ఞాన, కర్మ, సన్న్యాస యోగము",
     verses: 42,
   },
   {
     id: 5,
-    name: "",
     sanskrit_name: "కర్మ సన్యాస యోగము",
     verses: 29,
+  },
+  {
+    id: 6,
+    sanskrit_name: "ధ్యాన యోగము",
+    verses: 47,
   },
 
   // Add more chapters...
@@ -61,7 +60,7 @@ export default function HomeScreen() {
   const renderChapter = ({
     item,
   }: {
-    item: { id: number; name: string; sanskrit_name: string; verses: number };
+    item: { id: number; sanskrit_name: string; verses: number };
   }) => (
     <Link href={`/chapter/${item.id}`} asChild>
       <Pressable style={indexstyles.chapterCard}>
