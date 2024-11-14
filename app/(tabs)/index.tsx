@@ -57,7 +57,11 @@ const chapters = [
     sanskrit_name: "జ్ఞాన విజ్ఞాన యోగము",
     verses: 30,
   },
-
+  {
+    id: 8,
+    sanskrit_name: "అక్షర బ్రహ్మ యోగము",
+    verses: 28,
+  },
   // Add more chapters...
 ];
 
