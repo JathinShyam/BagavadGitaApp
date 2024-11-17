@@ -16,6 +16,7 @@ import { chapter6 } from "../verse/chapter6";
 import { chapter7 } from "../verse/chapter7";
 import { chapter8 } from "../verse/chapter8";
 import { chapter9 } from "../verse/chapter9";
+import { chapter10 } from "../verse/chapter10";
 
 // Styles
 import { chapterstyles } from "../styles";
@@ -94,6 +95,14 @@ const getChapterData = (id: string) => {
       description:
         "The second chapter of the Bhagavad Gita introduces the setting of the epic dialogue...",
       verses: chapter9,
+    },
+    {
+      id: 10,
+      chapter_number: "10వ అధ్యాయము",
+      yogam_name: "విభూతి యోగము",
+      description:
+        "The second chapter of the Bhagavad Gita introduces the setting of the epic dialogue...",
+      verses: chapter10,
     },
   ];
 
