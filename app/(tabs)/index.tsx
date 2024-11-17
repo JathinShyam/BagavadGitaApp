@@ -82,6 +82,12 @@ const chapters = [
     sanskrit_name: "భక్తి యోగము",
     verses: 20,
   },
+  {
+    id: 13,
+    sanskrit_name: "క్షేత్ర క్షేత్రజ్ఞ విభాగ యోగము",
+    verses: 35,
+  },
+
   // Add more chapters...
 ];
 
