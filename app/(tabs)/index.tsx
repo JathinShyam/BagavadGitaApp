@@ -92,6 +92,11 @@ const chapters = [
     sanskrit_name: "గుణత్రయ విభాగ యోగము",
     verses: 27,
   },
+  {
+    id: 15,
+    sanskrit_name: "పురుషోత్తమ యోగము",
+    verses: 20,
+  },
 
   // Add more chapters...
 ];
