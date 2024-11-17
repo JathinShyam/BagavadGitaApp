@@ -77,6 +77,11 @@ const chapters = [
     sanskrit_name: "విశ్వ రూప దర్శన యోగము",
     verses: 55,
   },
+  {
+    id: 12,
+    sanskrit_name: "భక్తి యోగము",
+    verses: 20,
+  },
   // Add more chapters...
 ];
 
