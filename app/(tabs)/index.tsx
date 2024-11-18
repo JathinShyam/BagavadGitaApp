@@ -9,7 +9,7 @@ import { indexstyles } from "../styles";
 /*
 TODO:
   - Add read chaper button
-  - Add chapter description
+  x Add chapter description
   - Add chapter image
   - Add chapter audio
   - Add chapter video

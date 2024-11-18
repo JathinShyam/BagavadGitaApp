@@ -328,4 +328,10 @@ export const versestyles = StyleSheet.create({
     textAlign: "center",
     marginTop: 20,
   },
+  navigationButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    padding: 16,
+    backgroundColor: "#FFF8E7",
+  },
 });

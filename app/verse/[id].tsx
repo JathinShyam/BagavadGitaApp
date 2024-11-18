@@ -1,8 +1,8 @@
 // app/verse/[id].tsx
 
-import { View, ScrollView, StyleSheet, Pressable } from "react-native";
+import { View, ScrollView, StyleSheet, Pressable, Button } from "react-native";
 import { Text } from "react-native-paper";
-import { useLocalSearchParams, Stack } from "expo-router";
+import { useLocalSearchParams, Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useState, useEffect, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -56,6 +56,7 @@ export default function VerseScreen() {
   const { id } = useLocalSearchParams();
   const verse = getVerseData(id as string);
   const [isSaved, setIsSaved] = useState(false);
+  const router = useRouter();
 
   const checkIfSaved = useCallback(async () => {
     if (!verse) return;
@@ -102,6 +103,37 @@ export default function VerseScreen() {
       console.error("Error toggling verse save:", error);
     }
   }, [verse, isSaved]);
+
+  const navigateToVerse = (offset: number) => {
+    const [chapterId, verseRange] = (id as string).split("-");
+    const verseNumbers = verseRange.split("-").map(Number);
+    const currentVerseNumber =
+      offset > 0 ? verseNumbers[verseNumbers.length - 1] : verseNumbers[0];
+    let newVerseNumber = currentVerseNumber + offset;
+    let newId = `${chapterId}-${newVerseNumber}`;
+
+    // Check for combined verses
+    while (!getVerseData(newId) && newVerseNumber > 0) {
+      newVerseNumber += offset;
+      newId = `${chapterId}-${newVerseNumber}`;
+    }
+
+    // Check if the new verse is part of a combined range
+    const combinedVerse = getVerseData(newId);
+    if (combinedVerse) {
+      const combinedVerseRange = combinedVerse.verse_number
+        .split("-")
+        .map(Number);
+      if (combinedVerseRange.length > 1) {
+        newId = `${chapterId}-${combinedVerseRange.join("-")}`;
+      }
+    }
+
+    const newVerse = getVerseData(newId);
+    if (newVerse) {
+      router.push(`/verse/${newId}`);
+    }
+  };
 
   return (
     <SafeAreaView style={versestyles.container}>
@@ -156,6 +188,31 @@ export default function VerseScreen() {
       ) : (
         <Text style={versestyles.errorText}>Verse not found</Text>
       )}
+
+      <View style={versestyles.navigationButtons}>
+        <Button
+          title="Previous"
+          onPress={() => navigateToVerse(-1)}
+          disabled={
+            !getVerseData(
+              `${verse?.chapter}-${
+                parseInt(verse?.verse_number.split("-")[0] || "0") - 1
+              }`
+            )
+          }
+        />
+        <Button
+          title="Next"
+          onPress={() => navigateToVerse(1)}
+          disabled={
+            !getVerseData(
+              `${verse?.chapter}-${
+                parseInt(verse?.verse_number.split("-").pop() || "0") + 1
+              }`
+            )
+          }
+        />
+      </View>
     </SafeAreaView>
   );
 }
