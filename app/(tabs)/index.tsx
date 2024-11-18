@@ -97,6 +97,11 @@ const chapters = [
     sanskrit_name: "పురుషోత్తమ యోగము",
     verses: 20,
   },
+  {
+    id: 16,
+    sanskrit_name: "దైవాసుర సంపద్విభాగ యోగము",
+    verses: 24,
+  },
 
   // Add more chapters...
 ];
