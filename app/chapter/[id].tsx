@@ -24,6 +24,7 @@ import { chapter14 } from "../verse/chapter14";
 import { chapter15 } from "../verse/chapter15";
 import { chapter16 } from "../verse/chapter16";
 import { chapter17 } from "../verse/chapter17";
+import { chapter18 } from "../verse/chapter18";
 
 // Styles
 import { chapterstyles } from "../styles";
@@ -36,7 +37,7 @@ const getChapterData = (id: string) => {
       chapter_number: "1వ అధ్యాయము",
       yogam_name: "అర్జున విషాద యోగము",
       description:
-        "The first chapter of the Bhagavad Gita introduces the setting of the epic dialogue...",
+        "దాయాదులైన కౌరవులు, పాండవుల మధ్య మొదలవ్వబోతున్న గొప్ప మహాభారత సంగ్రామ యుద్ధభూమి యందు భగవద్గీత చెప్పబడింది. ఈ భారీ యుద్ధానికి దారి తీసిన పరిణామాల యొక్క వివరణాత్మక వర్ణన ఈ పుస్తకం యొక్క ఉపోద్ఘాతంలో, భగవద్గీత సమయ పరిస్థితి అనే భాగంలో చెప్పబడింది. ధృతరాష్ట్ర మహారాజు మరియు అతని మంత్రి సంజయుడికి మధ్య జరిగిన సంభాషణ రూపంలో భగవద్గీత విశదీకరింపబడటం మొదలౌతుంది. ధృతరాష్ట్రుడు అంధుడైన కారణం చేత, తానే స్వయంగా యుద్ధభూమి యందు లేడు, అందుకే సంజయుడు అతనికి యుద్ధరంగ విశేషాలని యథాతథంగా చెప్తున్నాడు. సంజయుడు, మహాభారతాన్ని రచించిన మహాత్ముడైన వేద వ్యాసుని శిష్యుడు. వేద వ్యాసునికి సుదూరంలో జరిగే విషయాలని చూసే దివ్యశక్తి వుంది. అదే శక్తిని సంజయుడికి, యుద్ధభూమిలో జరిగే విశేషాలని ధృతరాష్ట్రునికి వివరించటానికి, ఆయన ప్రసాదించాడు.",
       verses: chapter1,
     },
     {
@@ -166,6 +167,14 @@ const getChapterData = (id: string) => {
       description:
         "The second chapter of the Bhagavad Gita introduces the setting of the epic dialogue...",
       verses: chapter17,
+    },
+    {
+      id: 18,
+      chapter_number: "18వ అధ్యాయము",
+      yogam_name: "మోక్ష సన్యాస యోగము",
+      description:
+        "The second chapter of the Bhagavad Gita introduces the setting of the epic dialogue...",
+      verses: chapter18,
     },
   ];
 

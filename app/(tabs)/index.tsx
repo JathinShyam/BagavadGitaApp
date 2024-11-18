@@ -107,6 +107,11 @@ const chapters = [
     sanskrit_name: "శ్రద్ధా త్రయ విభాగ యోగము",
     verses: 28,
   },
+  {
+    id: 18,
+    sanskrit_name: "మోక్ష సన్యాస యోగము",
+    verses: 78,
+  },
 
   // Add more chapters...
 ];

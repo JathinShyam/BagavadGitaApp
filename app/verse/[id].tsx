@@ -24,6 +24,7 @@ import { chapter14 } from "./chapter14";
 import { chapter15 } from "./chapter15";
 import { chapter16 } from "./chapter16";
 import { chapter17 } from "./chapter17";
+import { chapter18 } from "./chapter18";
 
 import { versestyles } from "../styles";
 
@@ -46,6 +47,7 @@ const getVerseData = (id: string) => {
     ...chapter15,
     ...chapter16,
     ...chapter17,
+    ...chapter18,
   ];
   return allVerses.find((verse: { id: string }) => verse.id === id);
 };
