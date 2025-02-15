@@ -1,12 +1,14 @@
 // app/verse/[id].tsx
 
 import { View, ScrollView, StyleSheet, Pressable, Button } from "react-native";
+import Slider from "@react-native-community/slider";
 import { Text } from "react-native-paper";
 import { useLocalSearchParams, Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useState, useEffect, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Audio } from "expo-av";
 import { chapter1 } from "./chapter1";
 import { chapter2 } from "./chapter2";
 import { chapter3 } from "./chapter3";
@@ -52,11 +54,87 @@ const getVerseData = (id: string) => {
   return allVerses.find((verse: { id: string }) => verse.id === id);
 };
 
+import { audioMappings } from "./audiomapper";
+
+export const getAudioFile = (chapter: string, verseNumber: string): any => {
+  try {
+    const verseNumbers = verseNumber.split("-").map(Number);
+    const audioFiles = verseNumbers
+      .map((num) => {
+        return audioMappings[chapter]?.[num.toString()] || null;
+      })
+      .filter(Boolean);
+
+    return audioFiles.length > 0 ? audioFiles : null;
+  } catch (error) {
+    console.error("Error getting audio file:", error);
+    return null;
+  }
+};
+
+// Helper function to format time in MM:SS
+const formatTime = (milliseconds: number) => {
+  const totalSeconds = Math.floor(milliseconds / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
+    2,
+    "0"
+  )}`;
+};
+
 export default function VerseScreen() {
   const { id } = useLocalSearchParams();
   const verse = getVerseData(id as string);
   const [isSaved, setIsSaved] = useState(false);
   const router = useRouter();
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [position, setPosition] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  useEffect(() => {
+    return () => {
+      if (sound) {
+        sound.unloadAsync();
+      }
+    };
+  }, [sound]);
+
+  const playPauseAudio = async (audioFiles: any[]) => {
+    if (sound) {
+      if (isPlaying) {
+        await sound.pauseAsync();
+        setIsPlaying(false);
+      } else {
+        await sound.playAsync();
+        setIsPlaying(true);
+      }
+    } else {
+      const { sound: newSound } = await Audio.Sound.createAsync(audioFiles[0], {
+        shouldPlay: true,
+      });
+      setSound(newSound);
+      setIsPlaying(true);
+
+      newSound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded) {
+          setPosition(status.positionMillis);
+          setDuration(status.durationMillis || 0);
+          if (status.didJustFinish) {
+            setIsPlaying(false);
+            setPosition(0); // Reset position to 0 when audio finishes
+          }
+        }
+      });
+    }
+  };
+
+  const handleSliderValueChange = async (value: number) => {
+    if (sound) {
+      await sound.setPositionAsync(value);
+    }
+  };
 
   const checkIfSaved = useCallback(async () => {
     if (!verse) return;
@@ -135,6 +213,16 @@ export default function VerseScreen() {
     }
   };
 
+  if (!verse) {
+    return (
+      <SafeAreaView style={versestyles.container}>
+        <Text>Verse not found</Text>
+      </SafeAreaView>
+    );
+  }
+
+  const audioFiles = getAudioFile(verse.chapter.toString(), verse.verse_number);
+
   return (
     <SafeAreaView style={versestyles.container}>
       <Stack.Screen
@@ -163,6 +251,27 @@ export default function VerseScreen() {
           <View style={versestyles.verseContainer}>
             <Text style={versestyles.sectionTitle}>Sloka</Text>
             <Text style={versestyles.teluguSlokaText}>{verse.teluguSloka}</Text>
+            {audioFiles && (
+              <View style={versestyles.audioContainer}>
+                <Pressable onPress={() => playPauseAudio(audioFiles)}>
+                  <Ionicons
+                    name={isPlaying ? "pause" : "play"}
+                    size={24}
+                    color="#4A3200"
+                  />
+                </Pressable>
+                <Slider
+                  style={versestyles.slider}
+                  minimumValue={0}
+                  maximumValue={duration}
+                  value={position}
+                  onValueChange={handleSliderValueChange}
+                />
+                <Text style={versestyles.audioTime}>
+                  {formatTime(position)} / {formatTime(duration)}
+                </Text>
+              </View>
+            )}
           </View>
 
           <View style={versestyles.wordMeaningsContainer}>
@@ -189,7 +298,7 @@ export default function VerseScreen() {
         <Text style={versestyles.errorText}>Verse not found</Text>
       )}
 
-      <View style={versestyles.navigationButtons}>
+      {/* <View style={versestyles.navigationButtons}>
         <Button
           title="Previous"
           onPress={() => navigateToVerse(-1)}
@@ -212,7 +321,7 @@ export default function VerseScreen() {
             )
           }
         />
-      </View>
+      </View> */}
     </SafeAreaView>
   );
 }

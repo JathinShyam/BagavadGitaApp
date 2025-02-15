@@ -334,4 +334,17 @@ export const versestyles = StyleSheet.create({
     padding: 16,
     backgroundColor: "#FFF8E7",
   },
+  audioContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 16,
+  },
+  slider: {
+    flex: 1,
+    marginHorizontal: 10,
+  },
+  audioTime: {
+    fontSize: 14,
+    color: "#666666",
+  },
 });
