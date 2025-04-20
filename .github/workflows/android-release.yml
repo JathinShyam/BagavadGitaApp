@@ -22,9 +22,6 @@ jobs:
         with:
           java-version: 11
 
-      - name: Set execute permission on Gradle
-        run: chmod +x ./android/gradlew
-
       - name: Install Node.js
         uses: actions/setup-node@v3
         with:
