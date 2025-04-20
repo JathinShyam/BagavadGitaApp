@@ -3,12 +3,12 @@ name: Build & Release APK on Tag or PR
 on:
   pull_request:
     branches:
-      - main
       - master
+      - main
       - dev
   push:
     tags:
-      - '*'  # Triggers build on all tags like v1.0.0, v1.1.0, etc.
+      - '*'
 
 jobs:
   build-release-apk:
@@ -41,29 +41,41 @@ jobs:
           npm install -g expo-cli
           npm install -g eas-cli
 
-      # Step 6: Validate PNG image files (sanity check)
-      - name: Validate PNG image files
-        run: |
-          echo "🔍 Checking all PNG files for integrity..."
-          find ./assets -iname '*.png' -exec file {} \; | grep -v "PNG image data" && exit 1 || echo "✅ All PNGs valid!"
+      - name: Install jq for JSON parsing
+        run: sudo apt-get update && sudo apt-get install -y jq
 
-      # Step 7: Build the APK using EAS
+      - name: Validate image formats
+        run: |
+          echo "🔍 Validating image formats..."
+          find ./assets/images -type f \( -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" \) | while read file; do
+            file "$file" | grep -qE 'PNG|JPEG' || { echo "❌ Invalid image format: $file"; exit 1; }
+          done
+          echo "✅ All images are valid."
+          
       - name: Build APK with EAS
         run: eas build --platform android --profile production --non-interactive
         env:
           EAS_ACCESS_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
           EXPO_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
 
-      # Step 8: Download the latest build artifact (APK)
-      - name: Download APK from EAS
-        run: eas build:inspect --latest --platform android --output=./apk
+      - name: Fetch latest Android build ID
+        id: get_build_id
+        run: |
+          BUILD_ID=$(eas build:list --platform android --status finished --limit 1 --json | jq -r '.[0].id')
+          echo "Latest Android Build ID: $BUILD_ID"
+          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_OUTPUT
         env:
           EAS_ACCESS_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
-          EXPO_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
 
-      # Step 9: Release APK to GitHub
+      - name: Download APK from EAS
+        run: |
+          mkdir -p apk
+          eas build:download --platform android --output=./apk/app-release.apk --id ${{ steps.get_build_id.outputs.BUILD_ID }}
+        env:
+          EAS_ACCESS_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
+
       - name: Release APK on GitHub
         uses: kyze8439690/action-release-releaseapk@master
         env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN }}  # Use a Personal Access Token with repo scope
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
           APP_FOLDER: apk
