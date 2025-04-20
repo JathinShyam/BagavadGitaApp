@@ -1,80 +1,83 @@
-name: Build & Release APK on Tag or PR
+name: ✨ Build & Release APK with Validation
 
 on:
   pull_request:
-    branches:
-      - master
-      - main
-      - dev
+    branches: [main, master, dev]
   push:
     tags:
       - '*'
 
 jobs:
-  build-release-apk:
+  validate-and-build-release-apk:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout code
-      - name: Checkout repository
+      - name: ✅ Checkout repository
         uses: actions/checkout@v2
 
-      # Step 2: Set up Java (required by EAS and Gradle)
-      - name: Set up JDK 11
+      - name: ☕ Set up JDK 11
         uses: actions/setup-java@v1
         with:
           java-version: 11
 
-      # Step 3: Set up Node.js
-      - name: Install Node.js
+      - name: 🌐 Install Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
 
-      # Step 4: Install NPM dependencies
-      - name: Install dependencies
+      - name: 📁 Install project dependencies
         run: npm install
 
-      # Step 5: Install Expo & EAS CLI globally
-      - name: Install Expo and EAS CLI
+      - name: ✨ Install Expo & EAS CLI
         run: |
-          npm install -g expo-cli
-          npm install -g eas-cli
+          npm install -g expo-cli eas-cli
 
       - name: Install jq for JSON parsing
         run: sudo apt-get update && sudo apt-get install -y jq
-
-      - name: Validate image formats
+  
+      - name: 🖼️ Validate Image Files
         run: |
-          echo "🔍 Validating image formats..."
-          find ./assets/images -type f \( -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" \) | while read file; do
-            file "$file" | grep -qE 'PNG|JPEG' || { echo "❌ Invalid image format: $file"; exit 1; }
+          echo "✨ Validating image types in ./assets/images"
+          for file in ./assets/images/*; do
+            if file "$file" | grep -q "JPEG"; then
+              echo "❌ $file is not a PNG file. Found JPEG."
+              exit 1
+            fi
           done
-          echo "✅ All images are valid."
-          
-      - name: Build APK with EAS
-        run: eas build --platform android --profile production --non-interactive
+          echo "✅ All image files are valid PNGs."
+
+      - name: 💻 EAS Build - Android APK
+        run: |
+          echo "⚙ Starting EAS build for Android"
+          eas build --platform android --profile production --non-interactive
         env:
           EAS_ACCESS_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
           EXPO_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
 
-      - name: Fetch latest Android build ID
+      - name: ❓ Get latest Android build ID
         id: get_build_id
         run: |
-          BUILD_ID=$(eas build:list --platform android --status finished --limit 1 --json | jq -r '.[0].id')
-          echo "Latest Android Build ID: $BUILD_ID"
+          echo "🔍 Fetching latest Android build ID..."
+          RAW_OUTPUT=$(eas build:list --platform android --status finished --limit 1 --json || echo "[]")
+          echo "Raw output: $RAW_OUTPUT"
+          BUILD_ID=$(echo "$RAW_OUTPUT" | jq -r '.[0].id')
+          if [[ "$BUILD_ID" == "null" || -z "$BUILD_ID" ]]; then
+            echo "❌ No finished build found."
+            exit 1
+          fi
+          echo "✅ Found Build ID: $BUILD_ID"
           echo "BUILD_ID=$BUILD_ID" >> $GITHUB_OUTPUT
         env:
           EAS_ACCESS_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
 
-      - name: Download APK from EAS
+      - name: 📁 Download APK
         run: |
-          mkdir -p apk
-          eas build:download --platform android --output=./apk/app-release.apk --id ${{ steps.get_build_id.outputs.BUILD_ID }}
+          echo "🔍 Downloading APK from build ID..."
+          eas build:download --platform android --output=./apk --id=${{ steps.get_build_id.outputs.BUILD_ID }}
         env:
           EAS_ACCESS_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
 
-      - name: Release APK on GitHub
+      - name: 📃 Release APK on GitHub
         uses: kyze8439690/action-release-releaseapk@master
         env:
           GITHUB_TOKEN: ${{ secrets.TOKEN }}
