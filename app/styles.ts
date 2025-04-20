@@ -1,4 +1,7 @@
-import { StyleSheet } from "react-native";
+import { StyleSheet, Dimensions } from "react-native";
+const windowWidth = Dimensions.get("window").width;
+const cardWidth = (windowWidth - 48) / 2; // 2 cards per row with padding
+
 
 export const savedstyles = StyleSheet.create({
   container: {
@@ -63,14 +66,17 @@ export const savedstyles = StyleSheet.create({
   },
 });
 
+
 export const indexstyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFF8E7",
+    backgroundColor: "#F5EFE0", // Warmer background color for bookshelf feel
   },
   header: {
-    padding: 20,
+    padding: 10,
     alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0D6C1", // Subtle border for header
   },
   title: {
     fontSize: 28,
@@ -81,42 +87,67 @@ export const indexstyles = StyleSheet.create({
   subtitle: {
     fontSize: 18,
     color: "#4A3200",
-    marginBottom: 16,
+    marginBottom: 6,
   },
-  listContainer: {
+  scrollContainer: {
     padding: 16,
+  },
+  bookshelfContainer: {
+    flex: 1,
+    paddingVertical: 8,
+  },
+  shelfRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
+    // Add a subtle shelf appearance
+    // paddingBottom: 8,
+    // borderBottomWidth: 4,
+    // borderBottomColor: '#8B7355', // Wooden shelf color
   },
   chapterCard: {
+    width: cardWidth,
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    marginBottom: 16,
-    elevation: 2,
+    borderRadius: 8,
+    overflow: "hidden",
+    elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: "#E0D6C1",
+  },
+  chapterImage: {
+    width: "100%",
+    height: 180,
+    resizeMode: "cover",
   },
   cardContent: {
-    padding: 16,
+    padding: 12,
+    backgroundColor: "#FFF8E7", // Slightly different background for text area
   },
   chapterNumber: {
-    fontSize: 16,
-    color: "#666666",
+    fontSize: 14,
+    color: "#8B5A2B", // Darker wood color
     marginBottom: 4,
+    fontWeight: "500",
   },
   sanskritName: {
-    fontSize: 20,
+    fontSize: 14,
+    fontWeight: "bold",
     color: "#4A3200",
-    marginBottom: 4,
-  },
-  chapterName: {
-    fontSize: 18,
-    color: "#4A3200",
-    marginBottom: 8,
+    // marginBottom: 3,
+    height: 50, // Fixed height for title to ensure consistent card sizes
   },
   versesCount: {
     fontSize: 14,
-    color: "#666666",
+    color: "#8B5A2B",
+    fontStyle: "italic",
+  },
+  emptySlot: {
+    width: cardWidth,
+    height: 0, // Takes space but isn't visible
   },
 });
 
