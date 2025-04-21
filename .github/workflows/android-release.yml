@@ -1,0 +1,93 @@
+name: ✨ Build & Release APK with Validation
+
+on:
+  pull_request:
+    branches: [main, master, dev]
+  push:
+    tags:
+      - '*'
+
+jobs:
+  validate-and-build-release-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ✅ Checkout repository
+        uses: actions/checkout@v2
+
+      - name: ☕ Set up JDK 11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+
+      - name: 🌐 Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: 📁 Install project dependencies
+        run: npm install
+
+      - name: ✨ Install Expo & EAS CLI
+        run: |
+          npm install -g expo-cli eas-cli
+
+      - name: Install jq for JSON parsing
+        run: sudo apt-get update && sudo apt-get install -y jq
+  
+      - name: 🖼️ Validate Image Files
+        run: |
+          echo "✨ Validating image types in ./assets/images"
+          for file in ./assets/images/*; do
+            if file "$file" | grep -q "JPEG"; then
+              echo "❌ $file is not a PNG file. Found JPEG."
+              exit 1
+            fi
+          done
+          echo "✅ All image files are valid PNGs."
+
+      - name: 💻 EAS Build - Android APK
+        run: |
+          echo "⚙ Starting EAS build for Android"
+          eas build --platform android --profile production --non-interactive
+        env:
+          EAS_ACCESS_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
+          EXPO_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
+
+      - name: ❓ Get latest successful Android build ID
+        id: get-build-id
+        run: |
+          echo "🔍 Fetching latest Android build ID..."
+          
+          # Always use --non-interactive when using --json
+          RAW_OUTPUT=$(eas build:list --platform android --status finished --limit 1 --json --non-interactive 2>/dev/null || echo "[]")
+          
+          echo "Raw output: $RAW_OUTPUT"
+          
+          # Attempt to parse the build ID
+          BUILD_ID=$(echo "$RAW_OUTPUT" | jq -r '.[0].id' 2>/dev/null)
+          
+          # Validate build ID
+          if [[ -z "$BUILD_ID" || "$BUILD_ID" == "null" ]]; then
+            echo "❌ No finished build found or invalid JSON output."
+            exit 1
+          fi
+          
+          echo "✅ Found Build ID: $BUILD_ID"
+          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_OUTPUT
+        env:
+          EAS_ACCESS_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
+          EXPO_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
+        
+      - name: 📁 Download APK
+        run: |
+          echo "🔍 Downloading APK from build ID..."
+          eas build:download --platform android --output=./apk --id=${{ steps.get_build_id.outputs.BUILD_ID }}
+        env:
+          EAS_ACCESS_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
+
+      - name: 📃 Release APK on GitHub
+        uses: kyze8439690/action-release-releaseapk@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+          APP_FOLDER: apk
