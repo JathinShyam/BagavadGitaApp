@@ -61,23 +61,24 @@ jobs:
           
           # Always use --non-interactive when using --json
           RAW_OUTPUT=$(eas build:list --platform android --status finished --limit 1 --json --non-interactive 2>/dev/null || echo "[]")
-      
+          
           echo "Raw output: $RAW_OUTPUT"
-      
+          
           # Attempt to parse the build ID
           BUILD_ID=$(echo "$RAW_OUTPUT" | jq -r '.[0].id' 2>/dev/null)
-      
+          
           # Validate build ID
           if [[ -z "$BUILD_ID" || "$BUILD_ID" == "null" ]]; then
             echo "❌ No finished build found or invalid JSON output."
             exit 1
           fi
-      
+          
           echo "✅ Found Build ID: $BUILD_ID"
           echo "BUILD_ID=$BUILD_ID" >> $GITHUB_OUTPUT
         env:
           EAS_ACCESS_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
-
+          EXPO_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
+        
       - name: 📁 Download APK
         run: |
           echo "🔍 Downloading APK from build ID..."
