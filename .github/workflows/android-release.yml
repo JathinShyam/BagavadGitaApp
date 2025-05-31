@@ -1,0 +1,192 @@
+name: ✨ Build & Release APK with Validation
+
+on:
+  pull_request:
+    branches: [main, master, dev]
+  push:
+    tags:
+      - "*"
+
+# Add permissions block
+permissions:
+  contents: write # Required for creating releases
+  packages: write # Required for uploading release assets
+
+jobs:
+  validate-and-build-release-apk:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Explicitly set permissions for this job
+
+    steps:
+      - name: ✅ Checkout repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # Fetch all history for proper versioning
+
+      - name: ☕ Set up JDK 11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+
+      - name: 🌐 Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: 📁 Install project dependencies
+        run: |
+          # Configure npm to handle network issues
+          npm config set fetch-retries 5
+          npm config set fetch-retry-mintimeout 20000
+          npm config set fetch-retry-maxtimeout 120000
+
+          # Clear npm cache and install with legacy peer deps
+          npm cache clean --force
+          npm install --legacy-peer-deps
+
+          # Verify installation
+          if [ $? -ne 0 ]; then
+            echo "❌ npm install failed, retrying with different flags..."
+            npm install --no-package-lock --legacy-peer-deps
+          fi
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
+
+      - name: ✨ Install Expo & EAS CLI
+        run: |
+          npm install -g expo-cli
+          npm install -g eas-cli@latest --legacy-peer-deps
+
+      - name: Install required tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl
+
+      - name: 🖼️ Validate Image Files
+        run: |
+          echo "✨ Validating image types in ./assets/images"
+          for file in ./assets/images/*; do
+            if file "$file" | grep -q "JPEG"; then
+              echo "❌ $file is not a PNG file. Found JPEG."
+              exit 1
+            fi
+          done
+          echo "✅ All image files are valid PNGs."
+
+      - name: 💻 EAS Build - Android APK
+        run: |
+          echo "⚙ Starting EAS build for Android"
+          eas build --platform android --profile production --non-interactive
+        env:
+          EAS_ACCESS_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
+          EXPO_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
+
+      - name: ❓ Get latest successful Android build ID
+        id: get-build-id
+        run: |
+          echo "🔍 Fetching latest Android build ID..."
+
+          # Always use --non-interactive when using --json
+          RAW_OUTPUT=$(eas build:list --platform android --status finished --limit 1 --json --non-interactive 2>/dev/null || echo "[]")
+
+          echo "Raw output: $RAW_OUTPUT"
+
+          # Attempt to parse the build ID
+          BUILD_ID=$(echo "$RAW_OUTPUT" | jq -r '.[0].id' 2>/dev/null)
+
+          # Validate build ID
+          if [[ -z "$BUILD_ID" || "$BUILD_ID" == "null" ]]; then
+            echo "❌ No finished build found or invalid JSON output."
+            exit 1
+          fi
+
+          echo "✅ Found Build ID: $BUILD_ID"
+          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_OUTPUT
+        env:
+          EAS_ACCESS_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
+          EXPO_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
+
+      - name: 📁 Download APK
+        run: |
+          echo "🔍 Downloading APK from build ID..."
+          BUILD_ID=${{ steps.get-build-id.outputs.BUILD_ID }}
+          if [ -z "$BUILD_ID" ]; then
+            echo "❌ Build ID is empty"
+            exit 1
+          fi
+
+          # Create output directory
+          mkdir -p ./apk
+
+          # Configure EAS
+          echo "🔑 Configuring EAS..."
+          echo "//registry.npmjs.org/:_authToken=${EAS_ACCESS_TOKEN}" > ~/.npmrc
+          echo "//registry.expo.dev/:_authToken=${EAS_ACCESS_TOKEN}" >> ~/.npmrc
+
+          # Get build details and download URL
+          echo "📥 Fetching build details..."
+          BUILD_INFO=$(eas build:list --json --limit 1 --status finished --non-interactive)
+          if [ $? -ne 0 ]; then
+            echo "❌ Failed to get build list"
+            exit 1
+          fi
+
+          # Debug output
+          echo "Build list response:"
+          echo "$BUILD_INFO"
+
+          # Extract download URL
+          DOWNLOAD_URL=$(echo "$BUILD_INFO" | jq -r '.[0].artifacts.buildUrl')
+          if [ -z "$DOWNLOAD_URL" ] || [ "$DOWNLOAD_URL" == "null" ]; then
+            echo "❌ No download URL found in build info"
+            echo "Build info: $BUILD_INFO"
+            exit 1
+          fi
+
+          echo "📥 Downloading APK from: $DOWNLOAD_URL"
+          curl -L "$DOWNLOAD_URL" -o "./apk/app.apk"
+          if [ $? -ne 0 ]; then
+            echo "❌ Failed to download APK"
+            exit 1
+          fi
+
+          echo "✅ APK downloaded successfully"
+        env:
+          EAS_ACCESS_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
+          EXPO_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
+
+      - name: 🔧 Setup Git
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git init
+          git add .
+          git commit -m "chore: prepare for release"
+
+      - name: 📃 Release APK on GitHub
+        uses: actions/create-release@v1
+        id: create_release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          tag_name: v${{ github.run_number }}
+          release_name: Release v${{ github.run_number }}
+          body: |
+            Automated release of APK build
+            - Build Number: ${{ github.run_number }}
+            - Commit: ${{ github.sha }}
+            - Branch: ${{ github.ref_name }}
+            - Triggered by: ${{ github.actor }}
+          draft: false
+          prerelease: false
+
+      - name: 📤 Upload APK
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./apk/app.apk
+          asset_name: app.apk
+          asset_content_type: application/vnd.android.package-archive

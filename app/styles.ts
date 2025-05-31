@@ -2,7 +2,6 @@ import { StyleSheet, Dimensions } from "react-native";
 const windowWidth = Dimensions.get("window").width;
 const cardWidth = (windowWidth - 48) / 2; // 2 cards per row with padding
 
-
 export const savedstyles = StyleSheet.create({
   container: {
     flex: 1,
@@ -49,6 +48,9 @@ export const savedstyles = StyleSheet.create({
     fontSize: 18,
     color: "#4A3200",
     marginBottom: 8,
+    textAlign: "center",
+    lineHeight: 28,
+    letterSpacing: 0.5,
   },
   translationText: {
     fontSize: 16,
@@ -65,7 +67,6 @@ export const savedstyles = StyleSheet.create({
     textAlign: "center",
   },
 });
-
 
 export const indexstyles = StyleSheet.create({
   container: {
@@ -287,6 +288,8 @@ export const versestyles = StyleSheet.create({
     color: "#4A3200",
     marginBottom: 12,
     textAlign: "center",
+    lineHeight: 28,
+    letterSpacing: 0.5,
   },
   transliteration: {
     fontSize: 16,
@@ -300,6 +303,7 @@ export const versestyles = StyleSheet.create({
     color: "#333333",
     lineHeight: 26,
     textAlign: "justify",
+    letterSpacing: 0.3,
   },
   wordMeaningsContainer: {
     padding: 20,
@@ -352,6 +356,7 @@ export const versestyles = StyleSheet.create({
     color: "#333333",
     lineHeight: 24,
     textAlign: "justify",
+    letterSpacing: 0.3,
   },
   errorText: {
     fontSize: 18,
