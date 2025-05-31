@@ -158,6 +158,7 @@ jobs:
             - Commit: ${{ github.sha }}
             - Branch: ${{ github.ref_name }}
             - Triggered by: ${{ github.actor }}
+          token: ${{ secrets.GITHUB_TOKEN }} # Primary token
         env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.TOKEN }} # Fallback token
           APP_FOLDER: apk
