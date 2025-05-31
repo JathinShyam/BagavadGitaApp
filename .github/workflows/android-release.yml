@@ -30,10 +30,13 @@ jobs:
 
       - name: ✨ Install Expo & EAS CLI
         run: |
-          npm install -g expo-cli eas-cli
+          npm install -g expo-cli
+          npm install -g eas-cli@latest
 
-      - name: Install jq for JSON parsing
-        run: sudo apt-get update && sudo apt-get install -y jq
+      - name: Install required tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl
 
       - name: 🖼️ Validate Image Files
         run: |
@@ -87,8 +90,34 @@ jobs:
             echo "❌ Build ID is empty"
             exit 1
           fi
+
+          # Create output directory
           mkdir -p ./apk
-          eas build:download --platform android --id="$BUILD_ID" --output="./apk/app.apk"
+
+          # Get build details and download URL
+          echo "📥 Fetching build details..."
+          BUILD_INFO=$(eas build:view "$BUILD_ID" --json)
+          if [ $? -ne 0 ]; then
+            echo "❌ Failed to get build info"
+            exit 1
+          fi
+
+          # Extract download URL
+          DOWNLOAD_URL=$(echo "$BUILD_INFO" | jq -r '.artifacts.url')
+          if [ -z "$DOWNLOAD_URL" ] || [ "$DOWNLOAD_URL" == "null" ]; then
+            echo "❌ No download URL found in build info"
+            echo "Build info: $BUILD_INFO"
+            exit 1
+          fi
+
+          echo "📥 Downloading APK from: $DOWNLOAD_URL"
+          curl -L "$DOWNLOAD_URL" -o "./apk/app.apk"
+          if [ $? -ne 0 ]; then
+            echo "❌ Failed to download APK"
+            exit 1
+          fi
+
+          echo "✅ APK downloaded successfully"
         env:
           EAS_ACCESS_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
 
