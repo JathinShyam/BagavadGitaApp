@@ -96,14 +96,18 @@ jobs:
 
           # Get build details and download URL
           echo "📥 Fetching build details..."
-          BUILD_INFO=$(eas build:view "$BUILD_ID" --json)
+          BUILD_INFO=$(eas build:list --json --limit 1 --status finished)
           if [ $? -ne 0 ]; then
-            echo "❌ Failed to get build info"
+            echo "❌ Failed to get build list"
             exit 1
           fi
 
+          # Debug output
+          echo "Build list response:"
+          echo "$BUILD_INFO"
+
           # Extract download URL
-          DOWNLOAD_URL=$(echo "$BUILD_INFO" | jq -r '.artifacts.url')
+          DOWNLOAD_URL=$(echo "$BUILD_INFO" | jq -r '.[0].artifacts.url')
           if [ -z "$DOWNLOAD_URL" ] || [ "$DOWNLOAD_URL" == "null" ]; then
             echo "❌ No download URL found in build info"
             echo "Build info: $BUILD_INFO"
@@ -120,6 +124,7 @@ jobs:
           echo "✅ APK downloaded successfully"
         env:
           EAS_ACCESS_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
+          EXPO_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
 
       - name: 📃 Release APK on GitHub
         uses: kyze8439690/action-release-releaseapk@master
