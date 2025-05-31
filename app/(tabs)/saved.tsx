@@ -15,6 +15,7 @@ interface SavedVerse {
   verse_number: number;
   sanskrit: string;
   translation: string;
+  teluguSloka: string;
 }
 
 export default function SavedScreen() {
@@ -52,8 +53,7 @@ export default function SavedScreen() {
             <Text style={savedstyles.verseLocation}>
               Chapter {item.chapter}, Verse {item.verse_number}
             </Text>
-            <Text style={savedstyles.sanskritText}>{item.sanskrit}</Text>
-            <Text style={savedstyles.translationText}>{item.translation}</Text>
+            <Text style={savedstyles.sanskritText}>{item.teluguSloka}</Text>
           </View>
         </Pressable>
       </Link>
