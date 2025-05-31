@@ -94,9 +94,17 @@ jobs:
           # Create output directory
           mkdir -p ./apk
 
+          # Login to EAS
+          echo "🔑 Logging in to EAS..."
+          eas login --token "$EAS_ACCESS_TOKEN"
+          if [ $? -ne 0 ]; then
+            echo "❌ Failed to login to EAS"
+            exit 1
+          fi
+
           # Get build details and download URL
           echo "📥 Fetching build details..."
-          BUILD_INFO=$(eas build:list --json --limit 1 --status finished)
+          BUILD_INFO=$(eas build:list --json --limit 1 --status finished --non-interactive)
           if [ $? -ne 0 ]; then
             echo "❌ Failed to get build list"
             exit 1
