@@ -94,13 +94,10 @@ jobs:
           # Create output directory
           mkdir -p ./apk
 
-          # Login to EAS
-          echo "🔑 Logging in to EAS..."
-          eas login --token "$EAS_ACCESS_TOKEN"
-          if [ $? -ne 0 ]; then
-            echo "❌ Failed to login to EAS"
-            exit 1
-          fi
+          # Configure EAS
+          echo "🔑 Configuring EAS..."
+          echo "//registry.npmjs.org/:_authToken=${EAS_ACCESS_TOKEN}" > ~/.npmrc
+          echo "//registry.expo.dev/:_authToken=${EAS_ACCESS_TOKEN}" >> ~/.npmrc
 
           # Get build details and download URL
           echo "📥 Fetching build details..."
