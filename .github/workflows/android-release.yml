@@ -112,7 +112,7 @@ jobs:
           echo "$BUILD_INFO"
 
           # Extract download URL
-          DOWNLOAD_URL=$(echo "$BUILD_INFO" | jq -r '.[0].artifacts.url')
+          DOWNLOAD_URL=$(echo "$BUILD_INFO" | jq -r '.[0].artifacts.buildUrl')
           if [ -z "$DOWNLOAD_URL" ] || [ "$DOWNLOAD_URL" == "null" ]; then
             echo "❌ No download URL found in build info"
             echo "Build info: $BUILD_INFO"
