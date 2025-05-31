@@ -15,6 +15,8 @@ permissions:
 jobs:
   validate-and-build-release-apk:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Explicitly set permissions for this job
 
     steps:
       - name: ✅ Checkout repository
@@ -163,18 +165,28 @@ jobs:
           git commit -m "chore: prepare for release"
 
       - name: 📃 Release APK on GitHub
-        uses: softprops/action-gh-release@v1
+        uses: actions/create-release@v1
+        id: create_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
         with:
-          files: ./apk/app.apk
           tag_name: v${{ github.run_number }}
-          name: Release v${{ github.run_number }}
+          release_name: Release v${{ github.run_number }}
           body: |
             Automated release of APK build
             - Build Number: ${{ github.run_number }}
             - Commit: ${{ github.sha }}
             - Branch: ${{ github.ref_name }}
             - Triggered by: ${{ github.actor }}
-          token: ${{ secrets.GITHUB_TOKEN }} # Primary token
+          draft: false
+          prerelease: false
+
+      - name: 📤 Upload APK
+        uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN }} # Fallback token
-          APP_FOLDER: apk
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./apk/app.apk
+          asset_name: app.apk
+          asset_content_type: application/vnd.android.package-archive
