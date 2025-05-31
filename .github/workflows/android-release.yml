@@ -33,12 +33,28 @@ jobs:
           node-version: 18
 
       - name: 📁 Install project dependencies
-        run: npm install
+        run: |
+          # Configure npm to handle network issues
+          npm config set fetch-retries 5
+          npm config set fetch-retry-mintimeout 20000
+          npm config set fetch-retry-maxtimeout 120000
+
+          # Clear npm cache and install with legacy peer deps
+          npm cache clean --force
+          npm install --legacy-peer-deps
+
+          # Verify installation
+          if [ $? -ne 0 ]; then
+            echo "❌ npm install failed, retrying with different flags..."
+            npm install --no-package-lock --legacy-peer-deps
+          fi
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
 
       - name: ✨ Install Expo & EAS CLI
         run: |
           npm install -g expo-cli
-          npm install -g eas-cli@latest
+          npm install -g eas-cli@latest --legacy-peer-deps
 
       - name: Install required tools
         run: |
