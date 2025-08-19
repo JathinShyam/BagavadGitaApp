@@ -257,13 +257,6 @@ export default function ChapterScreen() {
               </Text>
             </View>
           </View>
-          // <View style={chapterstyles.header}>
-          //   <Text style={chapterstyles.chapterName}>
-          //     {chapter.chapter_number}
-          //   </Text>
-          //   <Text style={chapterstyles.sanskritName}>{chapter.yogam_name}</Text>
-          //   <Text style={chapterstyles.description}>{chapter.description}</Text>
-          // </View>
         }
       />
     </SafeAreaView>
