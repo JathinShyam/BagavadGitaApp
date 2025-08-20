@@ -60,3 +60,6 @@ export const audioMappings: { [key: string]: AudioMapping } = {
   // '2': chapter2Audio,
   // Add more chapters
 };
+
+// Add default export at the end
+export default audioMappings;

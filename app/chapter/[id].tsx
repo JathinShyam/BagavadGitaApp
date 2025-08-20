@@ -5,6 +5,7 @@ import { Text } from "react-native-paper";
 import { useLocalSearchParams, Link, Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as Haptics from "expo-haptics";
 
 // Chapters
 import { chapter1 } from "../verse/chapter1";
@@ -28,6 +29,7 @@ import { chapter18 } from "../verse/chapter18";
 
 // Styles
 import { chapterstyles } from "../styles";
+import { useAppTheme } from "../hooks/useAppTheme";
 
 // This would eventually come from your data source
 const getChapterData = (id: string) => {
@@ -183,6 +185,7 @@ const getChapterData = (id: string) => {
 
 export default function ChapterScreen() {
   const { id } = useLocalSearchParams();
+  const { colors } = useAppTheme();
   const chapter = getChapterData(id as string);
 
   const renderVerse = ({
@@ -201,13 +204,28 @@ export default function ChapterScreen() {
     if (!chapter) return null;
     return (
       <Link href={`/verse/${chapter.id}-${item.verse_number}`} asChild>
-        <Pressable style={chapterstyles.verseCard}>
+        <Pressable
+          style={[
+            chapterstyles.verseCard,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.outline,
+            },
+          ]}
+          onPressIn={() =>
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+          }
+        >
           <View style={chapterstyles.verseContent}>
-            <Text style={chapterstyles.verseNumber}>
+            <Text
+              style={[chapterstyles.verseNumber, { color: colors.primary }]}
+            >
               Verse {item.verse_number}
             </Text>
             {/* <Text style={chapterstyles.sanskritText}>{item.sanskrit}</Text> */}
-            <Text style={chapterstyles.teluguSloka}>{item.teluguSloka}</Text>
+            <Text style={[chapterstyles.teluguSloka, { color: colors.text }]}>
+              {item.teluguSloka}
+            </Text>
             {/* <Text style={chapterstyles.translation}>{item.translation}</Text> */}
           </View>
         </Pressable>
@@ -224,13 +242,21 @@ export default function ChapterScreen() {
   }
 
   return (
-    <SafeAreaView style={chapterstyles.container}>
+    <SafeAreaView
+      style={[chapterstyles.container, { backgroundColor: colors.background }]}
+    >
       <Stack.Screen
         options={{
           headerTitle: `Chapter ${chapter.id}`,
           headerShown: true,
           headerStyle: {
-            backgroundColor: "#FFF8E7",
+            backgroundColor: colors.background,
+          },
+          headerTintColor: colors.text,
+          headerTitleStyle: {
+            color: colors.text,
+            fontSize: 18,
+            fontWeight: "600",
           },
           headerShadowVisible: false,
         }}
@@ -244,15 +270,29 @@ export default function ChapterScreen() {
         ListHeaderComponent={
           <View>
             <View style={chapterstyles.header}>
-              <Text style={chapterstyles.chapterName}>
+              <Text
+                style={[chapterstyles.chapterName, { color: colors.textMuted }]}
+              >
                 {chapter.chapter_number}
               </Text>
-              <Text style={chapterstyles.sanskritName}>
+              <Text
+                style={[chapterstyles.sanskritName, { color: colors.primary }]}
+              >
                 {chapter.yogam_name}
               </Text>
             </View>
-            <View style={chapterstyles.descriptionCard}>
-              <Text style={chapterstyles.descriptionText}>
+            <View
+              style={[
+                chapterstyles.descriptionCard,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.outline,
+                },
+              ]}
+            >
+              <Text
+                style={[chapterstyles.descriptionText, { color: colors.text }]}
+              >
                 {chapter.description}
               </Text>
             </View>

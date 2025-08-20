@@ -6,11 +6,20 @@ import {
   Pressable,
   Dimensions,
 } from "react-native";
+import Animated, {
+  FadeInUp,
+  FadeIn,
+  ZoomIn,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
 import { Text } from "react-native-paper";
 import { Link } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as Haptics from "expo-haptics";
 
 import { indexstyles } from "../styles";
+import { useAppTheme } from "../hooks/useAppTheme";
 /*
 TODO:
   - Add read chapter button
@@ -21,8 +30,6 @@ TODO:
   - Add social sharing
   - Add social login and save activity
   - Add chapter progress
-
-
 */
 
 // Chapter data with added image paths
@@ -138,9 +145,10 @@ const chapters = [
 ];
 
 export default function HomeScreen() {
-  // Function to create pairs of chapters for the bookshelf layout
+  const { colors } = useAppTheme();
+
   const getPairs = () => {
-    const pairs = [];
+    const pairs = [] as any[];
     for (let i = 0; i < chapters.length; i += 2) {
       if (i + 1 < chapters.length) {
         pairs.push([chapters[i], chapters[i + 1]]);
@@ -153,43 +161,78 @@ export default function HomeScreen() {
 
   const chapterPairs = getPairs();
 
-  // Render a single chapter card
-  const renderChapterCard = (chapter: {
-    id: any;
-    telugu_name: any;
-    verses: any;
-    image: any;
-  }) => (
+  const renderChapterCard = (
+    chapter: { id: number; telugu_name: string; verses: number; image: any },
+    idx?: number
+  ) => (
     <Link href={`/chapter/${chapter.id}`} asChild key={chapter.id}>
-      <Pressable style={indexstyles.chapterCard}>
-        <Image source={chapter.image} style={indexstyles.chapterImage} />
-        <View style={indexstyles.cardContent}>
-          <Text style={indexstyles.chapterNumber}>{chapter.id}వ అధ్యాయము</Text>
-          <Text
-            style={indexstyles.sanskritName}
-            numberOfLines={2}
-            ellipsizeMode="tail"
+      <Pressable
+        onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+        style={{ flex: 1 }}
+      >
+        <Animated.View
+          entering={FadeInUp.delay((idx ?? 0) * 60).springify()}
+          style={[
+            indexstyles.chapterCard,
+            { backgroundColor: colors.surface, borderColor: colors.outline },
+          ]}
+        >
+          <Image source={chapter.image} style={indexstyles.chapterImage} />
+          <View
+            style={[
+              indexstyles.cardContent,
+              { backgroundColor: colors.surface },
+            ]}
           >
-            {chapter.telugu_name}
-          </Text>
-          <Text style={indexstyles.versesCount}>{chapter.verses} verses</Text>
-        </View>
+            <Text
+              style={[indexstyles.chapterNumber, { color: colors.textMuted }]}
+            >
+              {chapter.id}వ అధ్యాయము
+            </Text>
+            <Text
+              style={[indexstyles.sanskritName, { color: colors.text }]}
+              numberOfLines={2}
+              ellipsizeMode="tail"
+            >
+              {chapter.telugu_name}
+            </Text>
+            <Text style={[indexstyles.versesCount, { color: colors.primary }]}>
+              {chapter.verses} verses
+            </Text>
+          </View>
+        </Animated.View>
       </Pressable>
     </Link>
   );
 
   return (
-    <SafeAreaView style={indexstyles.container}>
+    <SafeAreaView
+      style={[indexstyles.container, { backgroundColor: colors.background }]}
+    >
       <View style={indexstyles.header}>
-        <Text style={indexstyles.title}>భగవద్గీత</Text>
-        <Text style={indexstyles.subtitle}>Bhagavad Gita</Text>
+        <Text style={[indexstyles.title, { color: colors.primary }]}>
+          భగవద్గీత
+        </Text>
+        <Text style={[indexstyles.subtitle, { color: colors.textMuted }]}>
+          Bhagavad Gita
+        </Text>
       </View>
 
       <ScrollView contentContainerStyle={indexstyles.scrollContainer}>
         <View style={indexstyles.bookshelfContainer}>
           {chapterPairs.map((pair, index) => (
             <View key={index} style={indexstyles.shelfRow}>
-              {pair.map((chapter) => renderChapterCard(chapter))}
+              {pair.map(
+                (
+                  chapter: {
+                    id: number;
+                    telugu_name: string;
+                    verses: number;
+                    image: any;
+                  },
+                  i: number
+                ) => renderChapterCard(chapter, index * 2 + i)
+              )}
               {pair.length === 1 && <View style={indexstyles.emptySlot} />}
             </View>
           ))}

@@ -8,6 +8,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Link, useFocusEffect } from "expo-router";
 
 import { savedstyles } from "../styles";
+import { useAppTheme } from "../hooks/useAppTheme";
 
 interface SavedVerse {
   id: string;
@@ -19,6 +20,7 @@ interface SavedVerse {
 }
 
 export default function SavedScreen() {
+  const { colors } = useAppTheme();
   const [savedVerses, setSavedVerses] = useState<SavedVerse[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -48,17 +50,26 @@ export default function SavedScreen() {
   const renderVerse = useCallback(
     ({ item }: { item: SavedVerse }) => (
       <Link href={`/verse/${item.chapter}-${item.verse_number}`} asChild>
-        <Pressable style={savedstyles.verseCard}>
+        <Pressable
+          style={[
+            savedstyles.verseCard,
+            { backgroundColor: colors.surface, borderColor: colors.outline },
+          ]}
+        >
           <View style={savedstyles.cardContent}>
-            <Text style={savedstyles.verseLocation}>
+            <Text
+              style={[savedstyles.verseLocation, { color: colors.textMuted }]}
+            >
               Chapter {item.chapter}, Verse {item.verse_number}
             </Text>
-            <Text style={savedstyles.sanskritText}>{item.teluguSloka}</Text>
+            <Text style={[savedstyles.sanskritText, { color: colors.text }]}>
+              {item.teluguSloka}
+            </Text>
           </View>
         </Pressable>
       </Link>
     ),
-    []
+    [colors]
   );
 
   if (loading) {
@@ -70,9 +81,13 @@ export default function SavedScreen() {
   }
 
   return (
-    <SafeAreaView style={savedstyles.container}>
+    <SafeAreaView
+      style={[savedstyles.container, { backgroundColor: colors.background }]}
+    >
       <View style={savedstyles.header}>
-        <Text style={savedstyles.title}>Saved Verses</Text>
+        <Text style={[savedstyles.title, { color: colors.text }]}>
+          Saved Verses
+        </Text>
       </View>
       {savedVerses.length > 0 ? (
         <FlatList
@@ -83,8 +98,10 @@ export default function SavedScreen() {
         />
       ) : (
         <View style={savedstyles.centerContainer}>
-          <Text style={savedstyles.emptyText}>No saved verses yet</Text>
-          <Text style={savedstyles.emptySubtext}>
+          <Text style={[savedstyles.emptyText, { color: colors.text }]}>
+            No saved verses yet
+          </Text>
+          <Text style={[savedstyles.emptySubtext, { color: colors.textMuted }]}>
             Tap the bookmark icon on any verse to save it
           </Text>
         </View>
