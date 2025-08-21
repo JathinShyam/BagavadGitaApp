@@ -203,33 +203,37 @@ export default function ChapterScreen() {
   }) => {
     if (!chapter) return null;
     return (
-      <Link href={`/verse/${chapter.id}-${item.verse_number}`} asChild>
-        <Pressable
-          style={[
-            chapterstyles.verseCard,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.outline,
-            },
-          ]}
-          onPressIn={() =>
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-          }
-        >
-          <View style={chapterstyles.verseContent}>
-            <Text
-              style={[chapterstyles.verseNumber, { color: colors.primary }]}
-            >
-              Verse {item.verse_number}
-            </Text>
-            {/* <Text style={chapterstyles.sanskritText}>{item.sanskrit}</Text> */}
-            <Text style={[chapterstyles.teluguSloka, { color: colors.text }]}>
-              {item.teluguSloka}
-            </Text>
-            {/* <Text style={chapterstyles.translation}>{item.translation}</Text> */}
-          </View>
-        </Pressable>
-      </Link>
+      <View
+        style={[
+          chapterstyles.verseCard,
+          {
+            backgroundColor: colors.surface,
+            borderColor: colors.outline,
+          },
+        ]}
+      >
+        <Link href={`/verse/${chapter.id}-${item.verse_number}`} asChild>
+          <Pressable
+            style={{ flex: 1 }}
+            onPressIn={() =>
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+            }
+          >
+            <View style={chapterstyles.verseContent}>
+              <Text
+                style={[chapterstyles.verseNumber, { color: colors.primary }]}
+              >
+                Verse {item.verse_number}
+              </Text>
+              {/* <Text style={chapterstyles.sanskritText}>{item.sanskrit}</Text> */}
+              <Text style={[chapterstyles.teluguSloka, { color: colors.text }]}>
+                {item.teluguSloka}
+              </Text>
+              {/* <Text style={chapterstyles.translation}>{item.translation}</Text> */}
+            </View>
+          </Pressable>
+        </Link>
+      </View>
     );
   };
 

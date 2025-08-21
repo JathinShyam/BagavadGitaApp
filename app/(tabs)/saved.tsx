@@ -49,25 +49,27 @@ export default function SavedScreen() {
 
   const renderVerse = useCallback(
     ({ item }: { item: SavedVerse }) => (
-      <Link href={`/verse/${item.chapter}-${item.verse_number}`} asChild>
-        <Pressable
-          style={[
-            savedstyles.verseCard,
-            { backgroundColor: colors.surface, borderColor: colors.outline },
-          ]}
-        >
-          <View style={savedstyles.cardContent}>
-            <Text
-              style={[savedstyles.verseLocation, { color: colors.textMuted }]}
-            >
-              Chapter {item.chapter}, Verse {item.verse_number}
-            </Text>
-            <Text style={[savedstyles.sanskritText, { color: colors.text }]}>
-              {item.teluguSloka}
-            </Text>
-          </View>
-        </Pressable>
-      </Link>
+      <View
+        style={[
+          savedstyles.verseCard,
+          { backgroundColor: colors.surface, borderColor: colors.outline },
+        ]}
+      >
+        <Link href={`/verse/${item.chapter}-${item.verse_number}`} asChild>
+          <Pressable style={{ flex: 1 }}>
+            <View style={savedstyles.cardContent}>
+              <Text
+                style={[savedstyles.verseLocation, { color: colors.textMuted }]}
+              >
+                Chapter {item.chapter}, Verse {item.verse_number}
+              </Text>
+              <Text style={[savedstyles.sanskritText, { color: colors.text }]}>
+                {item.teluguSloka}
+              </Text>
+            </View>
+          </Pressable>
+        </Link>
+      </View>
     ),
     [colors]
   );

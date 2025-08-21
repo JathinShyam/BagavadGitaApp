@@ -7,7 +7,7 @@ import { useAppTheme } from "../hooks/useAppTheme";
 
 export default function TabLayout() {
   const { colors, isDark } = useAppTheme();
-  
+
   return (
     <Tabs
       screenOptions={{
@@ -22,7 +22,11 @@ export default function TabLayout() {
           paddingBottom: 8,
         },
         tabBarBackground: () => (
-          <BlurView intensity={40} tint={isDark ? "dark" : "light"} style={{ flex: 1 }} />
+          <BlurView
+            intensity={40}
+            tint={isDark ? "dark" : "light"}
+            style={{ flex: 1 }}
+          />
         ),
         tabBarLabelStyle: {
           fontSize: 11,
@@ -33,8 +37,12 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Chapters",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="book-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "book" : "book-outline"}
+              size={size}
+              color={color}
+            />
           ),
         }}
       />
@@ -42,8 +50,12 @@ export default function TabLayout() {
         name="saved"
         options={{
           title: "Saved",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="bookmark-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "bookmark" : "bookmark-outline"}
+              size={size}
+              color={color}
+            />
           ),
         }}
       />
@@ -51,8 +63,12 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: "Settings",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "settings" : "settings-outline"}
+              size={size}
+              color={color}
+            />
           ),
         }}
       />

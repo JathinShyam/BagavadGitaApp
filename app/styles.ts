@@ -28,30 +28,35 @@ export const savedstyles = StyleSheet.create({
   },
   verseCard: {
     // backgroundColor and borderColor will be set dynamically
+    margin: 8,
     borderRadius: 16,
-    marginBottom: 16,
+    marginHorizontal: 0,
     elevation: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.2,
     shadowRadius: 12,
-    borderWidth: 1,
+    width: "auto",
+    borderWidth: 2,
+    // Reduced margin for closer spacing
   },
   cardContent: {
     padding: 16,
   },
   verseLocation: {
-    fontSize: 14,
+    fontSize: 15,
     // color will be set dynamically
-    marginBottom: 8,
+    marginBottom: 10,
+    fontWeight: "600",
+    letterSpacing: 0.5,
   },
   sanskritText: {
-    fontSize: 18,
+    fontSize: 15,
     // color will be set dynamically
-    marginBottom: 8,
+    marginBottom: 10,
     textAlign: "center",
-    lineHeight: 28,
-    letterSpacing: 0.5,
+    lineHeight: 22,
+    fontStyle: "italic",
   },
   translationText: {
     fontSize: 16,
@@ -195,16 +200,17 @@ export const chapterstyles = StyleSheet.create({
   },
   verseCard: {
     // backgroundColor and borderColor will be set dynamically
+    margin: 8,
     borderRadius: 16,
-    marginBottom: 16,
     marginHorizontal: 0,
     elevation: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.2,
     shadowRadius: 12,
-    borderWidth: 1,
-    // Enhanced visual boundaries matching description card
+    width: "auto",
+    borderWidth: 2,
+    // Same layout properties as description card
   },
   verseContent: {
     padding: 16,
