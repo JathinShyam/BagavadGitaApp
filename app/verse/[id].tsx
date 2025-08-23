@@ -29,6 +29,7 @@ import { chapter17 } from "./chapter17";
 import { chapter18 } from "./chapter18";
 
 import { versestyles } from "../styles";
+import { useAppTheme } from "../hooks/useAppTheme";
 
 const getVerseData = (id: string) => {
   const allVerses = [
@@ -85,6 +86,7 @@ const formatTime = (milliseconds: number) => {
 
 export default function VerseScreen() {
   const { id } = useLocalSearchParams();
+  const { colors } = useAppTheme();
   const verse = getVerseData(id as string);
   const [isSaved, setIsSaved] = useState(false);
   const router = useRouter();
@@ -224,7 +226,9 @@ export default function VerseScreen() {
   const audioFiles = getAudioFile(verse.chapter.toString(), verse.verse_number);
 
   return (
-    <SafeAreaView style={versestyles.container}>
+    <SafeAreaView
+      style={[versestyles.container, { backgroundColor: colors.background }]}
+    >
       <Stack.Screen
         options={{
           headerTitle: verse
@@ -235,12 +239,18 @@ export default function VerseScreen() {
               <Ionicons
                 name={isSaved ? "bookmark" : "bookmark-outline"}
                 size={24}
-                color="#4A3200"
+                color={colors.primary}
               />
             </Pressable>
           ),
           headerStyle: {
-            backgroundColor: "#FFF8E7",
+            backgroundColor: colors.background,
+          },
+          headerTintColor: colors.text,
+          headerTitleStyle: {
+            color: colors.text,
+            fontSize: 18,
+            fontWeight: "600",
           },
           headerShadowVisible: false,
         }}
@@ -248,16 +258,25 @@ export default function VerseScreen() {
 
       {verse ? (
         <ScrollView style={versestyles.content}>
-          <View style={versestyles.verseContainer}>
-            <Text style={versestyles.sectionTitle}>Sloka</Text>
-            <Text style={versestyles.teluguSlokaText}>{verse.teluguSloka}</Text>
+          <View
+            style={[
+              versestyles.verseContainer,
+              { backgroundColor: colors.surface, borderColor: colors.outline },
+            ]}
+          >
+            <Text style={[versestyles.sectionTitle, { color: colors.primary }]}>
+              Sloka
+            </Text>
+            <Text style={[versestyles.teluguSlokaText, { color: colors.text }]}>
+              {verse.teluguSloka}
+            </Text>
             {audioFiles && (
               <View style={versestyles.audioContainer}>
                 <Pressable onPress={() => playPauseAudio(audioFiles)}>
                   <Ionicons
                     name={isPlaying ? "pause" : "play"}
                     size={24}
-                    color="#4A3200"
+                    color={colors.primary}
                   />
                 </Pressable>
                 <Slider
@@ -267,40 +286,80 @@ export default function VerseScreen() {
                   value={position}
                   onValueChange={handleSliderValueChange}
                 />
-                <Text style={versestyles.audioTime}>
+                <Text
+                  style={[versestyles.audioTime, { color: colors.textMuted }]}
+                >
                   {formatTime(position)} / {formatTime(duration)}
                 </Text>
               </View>
             )}
           </View>
 
-          <View style={versestyles.wordMeaningsContainer}>
-            <Text style={versestyles.sectionTitle}>Word Meanings</Text>
+          <View
+            style={[
+              versestyles.wordMeaningsContainer,
+              { backgroundColor: colors.surface, borderColor: colors.outline },
+            ]}
+          >
+            <Text style={[versestyles.sectionTitle, { color: colors.primary }]}>
+              Word Meanings
+            </Text>
             {verse.word_meanings.map((item, index) => (
-              <View key={index} style={versestyles.wordMeaningRow}>
-                <Text style={versestyles.word}>{item.word}</Text>
-                <Text style={versestyles.meaning}>{item.meaning}</Text>
+              <View
+                key={index}
+                style={[
+                  versestyles.wordMeaningRow,
+                  { borderBottomColor: colors.outline },
+                ]}
+              >
+                <Text style={[versestyles.word, { color: colors.text }]}>
+                  {item.word}
+                </Text>
+                <Text
+                  style={[versestyles.meaning, { color: colors.textMuted }]}
+                >
+                  {item.meaning}
+                </Text>
               </View>
             ))}
           </View>
 
-          <View style={versestyles.commentaryContainer}>
-            <Text style={versestyles.sectionTitle}>Meaning</Text>
-            <Text style={versestyles.meaningStyle}>{verse.meaning}</Text>
+          <View
+            style={[
+              versestyles.commentaryContainer,
+              { backgroundColor: colors.surface, borderColor: colors.outline },
+            ]}
+          >
+            <Text style={[versestyles.sectionTitle, { color: colors.primary }]}>
+              Meaning
+            </Text>
+            <Text style={[versestyles.meaningStyle, { color: colors.text }]}>
+              {verse.meaning}
+            </Text>
           </View>
 
-          <View style={versestyles.commentaryContainer}>
-            <Text style={versestyles.sectionTitle}>Commentary</Text>
-            <Text style={versestyles.commentaryText}>{verse.commentary}</Text>
+          <View
+            style={[
+              versestyles.commentaryContainer,
+              { backgroundColor: colors.surface, borderColor: colors.outline },
+            ]}
+          >
+            <Text style={[versestyles.sectionTitle, { color: colors.primary }]}>
+              Commentary
+            </Text>
+            <Text style={[versestyles.commentaryText, { color: colors.text }]}>
+              {verse.commentary}
+            </Text>
           </View>
         </ScrollView>
       ) : (
-        <Text style={versestyles.errorText}>Verse not found</Text>
+        <Text style={[versestyles.errorText, { color: colors.danger }]}>
+          Verse not found
+        </Text>
       )}
 
-      {/* <View style={versestyles.navigationButtons}>
-        <Button
-          title="Previous"
+      <View style={[versestyles.navigationButtons, { backgroundColor: colors.background }]}>
+        <Pressable
           onPress={() => navigateToVerse(-1)}
           disabled={
             !getVerseData(
@@ -309,9 +368,24 @@ export default function VerseScreen() {
               }`
             )
           }
-        />
-        <Button
-          title="Next"
+          style={[
+            versestyles.navButton,
+            { backgroundColor: colors.surface, borderColor: colors.outline },
+            {
+              opacity: !getVerseData(
+                `${verse?.chapter}-${
+                  parseInt(verse?.verse_number.split("-")[0] || "0") - 1
+                }`
+              )
+                ? 0.3
+                : 1,
+            },
+          ]}
+        >
+          <Ionicons name="chevron-back" size={24} color={colors.primary} />
+          <Text style={[versestyles.navButtonText, { color: colors.primary }]}>Previous</Text>
+        </Pressable>
+        <Pressable
           onPress={() => navigateToVerse(1)}
           disabled={
             !getVerseData(
@@ -320,8 +394,24 @@ export default function VerseScreen() {
               }`
             )
           }
-        />
-      </View> */}
+          style={[
+            versestyles.navButton,
+            { backgroundColor: colors.surface, borderColor: colors.outline },
+            {
+              opacity: !getVerseData(
+                `${verse?.chapter}-${
+                  parseInt(verse?.verse_number.split("-").pop() || "0") + 1
+                }`
+              )
+                ? 0.3
+                : 1,
+            },
+          ]}
+        >
+          <Text style={[versestyles.navButtonText, { color: colors.primary }]}>Next</Text>
+          <Ionicons name="chevron-forward" size={24} color={colors.primary} />
+        </Pressable>
+      </View>
     </SafeAreaView>
   );
 }
