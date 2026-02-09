@@ -1,11 +1,10 @@
 import {
   View,
   Image,
-  FlatList,
+  ScrollView,
   StyleSheet,
   Pressable,
   Dimensions,
-  RefreshControl,
 } from "react-native";
 import Animated, {
   FadeInUp,
@@ -13,22 +12,14 @@ import Animated, {
   ZoomIn,
   useSharedValue,
   withSpring,
-  useAnimatedStyle,
-  withSequence,
-  withTiming,
-  withRepeat,
-  Easing,
 } from "react-native-reanimated";
 import { Text } from "react-native-paper";
-import { Link, useRouter } from "expo-router";
+import { Link } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-import { useState, useCallback, useEffect } from "react";
-import { Ionicons } from "@expo/vector-icons";
 
 import { indexstyles } from "../styles";
 import { useAppTheme } from "../hooks/useAppTheme";
-import ShuffleModal from "../../components/ShuffleModal";
 /*
 TODO:
   - Add read chapter button
@@ -155,63 +146,6 @@ const chapters = [
 
 export default function HomeScreen() {
   const { colors } = useAppTheme();
-  const router = useRouter();
-  const [refreshing, setRefreshing] = useState(false);
-  const [showShuffleModal, setShowShuffleModal] = useState(false);
-  const fabScale = useSharedValue(1);
-  const fabRotate = useSharedValue(0);
-  const fabGlow = useSharedValue(0.3);
-
-  // Subtle pulsing glow animation for FAB
-  useEffect(() => {
-    fabGlow.value = withRepeat(
-      withSequence(
-        withTiming(0.6, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0.3, { duration: 1500, easing: Easing.inOut(Easing.ease) })
-      ),
-      -1,
-      true
-    );
-  }, []);
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // Simulate refresh - data is static but provides good UX feedback
-    setTimeout(() => setRefreshing(false), 800);
-  }, []);
-
-  const openShuffleModal = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // Animate FAB before opening modal
-    fabScale.value = withSequence(
-      withTiming(0.85, { duration: 100 }),
-      withTiming(1.1, { duration: 150 }),
-      withTiming(1, { duration: 100 })
-    );
-    fabRotate.value = withSequence(
-      withTiming(180, { duration: 300 }),
-      withTiming(360, { duration: 300 })
-    );
-    
-    setTimeout(() => {
-      setShowShuffleModal(true);
-      fabRotate.value = 0;
-    }, 200);
-  }, []);
-
-  const handleShuffleComplete = useCallback((chapterId: number, verseId: string) => {
-    setShowShuffleModal(false);
-    router.push(`/verse/${chapterId}-${verseId}`);
-  }, [router]);
-
-  const fabAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: fabScale.value },
-      { rotate: `${fabRotate.value}deg` },
-    ],
-    shadowOpacity: fabGlow.value,
-  }));
 
   const getPairs = () => {
     const pairs = [] as any[];
@@ -271,105 +205,39 @@ export default function HomeScreen() {
     </Link>
   );
 
-  const renderPair = ({ item, index }: { item: any[]; index: number }) => (
-    <View style={indexstyles.shelfRow}>
-      {item.map(
-        (
-          chapter: {
-            id: number;
-            telugu_name: string;
-            verses: number;
-            image: any;
-          },
-          i: number
-        ) => renderChapterCard(chapter, index * 2 + i)
-      )}
-      {item.length === 1 && <View style={indexstyles.emptySlot} />}
-    </View>
-  );
-
-  const ListHeader = () => (
-    <View style={indexstyles.header}>
-      <Text style={[indexstyles.title, { color: colors.primary }]}>
-        భగవద్గీత
-      </Text>
-      <Text style={[indexstyles.subtitle, { color: colors.textMuted }]}>
-        Bhagavad Gita
-      </Text>
-    </View>
-  );
-
   return (
     <SafeAreaView
       style={[indexstyles.container, { backgroundColor: colors.background }]}
     >
-      <FlatList
-        data={chapterPairs}
-        renderItem={renderPair}
-        keyExtractor={(_, index) => index.toString()}
-        contentContainerStyle={indexstyles.scrollContainer}
-        ListHeaderComponent={ListHeader}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-          />
-        }
-      />
+      <View style={indexstyles.header}>
+        <Text style={[indexstyles.title, { color: colors.primary }]}>
+          భగవద్గీత
+        </Text>
+        <Text style={[indexstyles.subtitle, { color: colors.textMuted }]}>
+          Bhagavad Gita
+        </Text>
+      </View>
 
-      {/* Divine Shuffle FAB */}
-      <Animated.View style={[fabStyles.fabContainer, fabAnimatedStyle]}>
-        <Pressable
-          onPress={openShuffleModal}
-          style={[fabStyles.fab, { backgroundColor: colors.primary }]}
-        >
-          <View style={fabStyles.fabContent}>
-            <Ionicons name="sparkles" size={22} color={colors.onPrimary} />
-            <Text style={[fabStyles.fabLabel, { color: colors.onPrimary }]}>
-              Surprise
-            </Text>
-          </View>
-        </Pressable>
-      </Animated.View>
-
-      {/* Shuffle Modal */}
-      <ShuffleModal
-        visible={showShuffleModal}
-        onComplete={handleShuffleComplete}
-        onClose={() => setShowShuffleModal(false)}
-      />
+      <ScrollView contentContainerStyle={indexstyles.scrollContainer}>
+        <View style={indexstyles.bookshelfContainer}>
+          {chapterPairs.map((pair, index) => (
+            <View key={index} style={indexstyles.shelfRow}>
+              {pair.map(
+                (
+                  chapter: {
+                    id: number;
+                    telugu_name: string;
+                    verses: number;
+                    image: any;
+                  },
+                  i: number
+                ) => renderChapterCard(chapter, index * 2 + i)
+              )}
+              {pair.length === 1 && <View style={indexstyles.emptySlot} />}
+            </View>
+          ))}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
-
-const fabStyles = StyleSheet.create({
-  fabContainer: {
-    position: "absolute",
-    right: 16,
-    bottom: 85,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
-    elevation: 10,
-  },
-  fab: {
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    borderRadius: 28,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  fabContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  fabLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    letterSpacing: 0.3,
-  },
-});
