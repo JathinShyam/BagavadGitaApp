@@ -9,6 +9,19 @@ import { useState, useEffect, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Audio } from "expo-av";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withSequence,
+  withTiming,
+  runOnJS,
+  FadeIn,
+} from "react-native-reanimated";
+import * as Clipboard from "expo-clipboard";
+import * as Haptics from "expo-haptics";
+
 import { chapter1 } from "./chapter1";
 import { chapter2 } from "./chapter2";
 import { chapter3 } from "./chapter3";
@@ -30,6 +43,10 @@ import { chapter18 } from "./chapter18";
 
 import { versestyles } from "../styles";
 import { useAppTheme } from "../hooks/useAppTheme";
+import { useReadingProgress } from "../hooks/useReadingProgress";
+import { useToast } from "../../components/Toast";
+import CelebrationModal from "../../components/CelebrationModal";
+import { SkeletonVerseDetail } from "../../components/SkeletonLoader";
 
 const getVerseData = (id: string) => {
   const allVerses = [
@@ -56,6 +73,56 @@ const getVerseData = (id: string) => {
 };
 
 import { audioMappings } from "./audiomapper";
+
+// Verse sequence map for each chapter - accounts for combined verses
+// This maps each chapter to an ordered array of verse identifiers
+const VERSE_SEQUENCES: { [chapter: number]: string[] } = {
+  1: ["1", "2", "3", "4-6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16-18", "19", "20", "21-22", "23", "24", "25", "26", "27", "28", "29-31", "32-33", "34-35", "36-37", "38-39", "40", "41", "42", "43", "44", "45-46", "47"],
+  2: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42-43", "44", "45", "46", "47", "48", "49", "50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "64", "65", "66", "67", "68", "69", "70", "71", "72"],
+  3: ["1-2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20-21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43"],
+  4: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29-30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42"],
+  5: ["1", "2", "3", "4", "5", "6", "7", "8-9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27-28", "29"],
+  6: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12-13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24-25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41-42", "43", "44", "45", "46", "47"],
+  7: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30"],
+  8: ["1-2", "3", "4", "5", "6", "7", "8", "9-10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23-26", "27", "28"],
+  9: ["1", "2", "3", "4", "5", "6", "7-8", "9", "10", "11", "12", "13", "14", "15", "16-17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34"],
+  10: ["1", "2", "3", "4-5", "6", "7", "8", "9", "10", "11", "12-13", "14", "15", "16-17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42"],
+  11: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10-11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26-27", "28-29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41-42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52-53", "54", "55"],
+  12: ["1", "2", "3-4", "5", "6-7", "8", "9", "10", "11", "12", "13-14", "15", "16", "17", "18-19", "20"],
+  13: ["1", "2", "3", "4", "5", "6", "7", "8-12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35"],
+  14: ["1", "2", "3-4", "5", "6", "7", "8", "9", "10", "11-13", "14-15", "16", "17", "18", "19", "20", "21", "22-23", "24-25", "26", "27"],
+  15: ["1", "2", "3-4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"],
+  16: ["1-3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13-15", "16", "17", "18", "19-20", "21", "22", "23", "24"],
+  17: ["1", "2", "3", "4", "5-6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26-27", "28"],
+  18: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15-16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51-53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "64", "65", "66", "67", "68", "69", "70", "71", "72", "73", "74", "75", "76", "77", "78"],
+};
+
+// Helper function to find the next/previous verse in sequence
+const getAdjacentVerse = (chapterId: number, currentVerse: string, direction: 1 | -1): string | null => {
+  const sequence = VERSE_SEQUENCES[chapterId];
+  if (!sequence) return null;
+  
+  // Find current verse in sequence - handle both "7" and "7-8" formats
+  const currentIndex = sequence.findIndex(v => {
+    // Exact match
+    if (v === currentVerse) return true;
+    // Check if current verse is part of a range (e.g., searching for "7" finds "7-8")
+    const parts = v.split("-").map(Number);
+    const searchParts = currentVerse.split("-").map(Number);
+    if (parts.length === 2) {
+      // It's a range like "7-8"
+      return searchParts.some(sp => sp >= parts[0] && sp <= parts[1]);
+    }
+    return false;
+  });
+  
+  if (currentIndex === -1) return null;
+  
+  const newIndex = currentIndex + direction;
+  if (newIndex < 0 || newIndex >= sequence.length) return null;
+  
+  return sequence[newIndex];
+};
 
 export const getAudioFile = (chapter: string, verseNumber: string): any => {
   try {
@@ -89,11 +156,40 @@ export default function VerseScreen() {
   const { colors } = useAppTheme();
   const verse = getVerseData(id as string);
   const [isSaved, setIsSaved] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [showCelebration, setShowCelebration] = useState(false);
+  
+  const { showToast } = useToast();
+  const { markVerseAsRead, isLastVerseInChapter, isChapterComplete } = useReadingProgress();
+  
+  // Animation values
+  const translateX = useSharedValue(0);
+  const bookmarkScale = useSharedValue(1);
+
+  // Simulate loading for skeleton
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 300);
+    return () => clearTimeout(timer);
+  }, [id]);
+
+  // Mark verse as read when viewed
+  useEffect(() => {
+    if (verse && !isLoading) {
+      const trackReading = async () => {
+        const result = await markVerseAsRead(verse.chapter, verse.verse_number);
+        // Check if this completes the chapter (on first view only)
+        if (result?.isNewCompletion && isLastVerseInChapter(verse.chapter, verse.verse_number)) {
+          setTimeout(() => setShowCelebration(true), 500);
+        }
+      };
+      trackReading();
+    }
+  }, [verse?.id, isLoading]);
 
   useEffect(() => {
     return () => {
@@ -125,7 +221,7 @@ export default function VerseScreen() {
           setDuration(status.durationMillis || 0);
           if (status.didJustFinish) {
             setIsPlaying(false);
-            setPosition(0); // Reset position to 0 when audio finishes
+            setPosition(0);
           }
         }
       });
@@ -171,7 +267,9 @@ export default function VerseScreen() {
       const savedVerses = await AsyncStorage.getItem("savedVerses");
       let verses = savedVerses ? JSON.parse(savedVerses) : [];
 
-      if (isSaved) {
+      const wasAlreadySaved = isSaved;
+      
+      if (wasAlreadySaved) {
         verses = verses.filter((v: { id: string }) => v.id !== verse.id);
       } else {
         verses.push(verseToSave);
@@ -179,46 +277,121 @@ export default function VerseScreen() {
 
       await AsyncStorage.setItem("savedVerses", JSON.stringify(verses));
       setIsSaved(!isSaved);
+      
+      // Show feedback
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      bookmarkScale.value = withSequence(
+        withTiming(1.3, { duration: 150 }),
+        withTiming(1, { duration: 150 })
+      );
+      showToast(
+        wasAlreadySaved ? "Removed from saved verses" : "Saved to bookmarks",
+        "success",
+        wasAlreadySaved ? "bookmark-outline" : "bookmark"
+      );
     } catch (error) {
       console.error("Error toggling verse save:", error);
     }
-  }, [verse, isSaved]);
+  }, [verse, isSaved, showToast]);
 
-  const navigateToVerse = (offset: number) => {
-    const [chapterId, verseRange] = (id as string).split("-");
-    const verseNumbers = verseRange.split("-").map(Number);
-    const currentVerseNumber =
-      offset > 0 ? verseNumbers[verseNumbers.length - 1] : verseNumbers[0];
-    let newVerseNumber = currentVerseNumber + offset;
-    let newId = `${chapterId}-${newVerseNumber}`;
+  const copyToClipboard = useCallback(async (text: string, label: string) => {
+    await Clipboard.setStringAsync(text);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    showToast(`${label} copied to clipboard`, "success", "copy");
+  }, [showToast]);
 
-    // Check for combined verses
-    while (!getVerseData(newId) && newVerseNumber > 0) {
-      newVerseNumber += offset;
-      newId = `${chapterId}-${newVerseNumber}`;
+  const navigateToVerse = useCallback((offset: number) => {
+    if (!verse) return;
+    
+    const chapterId = verse.chapter;
+    const currentVerseNum = verse.verse_number;
+    
+    // Use the verse sequence map to find the adjacent verse
+    const nextVerseNum = getAdjacentVerse(chapterId, currentVerseNum, offset as 1 | -1);
+    
+    if (nextVerseNum) {
+      const newId = `${chapterId}-${nextVerseNum}`;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      // Use replace instead of push so back button goes to chapter, not previous verse
+      router.replace(`/verse/${newId}`);
     }
+  }, [verse, router]);
 
-    // Check if the new verse is part of a combined range
-    const combinedVerse = getVerseData(newId);
-    if (combinedVerse) {
-      const combinedVerseRange = combinedVerse.verse_number
-        .split("-")
-        .map(Number);
-      if (combinedVerseRange.length > 1) {
-        newId = `${chapterId}-${combinedVerseRange.join("-")}`;
+  // Swipe gesture for navigation - only triggers on horizontal swipes
+  const swipeGesture = Gesture.Pan()
+    .activeOffsetX([-30, 30])
+    .failOffsetY([-20, 20])
+    .onUpdate((event) => {
+      // Smooth follow with damping
+      translateX.value = event.translationX * 0.4;
+    })
+    .onEnd((event) => {
+      const shouldNavigate = Math.abs(event.translationX) > 80;
+      
+      if (shouldNavigate && event.translationX < -80) {
+        // Swipe left - go to next verse
+        translateX.value = withTiming(-50, { duration: 150 }, () => {
+          translateX.value = withTiming(0, { duration: 200 });
+        });
+        runOnJS(navigateToVerse)(1);
+      } else if (shouldNavigate && event.translationX > 80) {
+        // Swipe right - go to previous verse  
+        translateX.value = withTiming(50, { duration: 150 }, () => {
+          translateX.value = withTiming(0, { duration: 200 });
+        });
+        runOnJS(navigateToVerse)(-1);
+      } else {
+        // Snap back smoothly
+        translateX.value = withTiming(0, { duration: 200 });
       }
-    }
+    });
 
-    const newVerse = getVerseData(newId);
-    if (newVerse) {
-      router.push(`/verse/${newId}`);
-    }
-  };
+  // Double-tap gesture for bookmark - separate from swipe
+  const doubleTapGesture = Gesture.Tap()
+    .numberOfTaps(2)
+    .onEnd(() => {
+      runOnJS(toggleSave)();
+    });
+
+  // Long press gesture for copy
+  const createLongPressGesture = (text: string, label: string) =>
+    Gesture.LongPress()
+      .minDuration(500)
+      .onEnd(() => {
+        runOnJS(copyToClipboard)(text, label);
+      });
+
+  // Only use swipe gesture on the main container - double tap is per section
+  const animatedContentStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  const bookmarkAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: bookmarkScale.value }],
+  }));
 
   if (!verse) {
     return (
       <SafeAreaView style={versestyles.container}>
         <Text>Verse not found</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <SafeAreaView
+        style={[versestyles.container, { backgroundColor: colors.background }]}
+      >
+        <Stack.Screen
+          options={{
+            headerTitle: `Chapter ${verse.chapter}, Verse ${verse.verse_number}`,
+            headerStyle: { backgroundColor: colors.background },
+            headerTintColor: colors.text,
+            headerShadowVisible: false,
+          }}
+        />
+        <SkeletonVerseDetail />
       </SafeAreaView>
     );
   }
@@ -236,11 +409,13 @@ export default function VerseScreen() {
             : "Verse Not Found",
           headerRight: () => (
             <Pressable onPress={toggleSave} style={versestyles.saveButton}>
-              <Ionicons
-                name={isSaved ? "bookmark" : "bookmark-outline"}
-                size={24}
-                color={colors.primary}
-              />
+              <Animated.View style={bookmarkAnimatedStyle}>
+                <Ionicons
+                  name={isSaved ? "bookmark" : "bookmark-outline"}
+                  size={24}
+                  color={colors.primary}
+                />
+              </Animated.View>
             </Pressable>
           ),
           headerStyle: {
@@ -256,129 +431,147 @@ export default function VerseScreen() {
         }}
       />
 
-      {verse ? (
-        <ScrollView style={versestyles.content}>
-          <View
-            style={[
-              versestyles.verseContainer,
-              { backgroundColor: colors.surface, borderColor: colors.outline },
-            ]}
-          >
-            <Text style={[versestyles.sectionTitle, { color: colors.primary }]}>
-              Sloka
-            </Text>
-            <Text style={[versestyles.teluguSlokaText, { color: colors.text }]}>
-              {verse.teluguSloka}
-            </Text>
-            {audioFiles && (
-              <View style={versestyles.audioContainer}>
-                <Pressable onPress={() => playPauseAudio(audioFiles)}>
-                  <Ionicons
-                    name={isPlaying ? "pause" : "play"}
-                    size={24}
-                    color={colors.primary}
-                  />
-                </Pressable>
-                <Slider
-                  style={versestyles.slider}
-                  minimumValue={0}
-                  maximumValue={duration}
-                  value={position}
-                  onValueChange={handleSliderValueChange}
-                />
-                <Text
-                  style={[versestyles.audioTime, { color: colors.textMuted }]}
-                >
-                  {formatTime(position)} / {formatTime(duration)}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          <View
-            style={[
-              versestyles.wordMeaningsContainer,
-              { backgroundColor: colors.surface, borderColor: colors.outline },
-            ]}
-          >
-            <Text style={[versestyles.sectionTitle, { color: colors.primary }]}>
-              Word Meanings
-            </Text>
-            {verse.word_meanings.map((item, index) => (
-              <View
-                key={index}
+      <GestureDetector gesture={swipeGesture}>
+        <Animated.View style={[{ flex: 1 }, animatedContentStyle]}>
+          <ScrollView style={versestyles.content} showsVerticalScrollIndicator={false}>
+            {/* Sloka Section with double-tap to bookmark and long press to copy */}
+            <GestureDetector gesture={Gesture.Exclusive(doubleTapGesture, createLongPressGesture(verse.teluguSloka, "Sloka"))}>
+              <Animated.View
+                entering={FadeIn.delay(100)}
                 style={[
-                  versestyles.wordMeaningRow,
-                  { borderBottomColor: colors.outline },
+                  versestyles.verseContainer,
+                  { backgroundColor: colors.surface, borderColor: colors.outline },
                 ]}
               >
-                <Text style={[versestyles.word, { color: colors.text }]}>
-                  {item.word}
+                <Text style={[versestyles.sectionTitle, { color: colors.primary }]}>
+                  Sloka
                 </Text>
-                <Text
-                  style={[versestyles.meaning, { color: colors.textMuted }]}
+                <Text style={[versestyles.teluguSlokaText, { color: colors.text }]}>
+                  {verse.teluguSloka}
+                </Text>
+                {audioFiles && (
+                  <View style={versestyles.audioContainer}>
+                    <Pressable onPress={() => playPauseAudio(audioFiles)}>
+                      <Ionicons
+                        name={isPlaying ? "pause" : "play"}
+                        size={24}
+                        color={colors.primary}
+                      />
+                    </Pressable>
+                    <Slider
+                      style={versestyles.slider}
+                      minimumValue={0}
+                      maximumValue={duration}
+                      value={position}
+                      onValueChange={handleSliderValueChange}
+                      minimumTrackTintColor={colors.primary}
+                      maximumTrackTintColor={colors.outline}
+                      thumbTintColor={colors.primary}
+                    />
+                    <Text
+                      style={[versestyles.audioTime, { color: colors.textMuted }]}
+                    >
+                      {formatTime(position)} / {formatTime(duration)}
+                    </Text>
+                  </View>
+                )}
+                <Text style={[localStyles.hintText, { color: colors.textMuted }]}>
+                  Long press to copy • Double tap to bookmark
+                </Text>
+              </Animated.View>
+            </GestureDetector>
+
+            {/* Word Meanings Section */}
+            <Animated.View
+              entering={FadeIn.delay(200)}
+              style={[
+                versestyles.wordMeaningsContainer,
+                { backgroundColor: colors.surface, borderColor: colors.outline },
+              ]}
+            >
+              <Text style={[versestyles.sectionTitle, { color: colors.primary }]}>
+                Word Meanings
+              </Text>
+              {verse.word_meanings.map((item, index) => (
+                <View
+                  key={index}
+                  style={[
+                    versestyles.wordMeaningRow,
+                    { borderBottomColor: colors.outline },
+                  ]}
                 >
-                  {item.meaning}
+                  <Text style={[versestyles.word, { color: colors.text }]}>
+                    {item.word}
+                  </Text>
+                  <Text
+                    style={[versestyles.meaning, { color: colors.textMuted }]}
+                  >
+                    {item.meaning}
+                  </Text>
+                </View>
+              ))}
+            </Animated.View>
+
+            {/* Meaning Section with long press to copy */}
+            <GestureDetector gesture={createLongPressGesture(verse.meaning, "Meaning")}>
+              <Animated.View
+                entering={FadeIn.delay(300)}
+                style={[
+                  versestyles.commentaryContainer,
+                  { backgroundColor: colors.surface, borderColor: colors.outline },
+                ]}
+              >
+                <Text style={[versestyles.sectionTitle, { color: colors.primary }]}>
+                  Meaning
                 </Text>
-              </View>
-            ))}
-          </View>
+                <Text style={[versestyles.meaningStyle, { color: colors.text }]}>
+                  {verse.meaning}
+                </Text>
+              </Animated.View>
+            </GestureDetector>
 
-          <View
-            style={[
-              versestyles.commentaryContainer,
-              { backgroundColor: colors.surface, borderColor: colors.outline },
-            ]}
-          >
-            <Text style={[versestyles.sectionTitle, { color: colors.primary }]}>
-              Meaning
-            </Text>
-            <Text style={[versestyles.meaningStyle, { color: colors.text }]}>
-              {verse.meaning}
-            </Text>
-          </View>
+            {/* Commentary Section with long press to copy */}
+            <GestureDetector gesture={createLongPressGesture(verse.commentary, "Commentary")}>
+              <Animated.View
+                entering={FadeIn.delay(400)}
+                style={[
+                  versestyles.commentaryContainer,
+                  { backgroundColor: colors.surface, borderColor: colors.outline },
+                ]}
+              >
+                <Text style={[versestyles.sectionTitle, { color: colors.primary }]}>
+                  Commentary
+                </Text>
+                <Text style={[versestyles.commentaryText, { color: colors.text }]}>
+                  {verse.commentary}
+                </Text>
+              </Animated.View>
+            </GestureDetector>
 
-          <View
-            style={[
-              versestyles.commentaryContainer,
-              { backgroundColor: colors.surface, borderColor: colors.outline },
-            ]}
-          >
-            <Text style={[versestyles.sectionTitle, { color: colors.primary }]}>
-              Commentary
-            </Text>
-            <Text style={[versestyles.commentaryText, { color: colors.text }]}>
-              {verse.commentary}
-            </Text>
-          </View>
-        </ScrollView>
-      ) : (
-        <Text style={[versestyles.errorText, { color: colors.danger }]}>
-          Verse not found
+            {/* Bottom spacing for navigation buttons */}
+            <View style={{ height: 100 }} />
+          </ScrollView>
+        </Animated.View>
+      </GestureDetector>
+
+      {/* Swipe hint indicator */}
+      <View style={[localStyles.swipeHint, { backgroundColor: colors.surface }]}>
+        <Ionicons name="chevron-back" size={16} color={colors.textMuted} />
+        <Text style={[localStyles.swipeHintText, { color: colors.textMuted }]}>
+          Swipe to navigate
         </Text>
-      )}
+        <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+      </View>
 
       <View style={[versestyles.navigationButtons, { backgroundColor: colors.background }]}>
         <Pressable
           onPress={() => navigateToVerse(-1)}
-          disabled={
-            !getVerseData(
-              `${verse?.chapter}-${
-                parseInt(verse?.verse_number.split("-")[0] || "0") - 1
-              }`
-            )
-          }
+          disabled={!getAdjacentVerse(verse.chapter, verse.verse_number, -1)}
           style={[
             versestyles.navButton,
             { backgroundColor: colors.surface, borderColor: colors.outline },
             {
-              opacity: !getVerseData(
-                `${verse?.chapter}-${
-                  parseInt(verse?.verse_number.split("-")[0] || "0") - 1
-                }`
-              )
-                ? 0.3
-                : 1,
+              opacity: !getAdjacentVerse(verse.chapter, verse.verse_number, -1) ? 0.3 : 1,
             },
           ]}
         >
@@ -387,24 +580,12 @@ export default function VerseScreen() {
         </Pressable>
         <Pressable
           onPress={() => navigateToVerse(1)}
-          disabled={
-            !getVerseData(
-              `${verse?.chapter}-${
-                parseInt(verse?.verse_number.split("-").pop() || "0") + 1
-              }`
-            )
-          }
+          disabled={!getAdjacentVerse(verse.chapter, verse.verse_number, 1)}
           style={[
             versestyles.navButton,
             { backgroundColor: colors.surface, borderColor: colors.outline },
             {
-              opacity: !getVerseData(
-                `${verse?.chapter}-${
-                  parseInt(verse?.verse_number.split("-").pop() || "0") + 1
-                }`
-              )
-                ? 0.3
-                : 1,
+              opacity: !getAdjacentVerse(verse.chapter, verse.verse_number, 1) ? 0.3 : 1,
             },
           ]}
         >
@@ -412,6 +593,37 @@ export default function VerseScreen() {
           <Ionicons name="chevron-forward" size={24} color={colors.primary} />
         </Pressable>
       </View>
+
+      {/* Celebration Modal */}
+      <CelebrationModal
+        visible={showCelebration}
+        chapterNumber={verse.chapter}
+        onClose={() => setShowCelebration(false)}
+      />
     </SafeAreaView>
   );
 }
+
+const localStyles = StyleSheet.create({
+  hintText: {
+    fontSize: 12,
+    textAlign: "center",
+    marginTop: 12,
+    fontStyle: "italic",
+  },
+  swipeHint: {
+    position: "absolute",
+    bottom: 80,
+    alignSelf: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    opacity: 0.8,
+  },
+  swipeHintText: {
+    fontSize: 12,
+    marginHorizontal: 4,
+  },
+});
