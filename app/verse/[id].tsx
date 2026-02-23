@@ -149,7 +149,12 @@ export default function VerseScreen() {
   const [showCelebration, setShowCelebration] = useState(false);
   
   const { showToast } = useToast();
-  const { markVerseAsRead, isLastVerseInChapter, isChapterComplete } = useReadingProgress();
+  const {
+    markVerseAsRead,
+    isLastVerseInChapter,
+    isChapterComplete,
+    setLastReadVerse,
+  } = useReadingProgress();
   
   // Animation values
   const translateX = useSharedValue(0);
@@ -178,6 +183,13 @@ export default function VerseScreen() {
       trackReading();
     }
   }, [verse?.id, isLoading]);
+
+  // Track \"last read\" location for resume feature
+  useEffect(() => {
+    if (verse && !isLoading) {
+      setLastReadVerse(verse.id);
+    }
+  }, [verse?.id, isLoading, setLastReadVerse]);
 
   const checkIfSaved = useCallback(async () => {
     if (!verse) return;

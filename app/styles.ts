@@ -121,29 +121,77 @@ export const indexstyles = StyleSheet.create({
   },
   chapterImage: {
     width: "100%",
-    height: 160,
+    height: 185,
     resizeMode: "cover",
   },
+  verseCountBadge: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  verseCountBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
   cardContent: {
-    padding: 12,
+    paddingHorizontal: 8,
+    paddingTop: 6,
+    paddingBottom: 6,
     // backgroundColor will be set dynamically
   },
   chapterNumber: {
-    fontSize: 12,
+    fontSize: 11,
     // color will be set dynamically
-    marginBottom: 4,
+    marginBottom: 2,
     fontWeight: "500",
   },
   sanskritName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "bold",
     // color will be set dynamically
-    height: 44,
+    height: 36,
   },
   versesCount: {
     fontSize: 12,
     // color will be set dynamically
     fontStyle: "italic",
+  },
+  chapterProgressContainer: {
+    marginTop: 2,
+  },
+  chapterProgressBarBackground: {
+    width: "100%",
+    height: 6,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    overflow: "hidden",
+    marginTop: 4,
+  },
+  chapterProgressBarFill: {
+    height: "100%",
+    borderRadius: 999,
+  },
+  chapterProgressLabelRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  chapterProgressLabel: {
+    fontSize: 11,
+  },
+  chapterProgressBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+  },
+  chapterProgressBadgeText: {
+    fontSize: 10,
+    fontWeight: "600",
   },
   emptySlot: {
     width: cardWidth,
@@ -197,6 +245,7 @@ export const chapterstyles = StyleSheet.create({
   },
   listContainer: {
     padding: 16,
+    paddingBottom: 40,
   },
   verseCard: {
     // backgroundColor and borderColor will be set dynamically
@@ -229,6 +278,21 @@ export const chapterstyles = StyleSheet.create({
     marginBottom: 10,
     lineHeight: 22,
     textAlign: "center",
+  },
+  readBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    marginTop: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  readBadgeText: {
+    fontSize: 11,
+    marginLeft: 4,
+    fontWeight: "600",
   },
   translation: {
     fontSize: 16,
@@ -348,24 +412,26 @@ export const versestyles = StyleSheet.create({
   navigationButtons: {
     flexDirection: "row",
     justifyContent: "space-between",
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     // backgroundColor will be set dynamically
   },
   navButton: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 12,
-    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
     // backgroundColor and borderColor will be set dynamically
     borderWidth: 1,
-    minWidth: 100,
+    minWidth: 90,
     justifyContent: "center",
   },
   navButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "500",
     // color will be set dynamically
-    marginHorizontal: 8,
+    marginHorizontal: 6,
   },
   audioContainer: {
     flexDirection: "row",
