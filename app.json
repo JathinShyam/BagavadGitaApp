@@ -40,7 +40,8 @@
         {
           "launchMode": "most-recent"
         }
-      ]
+      ],
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true

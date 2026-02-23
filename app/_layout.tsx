@@ -23,6 +23,7 @@ import {
 } from "@expo-google-fonts/playfair-display";
 import { ThemeProvider as AppThemeProvider } from "./context/ThemeContext";
 import { ToastProvider } from "../components/Toast";
+import { ReadingProgressProvider } from "./hooks/useReadingProgress";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -65,6 +66,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AppThemeProvider>
+        <ReadingProgressProvider>
         <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
           <ToastProvider>
             <Stack
@@ -87,6 +89,7 @@ export default function RootLayout() {
             </Stack>
           </ToastProvider>
         </ThemeProvider>
+        </ReadingProgressProvider>
       </AppThemeProvider>
     </GestureHandlerRootView>
   );

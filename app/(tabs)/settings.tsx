@@ -6,16 +6,19 @@ import {
   Pressable,
   Switch,
   Linking,
+  Alert,
 } from "react-native";
 import { Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeInUp } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { Spacing, Radius } from "../theme";
 import { useTheme } from "../context/ThemeContext";
 import { useAppTheme } from "../hooks/useAppTheme";
+import { useReadingProgress } from "../hooks/useReadingProgress";
 
 interface SettingItemProps {
   title: string;
@@ -73,6 +76,7 @@ const SettingItem: React.FC<SettingItemProps & { colors: any }> = ({
 export default function SettingsScreen() {
   const { theme, toggleTheme } = useTheme();
   const { colors } = useAppTheme();
+  const { CHAPTER_VERSES, resetChapterProgress, getTotalProgress } = useReadingProgress();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [autoPlayAudio, setAutoPlayAudio] = useState(false);
 
@@ -89,6 +93,32 @@ export default function SettingsScreen() {
   const handleAutoPlayToggle = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setAutoPlayAudio(!autoPlayAudio);
+  };
+
+  const handleResetProgress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    Alert.alert(
+      "Reset Reading Progress",
+      "This will reset all chapter progress, reading streak, and last read position to zero. This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Reset Everything",
+          style: "destructive",
+          onPress: async () => {
+            for (const chId of Object.keys(CHAPTER_VERSES)) {
+              await resetChapterProgress(parseInt(chId));
+            }
+            await AsyncStorage.multiRemove([
+              "readingStreak",
+              "lastReadVerse",
+            ]);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            Alert.alert("Done", "All reading progress has been reset.");
+          },
+        },
+      ]
+    );
   };
 
   const openGitHub = () => {
@@ -205,6 +235,35 @@ export default function SettingsScreen() {
                 />
               }
               delay={300}
+            />
+          </View>
+        </View>
+
+        {/* Data Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Data
+          </Text>
+          <View
+            style={[
+              styles.sectionContent,
+              { backgroundColor: colors.surface, borderColor: colors.outline },
+            ]}
+          >
+            <SettingItem
+              title="Reset Reading Progress"
+              subtitle={`Currently ${getTotalProgress()}% complete`}
+              icon="refresh-circle"
+              colors={colors}
+              onPress={handleResetProgress}
+              rightElement={
+                <Ionicons
+                  name="chevron-forward"
+                  size={20}
+                  color={colors.textMuted}
+                />
+              }
+              delay={350}
             />
           </View>
         </View>
