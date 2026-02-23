@@ -1,14 +1,12 @@
 // app/verse/[id].tsx
 
 import { View, ScrollView, StyleSheet, Pressable, Button } from "react-native";
-import Slider from "@react-native-community/slider";
 import { Text } from "react-native-paper";
 import { useLocalSearchParams, Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useState, useEffect, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Audio } from "expo-av";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useSharedValue,
@@ -47,6 +45,7 @@ import { useReadingProgress } from "../hooks/useReadingProgress";
 import { useToast } from "../../components/Toast";
 import CelebrationModal from "../../components/CelebrationModal";
 import { SkeletonVerseDetail } from "../../components/SkeletonLoader";
+import { VerseAudioPlayer } from "../../components/VerseAudioPlayer";
 
 const getVerseData = (id: string) => {
   const allVerses = [
@@ -140,17 +139,6 @@ export const getAudioFile = (chapter: string, verseNumber: string): any => {
   }
 };
 
-// Helper function to format time in MM:SS
-const formatTime = (milliseconds: number) => {
-  const totalSeconds = Math.floor(milliseconds / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
-    2,
-    "0"
-  )}`;
-};
-
 export default function VerseScreen() {
   const { id } = useLocalSearchParams();
   const { colors } = useAppTheme();
@@ -158,10 +146,6 @@ export default function VerseScreen() {
   const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [position, setPosition] = useState(0);
-  const [duration, setDuration] = useState(0);
   const [showCelebration, setShowCelebration] = useState(false);
   
   const { showToast } = useToast();
@@ -170,6 +154,11 @@ export default function VerseScreen() {
   // Animation values
   const translateX = useSharedValue(0);
   const bookmarkScale = useSharedValue(1);
+
+  // Audio source for current verse — computed once per verse so only VerseAudioPlayer re-renders on status
+  const verseAudioSource = verse
+    ? getAudioFile(verse.chapter.toString(), verse.verse_number)?.[0] ?? null
+    : null;
 
   // Simulate loading for skeleton
   useEffect(() => {
@@ -182,7 +171,6 @@ export default function VerseScreen() {
     if (verse && !isLoading) {
       const trackReading = async () => {
         const result = await markVerseAsRead(verse.chapter, verse.verse_number);
-        // Check if this completes the chapter (on first view only)
         if (result?.isNewCompletion && isLastVerseInChapter(verse.chapter, verse.verse_number)) {
           setTimeout(() => setShowCelebration(true), 500);
         }
@@ -190,49 +178,6 @@ export default function VerseScreen() {
       trackReading();
     }
   }, [verse?.id, isLoading]);
-
-  useEffect(() => {
-    return () => {
-      if (sound) {
-        sound.unloadAsync();
-      }
-    };
-  }, [sound]);
-
-  const playPauseAudio = async (audioFiles: any[]) => {
-    if (sound) {
-      if (isPlaying) {
-        await sound.pauseAsync();
-        setIsPlaying(false);
-      } else {
-        await sound.playAsync();
-        setIsPlaying(true);
-      }
-    } else {
-      const { sound: newSound } = await Audio.Sound.createAsync(audioFiles[0], {
-        shouldPlay: true,
-      });
-      setSound(newSound);
-      setIsPlaying(true);
-
-      newSound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded) {
-          setPosition(status.positionMillis);
-          setDuration(status.durationMillis || 0);
-          if (status.didJustFinish) {
-            setIsPlaying(false);
-            setPosition(0);
-          }
-        }
-      });
-    }
-  };
-
-  const handleSliderValueChange = async (value: number) => {
-    if (sound) {
-      await sound.setPositionAsync(value);
-    }
-  };
 
   const checkIfSaved = useCallback(async () => {
     if (!verse) return;
@@ -396,8 +341,6 @@ export default function VerseScreen() {
     );
   }
 
-  const audioFiles = getAudioFile(verse.chapter.toString(), verse.verse_number);
-
   return (
     <SafeAreaView
       style={[versestyles.container, { backgroundColor: colors.background }]}
@@ -449,31 +392,13 @@ export default function VerseScreen() {
                 <Text style={[versestyles.teluguSlokaText, { color: colors.text }]}>
                   {verse.teluguSloka}
                 </Text>
-                {audioFiles && (
-                  <View style={versestyles.audioContainer}>
-                    <Pressable onPress={() => playPauseAudio(audioFiles)}>
-                      <Ionicons
-                        name={isPlaying ? "pause" : "play"}
-                        size={24}
-                        color={colors.primary}
-                      />
-                    </Pressable>
-                    <Slider
-                      style={versestyles.slider}
-                      minimumValue={0}
-                      maximumValue={duration}
-                      value={position}
-                      onValueChange={handleSliderValueChange}
-                      minimumTrackTintColor={colors.primary}
-                      maximumTrackTintColor={colors.outline}
-                      thumbTintColor={colors.primary}
-                    />
-                    <Text
-                      style={[versestyles.audioTime, { color: colors.textMuted }]}
-                    >
-                      {formatTime(position)} / {formatTime(duration)}
-                    </Text>
-                  </View>
+                {verseAudioSource != null && (
+                  <VerseAudioPlayer
+                    audioSource={verseAudioSource}
+                    primaryColor={colors.primary}
+                    textMutedColor={colors.textMuted}
+                    outlineColor={colors.outline}
+                  />
                 )}
                 <Text style={[localStyles.hintText, { color: colors.textMuted }]}>
                   Long press to copy • Double tap to bookmark
