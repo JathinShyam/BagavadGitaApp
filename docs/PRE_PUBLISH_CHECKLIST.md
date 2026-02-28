@@ -15,7 +15,7 @@
 **Then:** Update the "Last updated" dates in both HTML files before publishing.
 
 ### 2. Android: Play Store requires AAB
-**Status:** ✓ Fixed – production buildType set to `aab` in eas.json
+**Status:** ✓ Fixed – production buildType set to `app-bundle` in eas.json
 
 ### 3. Android release signing
 **Status:** `android/app/build.gradle` uses debug keystore for release  
