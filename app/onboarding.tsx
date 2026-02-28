@@ -14,12 +14,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import Animated, {
+  type SharedValue,
   FadeIn,
   FadeInUp,
   FadeInDown,
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
   interpolate,
   Extrapolation,
 } from "react-native-reanimated";
@@ -27,7 +27,44 @@ import * as Haptics from "expo-haptics";
 
 import { useAppTheme } from "./hooks/useAppTheme";
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+
+function PaginationDot({
+  index,
+  scrollX,
+  color,
+}: {
+  index: number;
+  scrollX: SharedValue<number>;
+  color: string;
+}) {
+  const dotAnimatedStyle = useAnimatedStyle(() => {
+    const inputRange = [
+      (index - 1) * SCREEN_WIDTH,
+      index * SCREEN_WIDTH,
+      (index + 1) * SCREEN_WIDTH,
+    ];
+    const width = interpolate(
+      scrollX.value,
+      inputRange,
+      [8, 24, 8],
+      Extrapolation.CLAMP
+    );
+    const opacity = interpolate(
+      scrollX.value,
+      inputRange,
+      [0.4, 1, 0.4],
+      Extrapolation.CLAMP
+    );
+    return { width, opacity };
+  });
+
+  return (
+    <Animated.View
+      style={[styles.paginationDot, { backgroundColor: color }, dotAnimatedStyle]}
+    />
+  );
+}
 
 const ONBOARDING_KEY = "hasCompletedOnboarding";
 
@@ -161,39 +198,14 @@ export default function OnboardingScreen() {
   // Pagination dots
   const renderPagination = () => (
     <View style={styles.paginationContainer}>
-      {slides.map((_, index) => {
-        const dotAnimatedStyle = useAnimatedStyle(() => {
-          const inputRange = [
-            (index - 1) * SCREEN_WIDTH,
-            index * SCREEN_WIDTH,
-            (index + 1) * SCREEN_WIDTH,
-          ];
-          const width = interpolate(
-            scrollX.value,
-            inputRange,
-            [8, 24, 8],
-            Extrapolation.CLAMP
-          );
-          const opacity = interpolate(
-            scrollX.value,
-            inputRange,
-            [0.4, 1, 0.4],
-            Extrapolation.CLAMP
-          );
-          return { width, opacity };
-        });
-
-        return (
-          <Animated.View
-            key={index}
-            style={[
-              styles.paginationDot,
-              { backgroundColor: colors.primary },
-              dotAnimatedStyle,
-            ]}
-          />
-        );
-      })}
+      {slides.map((_, index) => (
+        <PaginationDot
+          key={index}
+          index={index}
+          scrollX={scrollX}
+          color={colors.primary}
+        />
+      ))}
     </View>
   );
 

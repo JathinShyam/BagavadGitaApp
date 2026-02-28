@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, createContext, useContext } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const READING_PROGRESS_KEY = "readingProgress";
+const READING_STREAK_KEY = "readingStreak";
+const LAST_READ_VERSE_KEY = "lastReadVerse";
 
 interface ReadingProgress {
   [chapterId: string]: {
@@ -12,38 +14,84 @@ interface ReadingProgress {
   };
 }
 
-// Total verses per chapter
-const CHAPTER_VERSES: { [key: number]: number } = {
-  1: 47,
-  2: 72,
-  3: 43,
-  4: 42,
-  5: 29,
-  6: 47,
-  7: 30,
-  8: 28,
-  9: 34,
-  10: 42,
-  11: 55,
-  12: 20,
-  13: 35,
-  14: 27,
-  15: 20,
-  16: 24,
-  17: 28,
-  18: 78,
+interface ReadingStreak {
+  currentStreak: number;
+  longestStreak: number;
+  lastReadDate: string | null;
+}
+
+interface LastReadVerse {
+  verseId: string | null;
+  updatedAt: string | null;
+}
+
+const getDateKey = (d: Date) => d.toISOString().slice(0, 10);
+
+export const CHAPTER_VERSES: { [key: number]: number } = {
+  1: 47, 2: 72, 3: 43, 4: 42, 5: 29, 6: 47, 7: 30, 8: 28, 9: 34,
+  10: 42, 11: 55, 12: 20, 13: 35, 14: 27, 15: 20, 16: 24, 17: 28, 18: 78,
 };
 
-export const useReadingProgress = () => {
+interface ReadingProgressContextValue {
+  progress: ReadingProgress;
+  loading: boolean;
+  markVerseAsRead: (chapterId: number, verseNumber: string) => Promise<{ isNewCompletion: boolean; totalVerses: number }>;
+  isVerseRead: (chapterId: number, verseNumber: string) => boolean;
+  getChapterProgress: (chapterId: number) => number;
+  isChapterComplete: (chapterId: number) => boolean;
+  isLastVerseInChapter: (chapterId: number, verseNumber: string) => boolean;
+  getTotalProgress: () => number;
+  resetChapterProgress: (chapterId: number) => Promise<void>;
+  CHAPTER_VERSES: { [key: number]: number };
+  streak: ReadingStreak;
+  lastReadVerseId: string | null;
+  setLastReadVerse: (verseId: string) => Promise<void>;
+}
+
+const ReadingProgressContext = createContext<ReadingProgressContextValue | null>(null);
+
+export function ReadingProgressProvider({ children }: { children: React.ReactNode }) {
   const [progress, setProgress] = useState<ReadingProgress>({});
   const [loading, setLoading] = useState(true);
+  const [streak, setStreak] = useState<ReadingStreak>({
+    currentStreak: 0,
+    longestStreak: 0,
+    lastReadDate: null,
+  });
+  const [lastReadVerse, setLastReadVerseState] = useState<LastReadVerse>({
+    verseId: null,
+    updatedAt: null,
+  });
 
-  // Load progress from storage
   const loadProgress = useCallback(async () => {
     try {
-      const stored = await AsyncStorage.getItem(READING_PROGRESS_KEY);
-      if (stored) {
-        setProgress(JSON.parse(stored));
+      const [storedProgress, storedStreak, storedLastRead] = await Promise.all([
+        AsyncStorage.getItem(READING_PROGRESS_KEY),
+        AsyncStorage.getItem(READING_STREAK_KEY),
+        AsyncStorage.getItem(LAST_READ_VERSE_KEY),
+      ]);
+
+      if (storedProgress) {
+        setProgress(JSON.parse(storedProgress));
+      }
+      if (storedStreak) {
+        try {
+          const parsed = JSON.parse(storedStreak);
+          setStreak({
+            currentStreak: parsed.currentStreak ?? 0,
+            longestStreak: parsed.longestStreak ?? 0,
+            lastReadDate: parsed.lastReadDate ?? null,
+          });
+        } catch {}
+      }
+      if (storedLastRead) {
+        try {
+          const parsed = JSON.parse(storedLastRead);
+          setLastReadVerseState({
+            verseId: parsed.verseId ?? null,
+            updatedAt: parsed.updatedAt ?? null,
+          });
+        } catch {}
       }
     } catch (error) {
       console.error("Error loading reading progress:", error);
@@ -56,24 +104,37 @@ export const useReadingProgress = () => {
     loadProgress();
   }, [loadProgress]);
 
-  // Save progress to storage
   const saveProgress = useCallback(async (newProgress: ReadingProgress) => {
     try {
-      await AsyncStorage.setItem(
-        READING_PROGRESS_KEY,
-        JSON.stringify(newProgress)
-      );
+      await AsyncStorage.setItem(READING_PROGRESS_KEY, JSON.stringify(newProgress));
     } catch (error) {
       console.error("Error saving reading progress:", error);
     }
   }, []);
 
-  // Mark a verse as read
+  const saveStreak = useCallback(async (data: ReadingStreak) => {
+    try {
+      await AsyncStorage.setItem(READING_STREAK_KEY, JSON.stringify(data));
+    } catch (error) {
+      console.error("Error saving reading streak:", error);
+    }
+  }, []);
+
+  const saveLastReadVerse = useCallback(async (data: LastReadVerse) => {
+    try {
+      await AsyncStorage.setItem(LAST_READ_VERSE_KEY, JSON.stringify(data));
+    } catch (error) {
+      console.error("Error saving last read verse:", error);
+    }
+  }, []);
+
   const markVerseAsRead = useCallback(
     async (chapterId: number, verseNumber: string) => {
       const chapterKey = chapterId.toString();
       const verseKey = `${chapterId}-${verseNumber}`;
       const totalVerses = CHAPTER_VERSES[chapterId] || 0;
+
+      let isNewCompletion = false;
 
       setProgress((prev) => {
         const chapterProgress = prev[chapterKey] || {
@@ -82,42 +143,60 @@ export const useReadingProgress = () => {
           isComplete: false,
         };
 
-        // If verse already read, return unchanged
         if (chapterProgress.versesRead.includes(verseKey)) {
           return prev;
         }
 
         const newVersesRead = [...chapterProgress.versesRead, verseKey];
-        const isComplete = newVersesRead.length >= totalVerses;
+        const chapterIsComplete = newVersesRead.length >= totalVerses;
 
         const newProgress: ReadingProgress = {
           ...prev,
           [chapterKey]: {
             versesRead: newVersesRead,
             totalVerses,
-            isComplete,
-            completedAt: isComplete ? new Date().toISOString() : undefined,
+            isComplete: chapterIsComplete,
+            completedAt: chapterIsComplete ? new Date().toISOString() : undefined,
           },
         };
 
         saveProgress(newProgress);
+        const wasComplete = chapterProgress.isComplete;
+        isNewCompletion = !wasComplete && chapterIsComplete;
         return newProgress;
       });
 
-      // Check if this completes the chapter
-      const chapterProgress = progress[chapterKey];
-      const currentVersesRead = chapterProgress?.versesRead || [];
-      const isNewCompletion =
-        !currentVersesRead.includes(verseKey) &&
-        currentVersesRead.length + 1 >= totalVerses &&
-        !chapterProgress?.isComplete;
+      const todayKey = getDateKey(new Date());
+      setStreak((prev) => {
+        if (prev.lastReadDate === todayKey) return prev;
+
+        let currentStreak: number;
+        if (!prev.lastReadDate) {
+          currentStreak = 1;
+        } else {
+          const last = new Date(prev.lastReadDate + "T00:00:00Z");
+          const today = new Date(todayKey + "T00:00:00Z");
+          const diffDays = (today.getTime() - last.getTime()) / (1000 * 60 * 60 * 24);
+          if (diffDays === 1) {
+            currentStreak = prev.currentStreak + 1;
+          } else if (diffDays > 1) {
+            currentStreak = 1;
+          } else {
+            currentStreak = prev.currentStreak || 1;
+          }
+        }
+
+        const longestStreak = Math.max(prev.longestStreak, currentStreak);
+        const next: ReadingStreak = { currentStreak, longestStreak, lastReadDate: todayKey };
+        saveStreak(next);
+        return next;
+      });
 
       return { isNewCompletion, totalVerses };
     },
-    [progress, saveProgress]
+    [saveProgress, saveStreak]
   );
 
-  // Check if a verse has been read
   const isVerseRead = useCallback(
     (chapterId: number, verseNumber: string) => {
       const chapterKey = chapterId.toString();
@@ -127,7 +206,6 @@ export const useReadingProgress = () => {
     [progress]
   );
 
-  // Get chapter progress percentage
   const getChapterProgress = useCallback(
     (chapterId: number) => {
       const chapterKey = chapterId.toString();
@@ -140,7 +218,6 @@ export const useReadingProgress = () => {
     [progress]
   );
 
-  // Check if chapter is complete
   const isChapterComplete = useCallback(
     (chapterId: number) => {
       const chapterKey = chapterId.toString();
@@ -149,11 +226,9 @@ export const useReadingProgress = () => {
     [progress]
   );
 
-  // Check if a verse is the last in the chapter
   const isLastVerseInChapter = useCallback(
     (chapterId: number, verseNumber: string) => {
       const totalVerses = CHAPTER_VERSES[chapterId] || 0;
-      // Handle combined verses like "1-2" or single verses
       const verseNumbers = verseNumber.split("-").map(Number);
       const lastVerseNum = Math.max(...verseNumbers);
       return lastVerseNum >= totalVerses;
@@ -161,7 +236,6 @@ export const useReadingProgress = () => {
     []
   );
 
-  // Get total progress across all chapters
   const getTotalProgress = useCallback(() => {
     const totalVerses = Object.values(CHAPTER_VERSES).reduce((a, b) => a + b, 0);
     const totalRead = Object.values(progress).reduce(
@@ -171,7 +245,6 @@ export const useReadingProgress = () => {
     return Math.round((totalRead / totalVerses) * 100);
   }, [progress]);
 
-  // Reset progress for a chapter
   const resetChapterProgress = useCallback(
     async (chapterId: number) => {
       const chapterKey = chapterId.toString();
@@ -185,7 +258,19 @@ export const useReadingProgress = () => {
     [saveProgress]
   );
 
-  return {
+  const setLastReadVerse = useCallback(
+    async (verseId: string) => {
+      const payload: LastReadVerse = {
+        verseId,
+        updatedAt: new Date().toISOString(),
+      };
+      setLastReadVerseState(payload);
+      await saveLastReadVerse(payload);
+    },
+    [saveLastReadVerse]
+  );
+
+  const value: ReadingProgressContextValue = {
     progress,
     loading,
     markVerseAsRead,
@@ -196,7 +281,20 @@ export const useReadingProgress = () => {
     getTotalProgress,
     resetChapterProgress,
     CHAPTER_VERSES,
+    streak,
+    lastReadVerseId: lastReadVerse.verseId,
+    setLastReadVerse,
   };
+
+  return React.createElement(ReadingProgressContext.Provider, { value }, children);
+}
+
+export const useReadingProgress = (): ReadingProgressContextValue => {
+  const context = useContext(ReadingProgressContext);
+  if (!context) {
+    throw new Error("useReadingProgress must be used within a ReadingProgressProvider");
+  }
+  return context;
 };
 
 export default useReadingProgress;
