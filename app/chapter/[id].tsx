@@ -181,13 +181,16 @@ const getChapterData = (id: string) => {
     },
   ];
 
-  return chapters.find((chapter) => chapter.id === parseInt(id));
+  const chapterId = parseInt(id, 10);
+  if (Number.isNaN(chapterId)) return undefined;
+  return chapters.find((chapter) => chapter.id === chapterId);
 };
 
 export default function ChapterScreen() {
   const { id } = useLocalSearchParams();
   const { colors } = useAppTheme();
-  const chapter = getChapterData(id as string);
+  const idStr = Array.isArray(id) ? id[0] : id;
+  const chapter = getChapterData(idStr ?? "");
   const { isVerseRead } = useReadingProgress();
 
   const renderVerse = ({

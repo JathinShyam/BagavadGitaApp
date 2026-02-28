@@ -1,6 +1,6 @@
 // components/ShuffleModal.tsx
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { View, StyleSheet, Dimensions, Pressable, Image, ImageSourcePropType } from "react-native";
 import { Text } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
@@ -23,6 +23,7 @@ import Animated, {
 import * as Haptics from "expo-haptics";
 import { useAppTheme } from "../app/hooks/useAppTheme";
 import { LinearGradient } from "expo-linear-gradient";
+import { VERSE_SEQUENCES } from "@/constants/verseSequences";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -31,28 +32,6 @@ interface ShuffleModalProps {
   onComplete: (chapterId: number, verseId: string) => void;
   onClose: () => void;
 }
-
-// Valid verse sequences for each chapter - accounts for combined verses
-const VERSE_SEQUENCES: { [chapter: number]: string[] } = {
-  1: ["1", "2", "3", "4-6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16-18", "19", "20", "21-22", "23", "24", "25", "26", "27", "28", "29-31", "32-33", "34-35", "36-37", "38-39", "40", "41", "42", "43", "44", "45-46", "47"],
-  2: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42-43", "44", "45", "46", "47", "48", "49", "50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "64", "65", "66", "67", "68", "69", "70", "71", "72"],
-  3: ["1-2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20-21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43"],
-  4: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29-30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42"],
-  5: ["1", "2", "3", "4", "5", "6", "7", "8-9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27-28", "29"],
-  6: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12-13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24-25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41-42", "43", "44", "45", "46", "47"],
-  7: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30"],
-  8: ["1-2", "3", "4", "5", "6", "7", "8", "9-10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23-26", "27", "28"],
-  9: ["1", "2", "3", "4", "5", "6", "7-8", "9", "10", "11", "12", "13", "14", "15", "16-17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34"],
-  10: ["1", "2", "3", "4-5", "6", "7", "8", "9", "10", "11", "12-13", "14", "15", "16-17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42"],
-  11: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10-11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26-27", "28-29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41-42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52-53", "54", "55"],
-  12: ["1", "2", "3-4", "5", "6-7", "8", "9", "10", "11", "12", "13-14", "15", "16", "17", "18-19", "20"],
-  13: ["1", "2", "3", "4", "5", "6", "7", "8-12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35"],
-  14: ["1", "2", "3-4", "5", "6", "7", "8", "9", "10", "11-13", "14-15", "16", "17", "18", "19", "20", "21", "22-23", "24-25", "26", "27"],
-  15: ["1", "2", "3-4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"],
-  16: ["1-3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13-15", "16", "17", "18", "19-20", "21", "22", "23", "24"],
-  17: ["1", "2", "3", "4", "5-6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26-27", "28"],
-  18: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15-16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51-53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "64", "65", "66", "67", "68", "69", "70", "71", "72", "73", "74", "75", "76", "77", "78"],
-};
 
 // Chapter images mapping
 const chapterImages: { [key: number]: ImageSourcePropType } = {
@@ -338,6 +317,7 @@ const ShuffleModal: React.FC<ShuffleModalProps> = ({
     verse: string;
   } | null>(null);
   const [showSparkles, setShowSparkles] = useState(false);
+  const intervalIdsRef = useRef<ReturnType<typeof setInterval>[]>([]);
 
   const backdropOpacity = useSharedValue(0);
   const containerScale = useSharedValue(0.8);
@@ -349,7 +329,13 @@ const ShuffleModal: React.FC<ShuffleModalProps> = ({
     return ALL_VERSES[randomIndex];
   }, []);
 
+  const clearAllIntervals = useCallback(() => {
+    intervalIdsRef.current.forEach((id) => clearInterval(id));
+    intervalIdsRef.current = [];
+  }, []);
+
   const startShuffle = useCallback(() => {
+    clearAllIntervals();
     setIsShuffling(true);
     setFinalSelection(null);
     setShowSparkles(false);
@@ -372,6 +358,7 @@ const ShuffleModal: React.FC<ShuffleModalProps> = ({
 
       if (shuffleCount >= maxShuffles) {
         clearInterval(shuffleInterval);
+        intervalIdsRef.current = intervalIdsRef.current.filter((id) => id !== shuffleInterval);
 
         // Slow down phase
         let slowCount = 0;
@@ -384,6 +371,7 @@ const ShuffleModal: React.FC<ShuffleModalProps> = ({
 
           if (slowCount >= slowShuffles) {
             clearInterval(slowInterval);
+            intervalIdsRef.current = intervalIdsRef.current.filter((id) => id !== slowInterval);
 
             // Final selection - pick a valid verse
             const final = generateRandomVerse();
@@ -392,28 +380,32 @@ const ShuffleModal: React.FC<ShuffleModalProps> = ({
             setIsShuffling(false);
             setShowSparkles(true);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            
-            // Wait for user to decide - no auto-navigation
           }
-        }, 200); // Slower interval
+        }, 200);
+        intervalIdsRef.current.push(slowInterval);
       }
-    }, 80); // Fast interval
-  }, [generateRandomVerse]);
+    }, 80);
+    intervalIdsRef.current.push(shuffleInterval);
+  }, [generateRandomVerse, clearAllIntervals]);
 
   useEffect(() => {
     if (visible) {
       backdropOpacity.value = withTiming(1, { duration: 300 });
       containerScale.value = withSpring(1, { damping: 12, stiffness: 100 });
-      // Auto-start shuffle when modal opens
-      setTimeout(startShuffle, 300);
+      const startTimer = setTimeout(startShuffle, 300);
+      return () => {
+        clearTimeout(startTimer);
+        clearAllIntervals();
+      };
     } else {
+      clearAllIntervals();
       backdropOpacity.value = withTiming(0, { duration: 200 });
       containerScale.value = withTiming(0.8, { duration: 200 });
       setFinalSelection(null);
       setShowSparkles(false);
       iconRotation.value = 0;
     }
-  }, [visible, startShuffle]);
+  }, [visible, startShuffle, clearAllIntervals]);
 
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: backdropOpacity.value,
@@ -486,6 +478,8 @@ const ShuffleModal: React.FC<ShuffleModalProps> = ({
               <Pressable
                 onPress={() => onComplete(finalSelection.chapter, finalSelection.verse)}
                 style={[styles.goButton, { backgroundColor: colors.primary }]}
+                accessibilityLabel="Open verse"
+                accessibilityRole="button"
               >
                 <Ionicons name="book-outline" size={20} color={colors.onPrimary} />
                 <Text style={[styles.goButtonText, { color: colors.onPrimary }]}>
@@ -518,6 +512,8 @@ const ShuffleModal: React.FC<ShuffleModalProps> = ({
             <Pressable
               onPress={startShuffle}
               style={[styles.shuffleAgain, { borderColor: colors.outline, backgroundColor: colors.surface }]}
+              accessibilityLabel="Try another random verse"
+              accessibilityRole="button"
             >
               <Ionicons name="shuffle" size={18} color={colors.primary} />
               <Text style={[styles.shuffleAgainText, { color: colors.text }]}>
@@ -531,6 +527,8 @@ const ShuffleModal: React.FC<ShuffleModalProps> = ({
         <Pressable
           style={[styles.closeButton, { backgroundColor: colors.surface + "CC" }]}
           onPress={onClose}
+          accessibilityLabel="Close"
+          accessibilityRole="button"
         >
           <Ionicons name="close" size={22} color={colors.text} />
         </Pressable>

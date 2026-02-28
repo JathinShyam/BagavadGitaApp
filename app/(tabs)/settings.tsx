@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useFocusEffect } from "expo-router";
 import {
   View,
   ScrollView,
@@ -7,6 +8,7 @@ import {
   Switch,
   Linking,
   Alert,
+  Platform,
 } from "react-native";
 import { Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -15,10 +17,19 @@ import Animated, { FadeInUp } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { Spacing, Radius } from "../theme";
+import { Spacing, Radius, Palette } from "../theme";
 import { useTheme } from "../context/ThemeContext";
 import { useAppTheme } from "../hooks/useAppTheme";
 import { useReadingProgress } from "../hooks/useReadingProgress";
+import {
+  getStoredPreferences,
+  setStoredPreferences,
+  requestNotificationPermissions,
+  scheduleNextDailyVerseNotification,
+  cancelDailyVerseNotifications,
+} from "@/lib/dailyVerseNotifications";
+import { APP_URLS } from "@/constants/appUrls";
+import { STORAGE_KEYS } from "@/constants/storageKeys";
 
 interface SettingItemProps {
   title: string;
@@ -29,7 +40,8 @@ interface SettingItemProps {
   delay?: number;
 }
 
-const SettingItem: React.FC<SettingItemProps & { colors: any }> = ({
+type ThemeColors = typeof Palette.light;
+const SettingItem: React.FC<SettingItemProps & { colors: ThemeColors }> = ({
   title,
   subtitle,
   icon,
@@ -42,7 +54,7 @@ const SettingItem: React.FC<SettingItemProps & { colors: any }> = ({
     <Pressable
       style={[styles.settingItem, { borderBottomColor: colors.outline }]}
       onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        if (onPress) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         onPress?.();
       }}
     >
@@ -77,23 +89,95 @@ export default function SettingsScreen() {
   const { theme, toggleTheme } = useTheme();
   const { colors } = useAppTheme();
   const { CHAPTER_VERSES, resetChapterProgress, getTotalProgress } = useReadingProgress();
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [autoPlayAudio, setAutoPlayAudio] = useState(false);
+  const [notificationsLoading, setNotificationsLoading] = useState(true);
+
+  const loadNotificationPreference = useCallback(async () => {
+    const { enabled } = await getStoredPreferences();
+    setNotificationsEnabled(enabled);
+    setNotificationsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    loadNotificationPreference();
+  }, [loadNotificationPreference]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadNotificationPreference();
+    }, [loadNotificationPreference])
+  );
+
+  const loadAutoPlayPreference = useCallback(async () => {
+    try {
+      const value = await AsyncStorage.getItem(STORAGE_KEYS.AUTO_PLAY_AUDIO);
+      setAutoPlayAudio(value === "true");
+    } catch {
+      setAutoPlayAudio(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAutoPlayPreference();
+  }, [loadAutoPlayPreference]);
+
+  const handleNotificationsToggle = useCallback(async () => {
+    if (Platform.OS === "web") {
+      setNotificationsEnabled((v) => !v);
+      return;
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const nextEnabled = !notificationsEnabled;
+    if (nextEnabled) {
+      const granted = await requestNotificationPermissions();
+      if (!granted) {
+        Alert.alert(
+          "Notifications disabled",
+          "Enable notifications in system settings to receive daily verse reminders."
+        );
+        return;
+      }
+      try {
+        await setStoredPreferences(true);
+        setNotificationsEnabled(true);
+        await scheduleNextDailyVerseNotification();
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } catch {
+        Alert.alert(
+          "Could not enable",
+          "Something went wrong. Please try again."
+        );
+      }
+    } else {
+      try {
+        await setStoredPreferences(false);
+        setNotificationsEnabled(false);
+        await cancelDailyVerseNotifications();
+      } catch {
+        Alert.alert(
+          "Could not disable",
+          "Something went wrong. Please try again."
+        );
+      }
+    }
+  }, [notificationsEnabled]);
 
   const handleThemeToggle = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     toggleTheme();
   };
 
-  const handleNotificationsToggle = () => {
+  const handleAutoPlayToggle = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setNotificationsEnabled(!notificationsEnabled);
-  };
-
-  const handleAutoPlayToggle = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setAutoPlayAudio(!autoPlayAudio);
-  };
+    const next = !autoPlayAudio;
+    setAutoPlayAudio(next);
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.AUTO_PLAY_AUDIO, next ? "true" : "false");
+    } catch {
+      setAutoPlayAudio(!next);
+    }
+  }, [autoPlayAudio]);
 
   const handleResetProgress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -121,17 +205,9 @@ export default function SettingsScreen() {
     );
   };
 
-  const openGitHub = () => {
-    Linking.openURL("https://github.com/yourusername/bhagavad-gita-app");
-  };
-
-  const openPrivacyPolicy = () => {
-    Linking.openURL("https://yourwebsite.com/privacy");
-  };
-
-  const openTermsOfService = () => {
-    Linking.openURL("https://yourwebsite.com/terms");
-  };
+  const openGitHub = () => Linking.openURL(APP_URLS.github);
+  const openPrivacyPolicy = () => Linking.openURL(APP_URLS.privacyPolicy);
+  const openTermsOfService = () => Linking.openURL(APP_URLS.termsOfService);
 
   return (
     <SafeAreaView
@@ -205,6 +281,7 @@ export default function SettingsScreen() {
                 <Switch
                   value={notificationsEnabled}
                   onValueChange={handleNotificationsToggle}
+                  disabled={notificationsLoading}
                   trackColor={{
                     false: colors.outline,
                     true: colors.primary,
@@ -354,7 +431,7 @@ export default function SettingsScreen() {
           <Text style={[styles.aboutDescription, { color: colors.text }]}>
             This app provides the complete text of the Bhagavad Gita in Telugu
             with English translations, word meanings, and detailed commentaries.
-            It's designed to help you study and understand this ancient wisdom
+            It&apos;s designed to help you study and understand this ancient wisdom
             in a modern, accessible format.
           </Text>
           <Text style={[styles.aboutFooter, { color: colors.textMuted }]}>

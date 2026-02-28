@@ -43,6 +43,7 @@ import { versestyles } from "../styles";
 import { useAppTheme } from "../hooks/useAppTheme";
 import { useReadingProgress } from "../hooks/useReadingProgress";
 import { useToast } from "../../components/Toast";
+import { STORAGE_KEYS } from "@/constants/storageKeys";
 import CelebrationModal from "../../components/CelebrationModal";
 import { SkeletonVerseDetail } from "../../components/SkeletonLoader";
 import { VerseAudioPlayer } from "../../components/VerseAudioPlayer";
@@ -72,29 +73,7 @@ const getVerseData = (id: string) => {
 };
 
 import { audioMappings } from "./audiomapper";
-
-// Verse sequence map for each chapter - accounts for combined verses
-// This maps each chapter to an ordered array of verse identifiers
-const VERSE_SEQUENCES: { [chapter: number]: string[] } = {
-  1: ["1", "2", "3", "4-6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16-18", "19", "20", "21-22", "23", "24", "25", "26", "27", "28", "29-31", "32-33", "34-35", "36-37", "38-39", "40", "41", "42", "43", "44", "45-46", "47"],
-  2: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42-43", "44", "45", "46", "47", "48", "49", "50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "64", "65", "66", "67", "68", "69", "70", "71", "72"],
-  3: ["1-2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20-21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43"],
-  4: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29-30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42"],
-  5: ["1", "2", "3", "4", "5", "6", "7", "8-9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27-28", "29"],
-  6: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12-13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24-25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41-42", "43", "44", "45", "46", "47"],
-  7: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30"],
-  8: ["1-2", "3", "4", "5", "6", "7", "8", "9-10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23-26", "27", "28"],
-  9: ["1", "2", "3", "4", "5", "6", "7-8", "9", "10", "11", "12", "13", "14", "15", "16-17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34"],
-  10: ["1", "2", "3", "4-5", "6", "7", "8", "9", "10", "11", "12-13", "14", "15", "16-17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42"],
-  11: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10-11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26-27", "28-29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41-42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52-53", "54", "55"],
-  12: ["1", "2", "3-4", "5", "6-7", "8", "9", "10", "11", "12", "13-14", "15", "16", "17", "18-19", "20"],
-  13: ["1", "2", "3", "4", "5", "6", "7", "8-12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35"],
-  14: ["1", "2", "3-4", "5", "6", "7", "8", "9", "10", "11-13", "14-15", "16", "17", "18", "19", "20", "21", "22-23", "24-25", "26", "27"],
-  15: ["1", "2", "3-4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"],
-  16: ["1-3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13-15", "16", "17", "18", "19-20", "21", "22", "23", "24"],
-  17: ["1", "2", "3", "4", "5-6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26-27", "28"],
-  18: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15-16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51-53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "64", "65", "66", "67", "68", "69", "70", "71", "72", "73", "74", "75", "76", "77", "78"],
-};
+import { VERSE_SEQUENCES } from "@/constants/verseSequences";
 
 // Helper function to find the next/previous verse in sequence
 const getAdjacentVerse = (chapterId: number, currentVerse: string, direction: 1 | -1): string | null => {
@@ -142,9 +121,11 @@ export const getAudioFile = (chapter: string, verseNumber: string): any => {
 export default function VerseScreen() {
   const { id } = useLocalSearchParams();
   const { colors } = useAppTheme();
-  const verse = getVerseData(id as string);
+  const idStr = Array.isArray(id) ? id[0] : id;
+  const verse = getVerseData(idStr ?? "");
   const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [autoPlayAudio, setAutoPlayAudio] = useState(false);
   const router = useRouter();
   const [showCelebration, setShowCelebration] = useState(false);
   
@@ -169,7 +150,14 @@ export default function VerseScreen() {
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 300);
     return () => clearTimeout(timer);
-  }, [id]);
+  }, [idStr]);
+
+  // Load auto-play preference
+  useEffect(() => {
+    AsyncStorage.getItem(STORAGE_KEYS.AUTO_PLAY_AUDIO).then((value) => {
+      setAutoPlayAudio(value === "true");
+    }).catch(() => setAutoPlayAudio(false));
+  }, []);
 
   // Mark verse as read when viewed
   useEffect(() => {
@@ -182,7 +170,7 @@ export default function VerseScreen() {
       };
       trackReading();
     }
-  }, [verse?.id, isLoading]);
+  }, [verse?.id, isLoading, markVerseAsRead, isLastVerseInChapter]);
 
   // Track \"last read\" location for resume feature
   useEffect(() => {
@@ -251,8 +239,10 @@ export default function VerseScreen() {
     }
   }, [verse, isSaved, showToast]);
 
-  const copyToClipboard = useCallback(async (text: string, label: string) => {
-    await Clipboard.setStringAsync(text);
+  const copyToClipboard = useCallback(async (text: string | undefined, label: string) => {
+    const value = text ?? "";
+    if (!value) return;
+    await Clipboard.setStringAsync(value);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     showToast(`${label} copied to clipboard`, "success", "copy");
   }, [showToast]);
@@ -329,8 +319,8 @@ export default function VerseScreen() {
 
   if (!verse) {
     return (
-      <SafeAreaView style={versestyles.container}>
-        <Text>Verse not found</Text>
+      <SafeAreaView style={[versestyles.container, { backgroundColor: colors.background }]}>
+        <Text style={{ color: colors.text }}>Verse not found</Text>
       </SafeAreaView>
     );
   }
@@ -363,7 +353,12 @@ export default function VerseScreen() {
             ? `Chapter ${verse.chapter}, Verse ${verse.verse_number}`
             : "Verse Not Found",
           headerRight: () => (
-            <Pressable onPress={toggleSave} style={versestyles.saveButton}>
+            <Pressable
+              onPress={toggleSave}
+              style={versestyles.saveButton}
+              accessibilityLabel={isSaved ? "Remove from saved" : "Save verse"}
+              accessibilityRole="button"
+            >
               <Animated.View style={bookmarkAnimatedStyle}>
                 <Ionicons
                   name={isSaved ? "bookmark" : "bookmark-outline"}
@@ -410,6 +405,7 @@ export default function VerseScreen() {
                     primaryColor={colors.primary}
                     textMutedColor={colors.textMuted}
                     outlineColor={colors.outline}
+                    autoPlay={autoPlayAudio}
                   />
                 )}
                 <Text style={[localStyles.hintText, { color: colors.textMuted }]}>
@@ -429,7 +425,7 @@ export default function VerseScreen() {
               <Text style={[versestyles.sectionTitle, { color: colors.primary }]}>
                 Word Meanings
               </Text>
-              {verse.word_meanings.map((item, index) => (
+              {(verse.word_meanings ?? []).map((item, index) => (
                 <View
                   key={index}
                   style={[
@@ -450,7 +446,7 @@ export default function VerseScreen() {
             </Animated.View>
 
             {/* Meaning Section with long press to copy */}
-            <GestureDetector gesture={createLongPressGesture(verse.meaning, "Meaning")}>
+            <GestureDetector gesture={createLongPressGesture(verse.meaning ?? "", "Meaning")}>
               <Animated.View
                 entering={FadeIn.delay(300)}
                 style={[
@@ -468,7 +464,7 @@ export default function VerseScreen() {
             </GestureDetector>
 
             {/* Commentary Section with long press to copy */}
-            <GestureDetector gesture={createLongPressGesture(verse.commentary, "Commentary")}>
+            <GestureDetector gesture={createLongPressGesture(verse.commentary ?? "", "Commentary")}>
               <Animated.View
                 entering={FadeIn.delay(400)}
                 style={[

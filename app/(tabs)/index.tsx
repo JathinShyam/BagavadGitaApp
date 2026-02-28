@@ -23,7 +23,7 @@ import { Text } from "react-native-paper";
 import { Link, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Ionicons } from "@expo/vector-icons";
 
 import { indexstyles } from "../styles";
@@ -175,16 +175,29 @@ export default function HomeScreen() {
     );
   }, []);
 
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+  }, []);
+
   const onRefresh = useCallback(() => {
+    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     setRefreshing(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // For now just end the refresh after a short delay
-    setTimeout(() => setRefreshing(false), 800);
+    refreshTimerRef.current = setTimeout(() => {
+      setRefreshing(false);
+      refreshTimerRef.current = null;
+    }, 800);
+  }, []);
+
+  const shuffleModalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (shuffleModalTimerRef.current) clearTimeout(shuffleModalTimerRef.current);
   }, []);
 
   const openShuffleModal = useCallback(() => {
+    if (shuffleModalTimerRef.current) clearTimeout(shuffleModalTimerRef.current);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // Animate FAB before opening modal
     fabScale.value = withSequence(
       withTiming(0.85, { duration: 100 }),
       withTiming(1.1, { duration: 150 }),
@@ -194,10 +207,10 @@ export default function HomeScreen() {
       withTiming(180, { duration: 300 }),
       withTiming(360, { duration: 300 })
     );
-    
-    setTimeout(() => {
+    shuffleModalTimerRef.current = setTimeout(() => {
       setShowShuffleModal(true);
       fabRotate.value = 0;
+      shuffleModalTimerRef.current = null;
     }, 200);
   }, []);
 
@@ -237,7 +250,7 @@ export default function HomeScreen() {
 
   const totalProgress = getTotalProgress();
 
-  const renderChapterCard = (
+  const renderChapterCard = useCallback((
     chapter: { id: number; telugu_name: string; verses: number; image: any },
     idx?: number
   ) => (
@@ -335,9 +348,9 @@ export default function HomeScreen() {
         </Animated.View>
       </Pressable>
     </Link>
-  );
+  ), [colors, getChapterProgress]);
 
-  const renderPair = ({ item, index }: { item: any[]; index: number }) => (
+  const renderPair = useCallback(({ item, index }: { item: any[]; index: number }) => (
     <View style={indexstyles.shelfRow}>
       {item.map(
         (
@@ -352,9 +365,9 @@ export default function HomeScreen() {
       )}
       {item.length === 1 && <View style={indexstyles.emptySlot} />}
     </View>
-  );
+  ), [renderChapterCard]);
 
-  const ListHeader = () => (
+  const ListHeader = useCallback(() => (
     <View style={indexstyles.header}>
       <Text style={[indexstyles.title, { color: colors.primary }]}>
         భగవద్గీత
@@ -373,7 +386,7 @@ export default function HomeScreen() {
         </Text>
       </View>
     </View>
-  );
+  ), [colors, totalProgress, streak]);
 
   return (
     <SafeAreaView
@@ -402,6 +415,8 @@ export default function HomeScreen() {
           <Pressable
             onPress={() => router.push(`/verse/${lastReadVerseId}`)}
             style={[fabStyles.continueFab, { backgroundColor: colors.primary }]}
+            accessibilityLabel="Continue reading"
+            accessibilityRole="button"
           >
             <Ionicons name="book" size={18} color={colors.onPrimary} />
             <Text style={[fabStyles.fabLabel, { color: colors.onPrimary }]}>
@@ -413,6 +428,8 @@ export default function HomeScreen() {
           <Pressable
             onPress={openShuffleModal}
             style={[fabStyles.fab, { backgroundColor: colors.primary }]}
+            accessibilityLabel="Surprise me with a random verse"
+            accessibilityRole="button"
           >
             <View style={fabStyles.fabContent}>
               <Ionicons name="sparkles" size={22} color={colors.onPrimary} />

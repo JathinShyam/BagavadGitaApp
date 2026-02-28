@@ -209,7 +209,7 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
         </Text>
 
         <Text style={[styles.subtitle, { color: colors.text }]}>
-          You've completed
+          You&apos;ve completed
         </Text>
 
         <Text style={[styles.chapterText, { color: colors.text }]}>

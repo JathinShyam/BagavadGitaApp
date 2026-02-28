@@ -16,10 +16,10 @@ import { SkeletonVerseCard } from "../../components/SkeletonLoader";
 interface SavedVerse {
   id: string;
   chapter: number;
-  verse_number: number;
-  sanskrit: string;
-  translation: string;
+  verse_number: string; // e.g. "1", "1-3", "13-14" for combined verses
   teluguSloka: string;
+  meaning?: string;
+  commentary?: string;
 }
 
 export default function SavedScreen() {
@@ -61,7 +61,7 @@ export default function SavedScreen() {
             { backgroundColor: colors.surface, borderColor: colors.outline },
           ]}
         >
-          <Link href={`/verse/${item.chapter}-${item.verse_number}`} asChild>
+          <Link href={`/verse/${item.id}`} asChild>
             <Pressable style={{ flex: 1 }}>
               <View style={savedstyles.cardContent}>
                 <Text
