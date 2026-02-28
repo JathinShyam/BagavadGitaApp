@@ -35,6 +35,10 @@ npm run reset-project
 
 This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
 
+## Troubleshooting
+
+- **Worklets version mismatch error:** See [docs/UPGRADE-NATIVE.md](docs/UPGRADE-NATIVE.md) for root cause and fix. After SDK upgrades, you may need to rebuild the development client.
+
 ## Learn more
 
 To learn more about developing your project with Expo, look at the following resources:

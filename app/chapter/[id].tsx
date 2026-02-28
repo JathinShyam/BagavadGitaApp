@@ -28,8 +28,9 @@ import { chapter17 } from "../verse/chapter17";
 import { chapter18 } from "../verse/chapter18";
 
 // Styles
-import { chapterstyles } from "../styles";
 import { useAppTheme } from "../hooks/useAppTheme";
+import { useReadingProgress } from "../hooks/useReadingProgress";
+import { chapterstyles } from "../styles";
 
 // This would eventually come from your data source
 const getChapterData = (id: string) => {
@@ -180,13 +181,17 @@ const getChapterData = (id: string) => {
     },
   ];
 
-  return chapters.find((chapter) => chapter.id === parseInt(id));
+  const chapterId = parseInt(id, 10);
+  if (Number.isNaN(chapterId)) return undefined;
+  return chapters.find((chapter) => chapter.id === chapterId);
 };
 
 export default function ChapterScreen() {
   const { id } = useLocalSearchParams();
   const { colors } = useAppTheme();
-  const chapter = getChapterData(id as string);
+  const idStr = Array.isArray(id) ? id[0] : id;
+  const chapter = getChapterData(idStr ?? "");
+  const { isVerseRead } = useReadingProgress();
 
   const renderVerse = ({
     item,
@@ -225,6 +230,28 @@ export default function ChapterScreen() {
               >
                 Verse {item.verse_number}
               </Text>
+              {isVerseRead(chapter.id, item.verse_number) && (
+                <View
+                  style={[
+                    chapterstyles.readBadge,
+                    { borderColor: colors.primary + "55" },
+                  ]}
+                >
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={14}
+                    color={colors.primary}
+                  />
+                  <Text
+                    style={[
+                      chapterstyles.readBadgeText,
+                      { color: colors.primary },
+                    ]}
+                  >
+                    Read
+                  </Text>
+                </View>
+              )}
               {/* <Text style={chapterstyles.sanskritText}>{item.sanskrit}</Text> */}
               <Text style={[chapterstyles.teluguSloka, { color: colors.text }]}>
                 {item.teluguSloka}

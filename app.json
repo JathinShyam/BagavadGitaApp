@@ -40,7 +40,14 @@
         {
           "launchMode": "most-recent"
         }
-      ]
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false
+        }
+      ],
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true
