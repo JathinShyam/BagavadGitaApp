@@ -88,7 +88,7 @@ export const CATEGORIES: Category[] = [
   {
     id: "laziness",
     name: "Laziness",
-    verses: ["3-8", "3-20", "6-16", "18-39"],
+    verses: ["3-8", "3-20-21", "6-16", "18-39"],
     gradient: ["#E65100", "#FFB74D"],
     icon: "bed",
   },
@@ -109,7 +109,7 @@ export const CATEGORIES: Category[] = [
   {
     id: "confusion",
     name: "Confusion",
-    verses: ["2-7", "3-2", "18-61"],
+    verses: ["2-7", "3-1-2", "18-61"],
     gradient: ["#303F9F", "#7986CB"],
     icon: "help-circle",
   },

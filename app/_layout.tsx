@@ -26,7 +26,9 @@ import { ThemeProvider as AppThemeProvider } from "./context/ThemeContext";
 import { ToastProvider } from "../components/Toast";
 import { ReadingProgressProvider } from "./hooks/useReadingProgress";
 import { ErrorBoundary } from "../components/ErrorBoundary";
+import { getVerseForDate } from "@/lib/dailyVerse";
 import { scheduleNextDailyVerseNotification } from "@/lib/dailyVerseNotifications";
+import { shouldLoadExpoNotifications } from "@/lib/notificationsAvailability";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -80,8 +82,10 @@ export default function RootLayout() {
     return () => sub.remove();
   }, []);
 
-  // Setup expo-notifications (lazy load to avoid crash in Expo Go where it's unsupported)
+  // Setup expo-notifications (skip require on Expo Go Android — module throws on load in SDK 53+)
   useEffect(() => {
+    if (!shouldLoadExpoNotifications()) return;
+
     let Notifications: typeof import("expo-notifications") | null = null;
     try {
       Notifications = require("expo-notifications");
@@ -101,16 +105,28 @@ export default function RootLayout() {
 
     const lastProcessedIdRef = { current: "" };
 
-    const handleNotificationResponse = (data: { verseId?: string } | undefined, responseId: string) => {
-      if (!data?.verseId) return;
+    type NotificationPayload = {
+      verseId?: string;
+      screen?: string;
+    };
+
+    const handleNotificationResponse = (data: NotificationPayload | undefined, responseId: string) => {
       const id = responseId || `fallback-${Date.now()}`;
       if (id === lastProcessedIdRef.current) return;
       lastProcessedIdRef.current = id;
-      router.push(`/verse/${data.verseId}`);
+
+      if (data?.screen === "daily-verse") {
+        const verse = getVerseForDate(new Date());
+        if (verse) router.push(`/verse/${verse.id}`);
+        return;
+      }
+      if (data?.verseId) {
+        router.push(`/verse/${data.verseId}`);
+      }
     };
 
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const data = response.notification.request.content.data as { verseId?: string } | undefined;
+      const data = response.notification.request.content.data as NotificationPayload | undefined;
       const id = response.notification.request.identifier ?? "";
       handleNotificationResponse(data, id);
     });
@@ -118,7 +134,7 @@ export default function RootLayout() {
     // Handle app launched from notification tap (when app was killed)
     Notifications.getLastNotificationResponseAsync().then((response) => {
       if (!response?.notification.request.content.data) return;
-      const data = response.notification.request.content.data as { verseId?: string };
+      const data = response.notification.request.content.data as NotificationPayload;
       const id = response.notification.request.identifier ?? "";
       handleNotificationResponse(data, id);
     });
