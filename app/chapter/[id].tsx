@@ -1,11 +1,13 @@
 // app/chapter/[id].tsx
 
-import { View, FlatList, StyleSheet, Pressable } from "react-native";
+import { View, FlatList, StyleSheet, Pressable, ImageBackground, Image, Dimensions } from "react-native";
 import { Text } from "react-native-paper";
 import { useLocalSearchParams, Link, Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { LinearGradient } from "expo-linear-gradient";
 
 // Chapters
 import { chapter1 } from "../verse/chapter1";
@@ -186,12 +188,58 @@ const getChapterData = (id: string) => {
   return chapters.find((chapter) => chapter.id === chapterId);
 };
 
+const chapterImages: Record<number, any> = {
+  1: require("../../assets/images/chapter1.png"),
+  2: require("../../assets/images/chapter2.png"),
+  3: require("../../assets/images/chapter3.png"),
+  4: require("../../assets/images/chapter4.png"),
+  5: require("../../assets/images/chapter5.png"),
+  6: require("../../assets/images/chapter6.png"),
+  7: require("../../assets/images/chapter7.png"),
+  8: require("../../assets/images/chapter8.png"),
+  9: require("../../assets/images/chapter9.png"),
+  10: require("../../assets/images/chapter10.png"),
+  11: require("../../assets/images/chapter11.png"),
+  12: require("../../assets/images/chapter12.png"),
+  13: require("../../assets/images/chapter13.png"),
+  14: require("../../assets/images/chapter14.png"),
+  15: require("../../assets/images/chapter15.png"),
+  16: require("../../assets/images/chapter16.png"),
+  17: require("../../assets/images/chapter17.png"),
+  18: require("../../assets/images/chapter18.png"),
+};
+
+const SCREEN_WIDTH = Dimensions.get("window").width;
+
 export default function ChapterScreen() {
   const { id } = useLocalSearchParams();
   const { colors } = useAppTheme();
   const idStr = Array.isArray(id) ? id[0] : id;
   const chapter = getChapterData(idStr ?? "");
-  const { isVerseRead } = useReadingProgress();
+  const { isVerseRead, getChapterProgress, isChapterComplete } = useReadingProgress();
+  const [isContextExpanded, setIsContextExpanded] = useState(false);
+  const listRef = useRef<FlatList<any> | null>(null);
+
+  const heroHeight = useMemo(() => {
+    if (!chapter) return 240;
+    const source = Image.resolveAssetSource(chapterImages[chapter.id]);
+    if (!source?.width || !source?.height) return 240;
+    return Math.round(SCREEN_WIDTH * (source.height / source.width));
+  }, [chapter?.id]);
+
+  const jumpToVerses = useCallback(() => {
+    listRef.current?.scrollToIndex({ index: 0, animated: true, viewPosition: 0 });
+  }, []);
+
+  const chapterProgress = useMemo(() => {
+    if (!chapter) return 0;
+    return getChapterProgress(chapter.id);
+  }, [chapter, getChapterProgress]);
+
+  const chapterDone = useMemo(() => {
+    if (!chapter) return false;
+    return isChapterComplete(chapter.id);
+  }, [chapter, isChapterComplete]);
 
   const renderVerse = ({
     item,
@@ -207,56 +255,83 @@ export default function ChapterScreen() {
     };
   }) => {
     if (!chapter) return null;
+    const read = isVerseRead(chapter.id, item.verse_number);
     return (
       <View
         style={[
           chapterstyles.verseCard,
           {
-            backgroundColor: colors.surface,
-            borderColor: colors.outline,
+            backgroundColor: read ? colors.surfaceElevated : colors.surface,
+            borderColor: read ? colors.primary + "45" : colors.outline,
           },
         ]}
       >
         <Link href={`/verse/${chapter.id}-${item.verse_number}`} asChild>
           <Pressable
-            style={{ flex: 1 }}
+            style={({ pressed }) => [
+              { flex: 1 },
+              pressed && { transform: [{ scale: 0.985 }], opacity: 0.96 },
+            ]}
             onPressIn={() =>
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
             }
+            accessibilityRole="button"
+            accessibilityLabel={`Open verse ${item.verse_number}`}
           >
             <View style={chapterstyles.verseContent}>
-              <Text
-                style={[chapterstyles.verseNumber, { color: colors.primary }]}
-              >
-                Verse {item.verse_number}
-              </Text>
-              {isVerseRead(chapter.id, item.verse_number) && (
-                <View
-                  style={[
-                    chapterstyles.readBadge,
-                    { borderColor: colors.primary + "55" },
-                  ]}
+              <View style={chapterstyles.verseHeaderRow}>
+                <Text
+                  style={[chapterstyles.verseNumber, { color: colors.primary }]}
                 >
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={14}
-                    color={colors.primary}
-                  />
-                  <Text
+                  Verse {item.verse_number}
+                </Text>
+                {read && (
+                  <View
                     style={[
-                      chapterstyles.readBadgeText,
-                      { color: colors.primary },
+                      chapterstyles.readBadge,
+                      {
+                        borderColor: colors.primary + "45",
+                        backgroundColor: colors.primary + "14",
+                      },
                     ]}
                   >
-                    Read
-                  </Text>
-                </View>
-              )}
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={12}
+                      color={colors.primary}
+                    />
+                    <Text
+                      style={[
+                        chapterstyles.readBadgeText,
+                        { color: colors.primary },
+                      ]}
+                    >
+                      Read
+                    </Text>
+                  </View>
+                )}
+              </View>
               {/* <Text style={chapterstyles.sanskritText}>{item.sanskrit}</Text> */}
               <Text style={[chapterstyles.teluguSloka, { color: colors.text }]}>
                 {item.teluguSloka}
               </Text>
               {/* <Text style={chapterstyles.translation}>{item.translation}</Text> */}
+              <View
+                style={[
+                  chapterstyles.openVerseHintRow,
+                  { borderTopColor: colors.outline + "66" },
+                ]}
+              >
+                <Text
+                  style={[
+                    chapterstyles.openVerseHintText,
+                    { color: colors.textMuted },
+                  ]}
+                >
+                  Open
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              </View>
             </View>
           </Pressable>
         </Link>
@@ -275,13 +350,16 @@ export default function ChapterScreen() {
   return (
     <SafeAreaView
       style={[chapterstyles.container, { backgroundColor: colors.background }]}
+      edges={["bottom"]}
     >
       <Stack.Screen
         options={{
           headerTitle: `Chapter ${chapter.id}`,
           headerShown: true,
+          headerBackTitleVisible: false,
           headerStyle: {
             backgroundColor: colors.background,
+            height: 44,
           },
           headerTintColor: colors.text,
           headerTitleStyle: {
@@ -294,23 +372,48 @@ export default function ChapterScreen() {
       />
 
       <FlatList
+        ref={listRef}
         data={chapter.verses}
         renderItem={renderVerse}
         keyExtractor={(item) => item.verse_number.toString()}
         contentContainerStyle={chapterstyles.listContainer}
+        onScrollToIndexFailed={() => {
+          listRef.current?.scrollToOffset({ offset: 0, animated: true });
+        }}
         ListHeaderComponent={
           <View>
             <View style={chapterstyles.header}>
-              <Text
-                style={[chapterstyles.chapterName, { color: colors.textMuted }]}
-              >
-                {chapter.chapter_number}
-              </Text>
-              <Text
-                style={[chapterstyles.sanskritName, { color: colors.primary }]}
-              >
-                {chapter.yogam_name}
-              </Text>
+              <View style={[chapterPageStyles.heroImage, { height: heroHeight }]}>
+                <ImageBackground
+                  source={chapterImages[chapter.id]}
+                  style={[chapterPageStyles.heroImage, { height: heroHeight }]}
+                  imageStyle={chapterPageStyles.heroImageStyle}
+                />
+                <LinearGradient
+                  colors={[colors.background, "transparent"]}
+                  start={{ x: 0.5, y: 0 }}
+                  end={{ x: 0.5, y: 1 }}
+                  style={chapterPageStyles.heroTopFade}
+                />
+                <LinearGradient
+                  colors={["transparent", colors.background]}
+                  start={{ x: 0.5, y: 0 }}
+                  end={{ x: 0.5, y: 1 }}
+                  style={chapterPageStyles.heroBottomFade}
+                />
+                <View style={chapterPageStyles.heroContent}>
+                  <Text
+                    style={[chapterPageStyles.heroChapterNumber, { color: "#FFFFFFE0" }]}
+                  >
+                    {chapter.chapter_number}
+                  </Text>
+                  <Text
+                    style={[chapterPageStyles.heroTitle, { color: "#FFFFFF" }]}
+                  >
+                    {chapter.yogam_name}
+                  </Text>
+                </View>
+              </View>
             </View>
             <View
               style={[
@@ -323,9 +426,108 @@ export default function ChapterScreen() {
             >
               <Text
                 style={[chapterstyles.descriptionText, { color: colors.text }]}
+                numberOfLines={isContextExpanded ? undefined : 5}
               >
                 {chapter.description}
               </Text>
+              <View style={chapterPageStyles.contextActions}>
+                <Pressable
+                  onPress={() => setIsContextExpanded((v) => !v)}
+                  style={[
+                    chapterPageStyles.contextActionBtn,
+                    { borderColor: colors.primary + "55", backgroundColor: colors.primary + "12" },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      chapterPageStyles.contextActionText,
+                      { color: colors.primary },
+                    ]}
+                  >
+                    {isContextExpanded ? "Show less" : "Read full context"}
+                  </Text>
+                  <Ionicons
+                    name={isContextExpanded ? "chevron-up" : "chevron-down"}
+                    size={14}
+                    color={colors.primary}
+                  />
+                </Pressable>
+                {isContextExpanded && (
+                  <Pressable
+                    onPress={jumpToVerses}
+                    style={[
+                      chapterPageStyles.contextActionBtn,
+                      { borderColor: colors.outline, backgroundColor: colors.surfaceElevated },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        chapterPageStyles.contextActionText,
+                        { color: colors.textMuted },
+                      ]}
+                    >
+                      Jump to verses
+                    </Text>
+                    <Ionicons name="arrow-down" size={14} color={colors.textMuted} />
+                  </Pressable>
+                )}
+              </View>
+            </View>
+            <View
+              style={[
+                chapterPageStyles.progressCard,
+                {
+                  borderColor: chapterDone ? colors.primary + "44" : colors.outline,
+                  backgroundColor: chapterDone ? colors.primary + "10" : colors.surfaceElevated,
+                },
+              ]}
+            >
+              <View style={chapterPageStyles.progressTopRow}>
+                <Text style={[chapterPageStyles.progressLabel, { color: colors.textMuted }]}>
+                  Chapter progress
+                </Text>
+                <View
+                  style={[
+                    chapterPageStyles.progressChip,
+                    {
+                      borderColor: chapterDone ? colors.primary + "55" : colors.outline,
+                      backgroundColor: chapterDone ? colors.primary + "14" : colors.surface,
+                    },
+                  ]}
+                >
+                  {chapterDone && (
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={12}
+                      color={colors.primary}
+                    />
+                  )}
+                  <Text
+                    style={[
+                      chapterPageStyles.progressChipText,
+                      { color: chapterDone ? colors.primary : colors.text },
+                    ]}
+                  >
+                    {chapterDone ? "Completed" : `${chapterProgress}%`}
+                  </Text>
+                </View>
+              </View>
+              <View
+                style={[
+                  chapterPageStyles.progressTrack,
+                  { backgroundColor: colors.outline + "44" },
+                ]}
+              >
+                <View
+                  style={[
+                    chapterPageStyles.progressFill,
+                    {
+                      backgroundColor: colors.primary,
+                      width: `${Math.max(0, Math.min(100, chapterProgress))}%`,
+                    },
+                  ]}
+                />
+              </View>
             </View>
           </View>
         }
@@ -333,3 +535,107 @@ export default function ChapterScreen() {
     </SafeAreaView>
   );
 }
+
+const chapterPageStyles = StyleSheet.create({
+  heroImage: {
+    width: SCREEN_WIDTH,
+    marginHorizontal: -16,
+    height: 240,
+    justifyContent: "flex-end",
+    overflow: "hidden",
+  },
+  heroImageStyle: {
+    borderRadius: 0,
+    resizeMode: "contain",
+  },
+  heroTopFade: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 34,
+  },
+  heroBottomFade: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 52,
+  },
+  heroContent: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  heroChapterNumber: {
+    fontSize: 10,
+    fontWeight: "600",
+    marginBottom: 1,
+  },
+  heroTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    lineHeight: 19,
+  },
+  contextActions: {
+    marginTop: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  contextActionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  contextActionText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  progressCard: {
+    marginHorizontal: 0,
+    marginTop: -4,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 12,
+    gap: 10,
+  },
+  progressTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  progressLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  progressChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  progressChipText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  progressTrack: {
+    height: 7,
+    borderRadius: 999,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    borderRadius: 999,
+  },
+});

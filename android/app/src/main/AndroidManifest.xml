@@ -32,5 +32,17 @@
         <data android:scheme="exp+bagavadgita"/>
       </intent-filter>
     </activity>
+
+    <receiver
+      android:name=".DailyVerseWidgetProvider"
+      android:exported="false">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+        <action android:name="com.jathinshyam.BagavadGita.DAILY_VERSE_WIDGET_REFRESH"/>
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/daily_verse_widget_info"/>
+    </receiver>
   </application>
 </manifest>

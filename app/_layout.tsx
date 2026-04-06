@@ -5,7 +5,7 @@ import {
 } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { AppState, AppStateStatus } from "react-native";
 import "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -29,6 +29,7 @@ import { ErrorBoundary } from "../components/ErrorBoundary";
 import { getVerseForDate } from "@/lib/dailyVerse";
 import { scheduleNextDailyVerseNotification } from "@/lib/dailyVerseNotifications";
 import { shouldLoadExpoNotifications } from "@/lib/notificationsAvailability";
+import { setWidgetVerseData } from "@/lib/widgetData";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -42,6 +43,18 @@ export default function RootLayout() {
   const [isOnboardingComplete, setIsOnboardingComplete] = useState<boolean | null>(null);
 
   const loaded = interLoaded && playfairLoaded;
+  const pendingNavigationPathRef = useRef<string | null>(null);
+
+  const isNavigationReady = loaded && isOnboardingComplete !== null;
+
+  const flushPendingNavigation = useCallback(() => {
+    if (!isNavigationReady) return;
+    if (isOnboardingComplete !== true) return;
+    const path = pendingNavigationPathRef.current;
+    if (!path) return;
+    pendingNavigationPathRef.current = null;
+    router.push(path as any);
+  }, [isNavigationReady, isOnboardingComplete]);
 
   useEffect(() => {
     const checkOnboarding = async () => {
@@ -64,11 +77,25 @@ export default function RootLayout() {
     }
   }, [loaded, isOnboardingComplete]);
 
+  useEffect(() => {
+    flushPendingNavigation();
+  }, [flushPendingNavigation]);
+
   // Reschedule daily verse notification: on app launch (cold start) and when coming from background
   const appState = useRef<AppStateStatus>(AppState.currentState);
   useEffect(() => {
     if (loaded && isOnboardingComplete !== null) {
       scheduleNextDailyVerseNotification().catch(() => {});
+      const v = getVerseForDate(new Date());
+      if (v?.id) {
+        setWidgetVerseData({
+          verseId: v.id,
+          title: `Chapter ${v.chapter} • Verse ${v.verse_number}`,
+          sloka: v.teluguSloka ?? "",
+          meaning: v.meaning ?? "",
+          updatedAt: Date.now(),
+        }).catch(() => {});
+      }
     }
   }, [loaded, isOnboardingComplete]);
 
@@ -115,13 +142,27 @@ export default function RootLayout() {
       if (id === lastProcessedIdRef.current) return;
       lastProcessedIdRef.current = id;
 
+      const navigateTo = (path: string) => {
+        // Notification taps can arrive before fonts/onboarding are resolved; queue until ready.
+        pendingNavigationPathRef.current = path;
+        flushPendingNavigation();
+      };
+
       if (data?.screen === "daily-verse") {
         const verse = getVerseForDate(new Date());
-        if (verse) router.push(`/verse/${verse.id}`);
+        if (verse) navigateTo(`/verse/${verse.id}`);
+        return;
+      }
+
+      // Fallback: repeating daily notifications might arrive without our custom `screen` field.
+      // In that case, just open today's verse.
+      if (!data?.verseId) {
+        const verse = getVerseForDate(new Date());
+        if (verse) navigateTo(`/verse/${verse.id}`);
         return;
       }
       if (data?.verseId) {
-        router.push(`/verse/${data.verseId}`);
+        navigateTo(`/verse/${data.verseId}`);
       }
     };
 

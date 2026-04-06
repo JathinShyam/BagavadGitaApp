@@ -34,6 +34,9 @@ const STORAGE_KEY_TIME = "dailyVerseNotificationTime";
 const DEFAULT_TIME = "08:00"; // 8 AM
 const ANDROID_CHANNEL_ID = "daily-verse";
 
+// Prevent overlapping schedule calls from creating duplicate notifications.
+let scheduleInFlight: Promise<void> | null = null;
+
 /** Payload for repeating daily notification — verse is resolved on open, not in tray text. */
 export const DAILY_VERSE_NOTIFICATION_DATA = {
   screen: "daily-verse" as const,
@@ -120,6 +123,11 @@ export async function cancelDailyVerseNotifications(): Promise<void> {
 export async function scheduleNextDailyVerseNotification(): Promise<void> {
   if (Platform.OS === "web") return;
 
+  if (scheduleInFlight) {
+    return scheduleInFlight;
+  }
+
+  scheduleInFlight = (async () => {
   const { enabled, time } = await getStoredPreferences();
   if (!enabled) {
     await cancelDailyVerseNotifications();
@@ -154,4 +162,11 @@ export async function scheduleNextDailyVerseNotification(): Promise<void> {
       ...(Platform.OS === "android" && { channelId: ANDROID_CHANNEL_ID }),
     },
   });
+  })();
+
+  try {
+    await scheduleInFlight;
+  } finally {
+    scheduleInFlight = null;
+  }
 }

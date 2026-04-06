@@ -9,6 +9,7 @@ import {
   Linking,
   Alert,
   Platform,
+  Modal,
 } from "react-native";
 import { Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeInUp } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 import { Spacing, Radius, Palette } from "../theme";
 import { useTheme } from "../context/ThemeContext";
@@ -90,12 +92,45 @@ export default function SettingsScreen() {
   const { colors } = useAppTheme();
   const { CHAPTER_VERSES, resetChapterProgress, getTotalProgress } = useReadingProgress();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [notificationTime, setNotificationTime] = useState("08:00");
   const [autoPlayAudio, setAutoPlayAudio] = useState(false);
   const [notificationsLoading, setNotificationsLoading] = useState(true);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [draftTime, setDraftTime] = useState<Date>(new Date());
+
+  const parseTimeToDate = useCallback((time: string) => {
+    const [h, m] = time.split(":").map(Number);
+    const d = new Date();
+    d.setHours(Number.isFinite(h) ? h : 8, Number.isFinite(m) ? m : 0, 0, 0);
+    return d;
+  }, []);
+
+  const toTimeString = useCallback((d: Date) => {
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mm = String(d.getMinutes()).padStart(2, "0");
+    return `${hh}:${mm}`;
+  }, []);
+
+  const formatDisplayTime = useCallback((time: string) => {
+    const d = parseTimeToDate(time);
+    return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  }, [parseTimeToDate]);
+
+  const getNextReminderDisplay = useCallback((time: string) => {
+    const target = parseTimeToDate(time);
+    const now = new Date();
+    if (target <= now) target.setDate(target.getDate() + 1);
+    return target.toLocaleString([], {
+      weekday: "short",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  }, [parseTimeToDate]);
 
   const loadNotificationPreference = useCallback(async () => {
-    const { enabled } = await getStoredPreferences();
+    const { enabled, time } = await getStoredPreferences();
     setNotificationsEnabled(enabled);
+    setNotificationTime(time);
     setNotificationsLoading(false);
   }, []);
 
@@ -139,7 +174,7 @@ export default function SettingsScreen() {
         return;
       }
       try {
-        await setStoredPreferences(true);
+        await setStoredPreferences(true, notificationTime);
         setNotificationsEnabled(true);
         await scheduleNextDailyVerseNotification();
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -161,12 +196,35 @@ export default function SettingsScreen() {
         );
       }
     }
-  }, [notificationsEnabled]);
+  }, [notificationsEnabled, notificationTime]);
 
   const handleThemeToggle = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     toggleTheme();
   };
+
+  const handleTimePickerChange = useCallback((_event: any, selected?: Date) => {
+    if (!selected) return;
+    setDraftTime(selected);
+  }, []);
+
+  const openTimePicker = useCallback(() => {
+    setDraftTime(parseTimeToDate(notificationTime));
+    setShowTimePicker(true);
+  }, [notificationTime, parseTimeToDate]);
+
+  const saveNotificationTime = useCallback(async () => {
+    const nextTime = toTimeString(draftTime);
+    setNotificationTime(nextTime);
+    setShowTimePicker(false);
+    try {
+      await setStoredPreferences(notificationsEnabled, nextTime);
+      await scheduleNextDailyVerseNotification();
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch {
+      // ignore — UI already updated
+    }
+  }, [draftTime, notificationsEnabled, toTimeString]);
 
   const handleAutoPlayToggle = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -205,7 +263,6 @@ export default function SettingsScreen() {
     );
   };
 
-  const openGitHub = () => Linking.openURL(APP_URLS.github);
   const openPrivacyPolicy = () => Linking.openURL(APP_URLS.privacyPolicy);
   const openTermsOfService = () => Linking.openURL(APP_URLS.termsOfService);
 
@@ -274,7 +331,11 @@ export default function SettingsScreen() {
           >
             <SettingItem
               title="Notifications"
-              subtitle="Get daily verse notifications"
+              subtitle={
+                notificationsEnabled
+                  ? `Enabled • Next: ${getNextReminderDisplay(notificationTime)}`
+                  : "Off • Enable daily verse notifications"
+              }
               icon="notifications"
               colors={colors}
               rightElement={
@@ -292,6 +353,26 @@ export default function SettingsScreen() {
                 />
               }
               delay={200}
+            />
+            <SettingItem
+              title="Notification time"
+              subtitle={`Daily at ${formatDisplayTime(notificationTime)}`}
+              icon="time"
+              colors={colors}
+              onPress={openTimePicker}
+              rightElement={
+                <View
+                  style={[
+                    styles.timeBadge,
+                    { backgroundColor: colors.primary + "15", borderColor: colors.primary + "40" },
+                  ]}
+                >
+                  <Text style={[styles.timeBadgeText, { color: colors.primary }]}>
+                    {formatDisplayTime(notificationTime)}
+                  </Text>
+                </View>
+              }
+              delay={250}
             />
             <SettingItem
               title="Auto-play Audio"
@@ -364,21 +445,6 @@ export default function SettingsScreen() {
               delay={400}
             />
             <SettingItem
-              title="Source Code"
-              subtitle="View on GitHub"
-              icon="logo-github"
-              colors={colors}
-              onPress={openGitHub}
-              rightElement={
-                <Ionicons
-                  name="chevron-forward"
-                  size={20}
-                  color={colors.textMuted}
-                />
-              }
-              delay={500}
-            />
-            <SettingItem
               title="Privacy Policy"
               subtitle="Read our privacy policy"
               icon="shield-checkmark"
@@ -391,7 +457,7 @@ export default function SettingsScreen() {
                   color={colors.textMuted}
                 />
               }
-              delay={600}
+              delay={500}
             />
             <SettingItem
               title="Terms of Service"
@@ -406,7 +472,7 @@ export default function SettingsScreen() {
                   color={colors.textMuted}
                 />
               }
-              delay={700}
+              delay={600}
             />
           </View>
         </View>
@@ -439,6 +505,58 @@ export default function SettingsScreen() {
           </Text>
         </Animated.View>
       </ScrollView>
+
+      <Modal
+        visible={showTimePicker}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowTimePicker(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View
+            style={[
+              styles.modalCard,
+              { backgroundColor: colors.surface, borderColor: colors.outline },
+            ]}
+          >
+            <Text style={[styles.modalTitle, { color: colors.text }]}>
+              Choose notification time
+            </Text>
+            <Text style={[styles.modalSubtitle, { color: colors.textMuted }]}>
+              Daily reminder at {draftTime.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+            </Text>
+
+            {Platform.OS !== "web" && (
+              <DateTimePicker
+                mode="time"
+                value={draftTime}
+                is24Hour={false}
+                display={Platform.OS === "ios" ? "spinner" : "clock"}
+                onChange={handleTimePickerChange}
+              />
+            )}
+
+            <View style={styles.modalActions}>
+              <Pressable
+                style={[styles.modalButton, { borderColor: colors.outline }]}
+                onPress={() => setShowTimePicker(false)}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.textMuted }]}>
+                  Cancel
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                onPress={saveNotificationTime}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.onPrimary }]}>
+                  Save
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -518,6 +636,54 @@ const styles = StyleSheet.create({
   settingSubtitle: {
     fontSize: 14,
     // color will be set dynamically
+  },
+  timeBadge: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+  },
+  timeBadgeText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: Spacing.lg,
+  },
+  modalCard: {
+    width: "100%",
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    padding: Spacing.lg,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: Spacing.xs,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    marginBottom: Spacing.md,
+  },
+  modalActions: {
+    marginTop: Spacing.md,
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: Spacing.sm,
+  },
+  modalButton: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+  },
+  modalButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
   aboutCard: {
     // backgroundColor and borderColor will be set dynamically
