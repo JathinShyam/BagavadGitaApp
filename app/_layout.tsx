@@ -5,7 +5,7 @@ import {
 } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { AppState, AppStateStatus } from "react-native";
 import "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -26,7 +26,10 @@ import { ThemeProvider as AppThemeProvider } from "./context/ThemeContext";
 import { ToastProvider } from "../components/Toast";
 import { ReadingProgressProvider } from "./hooks/useReadingProgress";
 import { ErrorBoundary } from "../components/ErrorBoundary";
+import { getVerseForDate } from "@/lib/dailyVerse";
 import { scheduleNextDailyVerseNotification } from "@/lib/dailyVerseNotifications";
+import { shouldLoadExpoNotifications } from "@/lib/notificationsAvailability";
+import { setWidgetVerseData } from "@/lib/widgetData";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -40,6 +43,18 @@ export default function RootLayout() {
   const [isOnboardingComplete, setIsOnboardingComplete] = useState<boolean | null>(null);
 
   const loaded = interLoaded && playfairLoaded;
+  const pendingNavigationPathRef = useRef<string | null>(null);
+
+  const isNavigationReady = loaded && isOnboardingComplete !== null;
+
+  const flushPendingNavigation = useCallback(() => {
+    if (!isNavigationReady) return;
+    if (isOnboardingComplete !== true) return;
+    const path = pendingNavigationPathRef.current;
+    if (!path) return;
+    pendingNavigationPathRef.current = null;
+    router.push(path as any);
+  }, [isNavigationReady, isOnboardingComplete]);
 
   useEffect(() => {
     const checkOnboarding = async () => {
@@ -62,11 +77,25 @@ export default function RootLayout() {
     }
   }, [loaded, isOnboardingComplete]);
 
+  useEffect(() => {
+    flushPendingNavigation();
+  }, [flushPendingNavigation]);
+
   // Reschedule daily verse notification: on app launch (cold start) and when coming from background
   const appState = useRef<AppStateStatus>(AppState.currentState);
   useEffect(() => {
     if (loaded && isOnboardingComplete !== null) {
       scheduleNextDailyVerseNotification().catch(() => {});
+      const v = getVerseForDate(new Date());
+      if (v?.id) {
+        setWidgetVerseData({
+          verseId: v.id,
+          title: `Chapter ${v.chapter} • Verse ${v.verse_number}`,
+          sloka: v.teluguSloka ?? "",
+          meaning: v.meaning ?? "",
+          updatedAt: Date.now(),
+        }).catch(() => {});
+      }
     }
   }, [loaded, isOnboardingComplete]);
 
@@ -80,8 +109,10 @@ export default function RootLayout() {
     return () => sub.remove();
   }, []);
 
-  // Setup expo-notifications (lazy load to avoid crash in Expo Go where it's unsupported)
+  // Setup expo-notifications (skip require on Expo Go Android — module throws on load in SDK 53+)
   useEffect(() => {
+    if (!shouldLoadExpoNotifications()) return;
+
     let Notifications: typeof import("expo-notifications") | null = null;
     try {
       Notifications = require("expo-notifications");
@@ -101,16 +132,42 @@ export default function RootLayout() {
 
     const lastProcessedIdRef = { current: "" };
 
-    const handleNotificationResponse = (data: { verseId?: string } | undefined, responseId: string) => {
-      if (!data?.verseId) return;
+    type NotificationPayload = {
+      verseId?: string;
+      screen?: string;
+    };
+
+    const handleNotificationResponse = (data: NotificationPayload | undefined, responseId: string) => {
       const id = responseId || `fallback-${Date.now()}`;
       if (id === lastProcessedIdRef.current) return;
       lastProcessedIdRef.current = id;
-      router.push(`/verse/${data.verseId}`);
+
+      const navigateTo = (path: string) => {
+        // Notification taps can arrive before fonts/onboarding are resolved; queue until ready.
+        pendingNavigationPathRef.current = path;
+        flushPendingNavigation();
+      };
+
+      if (data?.screen === "daily-verse") {
+        const verse = getVerseForDate(new Date());
+        if (verse) navigateTo(`/verse/${verse.id}`);
+        return;
+      }
+
+      // Fallback: repeating daily notifications might arrive without our custom `screen` field.
+      // In that case, just open today's verse.
+      if (!data?.verseId) {
+        const verse = getVerseForDate(new Date());
+        if (verse) navigateTo(`/verse/${verse.id}`);
+        return;
+      }
+      if (data?.verseId) {
+        navigateTo(`/verse/${data.verseId}`);
+      }
     };
 
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const data = response.notification.request.content.data as { verseId?: string } | undefined;
+      const data = response.notification.request.content.data as NotificationPayload | undefined;
       const id = response.notification.request.identifier ?? "";
       handleNotificationResponse(data, id);
     });
@@ -118,7 +175,7 @@ export default function RootLayout() {
     // Handle app launched from notification tap (when app was killed)
     Notifications.getLastNotificationResponseAsync().then((response) => {
       if (!response?.notification.request.content.data) return;
-      const data = response.notification.request.content.data as { verseId?: string };
+      const data = response.notification.request.content.data as NotificationPayload;
       const id = response.notification.request.identifier ?? "";
       handleNotificationResponse(data, id);
     });

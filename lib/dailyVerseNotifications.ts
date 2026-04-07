@@ -1,21 +1,27 @@
 /**
  * Daily verse local notifications: permissions, scheduling, and persistence.
- * Schedules a single notification for the next occurrence of the user's chosen time,
- * with the verse for that day. Reschedule on app open so content stays correct.
  *
- * Uses lazy require() to avoid loading expo-notifications in Expo Go (unsupported on Android).
+ * Uses a single `SchedulableTriggerInputTypes.DAILY` trigger so the OS fires every day at
+ * the chosen time with no day limit (unlike stacking DATE triggers). Notification copy is generic
+ * because repeating locals cannot update body per day without the app; the tap handler resolves
+ * today's verse with getVerseForDate(new Date()).
+ *
+ * Uses lazy require() only when {@link shouldLoadExpoNotifications} is true (Expo Go on Android
+ * cannot load expo-notifications — use a development build).
  */
 
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import {
-  getVerseForDate,
-  getDailyVerseNotificationContent,
+  DAILY_VERSE_NOTIFICATION_TITLE,
+  DAILY_VERSE_NOTIFICATION_BODY_GENERIC,
 } from "./dailyVerse";
+import { shouldLoadExpoNotifications } from "./notificationsAvailability";
 
-/** Lazy-load expo-notifications; returns null in Expo Go where it's unsupported. */
+/** Lazy-load expo-notifications; returns null in Expo Go (Android) or when require fails. */
 function getNotifications(): typeof import("expo-notifications") | null {
+  if (!shouldLoadExpoNotifications()) return null;
   try {
     return require("expo-notifications");
   } catch {
@@ -27,6 +33,14 @@ const STORAGE_KEY_ENABLED = "dailyVerseNotificationsEnabled";
 const STORAGE_KEY_TIME = "dailyVerseNotificationTime";
 const DEFAULT_TIME = "08:00"; // 8 AM
 const ANDROID_CHANNEL_ID = "daily-verse";
+
+// Prevent overlapping schedule calls from creating duplicate notifications.
+let scheduleInFlight: Promise<void> | null = null;
+
+/** Payload for repeating daily notification — verse is resolved on open, not in tray text. */
+export const DAILY_VERSE_NOTIFICATION_DATA = {
+  screen: "daily-verse" as const,
+};
 
 export async function getStoredPreferences(): Promise<{
   enabled: boolean;
@@ -84,16 +98,6 @@ export async function requestNotificationPermissions(): Promise<boolean> {
   return status === "granted";
 }
 
-/** Get next Date for given local hour/minute (today or tomorrow). */
-function getNextTriggerDate(hour: number, minute: number): Date {
-  const now = new Date();
-  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0, 0);
-  if (next.getTime() <= now.getTime()) {
-    next.setDate(next.getDate() + 1);
-  }
-  return next;
-}
-
 /** Parse "HH:mm" or "H:mm" into hour and minute. */
 function parseTime(timeStr: string): { hour: number; minute: number } {
   const [h, m] = timeStr.trim().split(":").map(Number);
@@ -113,13 +117,17 @@ export async function cancelDailyVerseNotifications(): Promise<void> {
 }
 
 /**
- * Schedule the next daily verse notification for the user's chosen time.
- * Uses one DATE trigger so the notification content can be the verse for that day.
- * Call when: user enables notifications, or app comes to foreground (to refresh the next one).
+ * Schedule one repeating daily notification at the user's local hour/minute.
+ * Re-call on foreground / preference changes to refresh time (cancel + reschedule).
  */
 export async function scheduleNextDailyVerseNotification(): Promise<void> {
   if (Platform.OS === "web") return;
 
+  if (scheduleInFlight) {
+    return scheduleInFlight;
+  }
+
+  scheduleInFlight = (async () => {
   const { enabled, time } = await getStoredPreferences();
   if (!enabled) {
     await cancelDailyVerseNotifications();
@@ -135,27 +143,30 @@ export async function scheduleNextDailyVerseNotification(): Promise<void> {
   await cancelDailyVerseNotifications();
 
   const { hour, minute } = parseTime(time);
-  const triggerDate = getNextTriggerDate(hour, minute);
-  const verse = getVerseForDate(triggerDate);
-  if (!verse) return;
-
-  const { title, body, verseId } = getDailyVerseNotificationContent(verse);
 
   const Notifications = getNotifications();
   if (!Notifications) return;
 
-  // Explicit trigger type required by expo-notifications.
   await Notifications.scheduleNotificationAsync({
     content: {
-      title,
-      body,
+      title: DAILY_VERSE_NOTIFICATION_TITLE,
+      body: DAILY_VERSE_NOTIFICATION_BODY_GENERIC,
       sound: true,
-      data: { verseId, screen: "verse" },
+      data: { ...DAILY_VERSE_NOTIFICATION_DATA },
+      ...(Platform.OS === "android" && { channelId: ANDROID_CHANNEL_ID }),
     },
     trigger: {
-      type: "date" as const,
-      date: triggerDate,
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour,
+      minute,
       ...(Platform.OS === "android" && { channelId: ANDROID_CHANNEL_ID }),
     },
   });
+  })();
+
+  try {
+    await scheduleInFlight;
+  } finally {
+    scheduleInFlight = null;
+  }
 }

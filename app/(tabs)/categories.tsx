@@ -19,7 +19,27 @@ const GAP = 16;
 const TILE_HEIGHT = Math.floor(((SCREEN_WIDTH - 32 - GAP) / 2) * 0.56); // width > height
 const TILE_BORDER_RADIUS = 14;
 
-const PREVIEW_LENGTH = 80;
+const PREVIEW_LENGTH = 64;
+const CHAPTER_NAMES: Record<number, string> = {
+  1: "అర్జున విషాద యోగము",
+  2: "సాంఖ్య యోగము",
+  3: "కర్మ యోగము",
+  4: "జ్ఞాన, కర్మ, సన్న్యాస యోగము",
+  5: "కర్మ సన్యాస యోగము",
+  6: "ధ్యాన యోగము",
+  7: "జ్ఞాన విజ్ఞాన యోగము",
+  8: "అక్షర బ్రహ్మ యోగము",
+  9: "రాజ విద్యా యోగము",
+  10: "విభూతి యోగము",
+  11: "విశ్వ రూప దర్శన యోగము",
+  12: "భక్తి యోగము",
+  13: "క్షేత్ర క్షేత్రజ్ఞ విభాగ యోగము",
+  14: "గుణత్రయ విభాగ యోగము",
+  15: "పురుషోత్తమ యోగము",
+  16: "దైవాసుర సంపద్విభాగ యోగము",
+  17: "శ్రద్ధా త్రయ విభాగ యోగము",
+  18: "మోక్ష సన్యాస యోగము",
+};
 
 function truncatePreview(text: string, maxLen: number): string {
   const trimmed = text.replace(/\s+/g, " ").trim();
@@ -106,13 +126,26 @@ export default function CategoriesScreen() {
           style={[styles.todaysVerseGradient, { borderRadius: Radius.md }]}
         >
           <View style={styles.todaysVerseHeader}>
-            <Ionicons name="sunny" size={20} color={colors.primary} />
-            <Text style={[styles.todaysVerseLabel, { color: colors.primary }]}>
-              Today&apos;s Verse
-            </Text>
+            <View style={styles.todaysVerseTitleRow}>
+              <Ionicons name="sunny" size={18} color={colors.primary} />
+              <Text style={[styles.todaysVerseLabel, { color: colors.primary }]}>
+                Today&apos;s Verse
+              </Text>
+            </View>
+            <View
+              style={[
+                styles.todaysVerseBadge,
+                { backgroundColor: colors.primary + "18", borderColor: colors.primary + "35" },
+              ]}
+            >
+              <Text style={[styles.todaysVerseBadgeText, { color: colors.primary }]}>
+                Daily
+              </Text>
+            </View>
           </View>
           <Text style={[styles.todaysVerseRef, { color: colors.text }]}>
-            Bhagavad Gita {todaysVerse.chapter}.{todaysVerse.verse_number}
+            {CHAPTER_NAMES[todaysVerse.chapter] ?? `Chapter ${todaysVerse.chapter}`} • Verse{" "}
+            {todaysVerse.verse_number}
           </Text>
           <Text
             style={[styles.todaysVersePreview, { color: colors.textMuted }]}
@@ -121,10 +154,17 @@ export default function CategoriesScreen() {
             {preview}
           </Text>
           <View style={styles.todaysVerseFooter}>
-            <Text style={[styles.todaysVerseLink, { color: colors.primary }]}>
-              Read verse
-            </Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+            <View
+              style={[
+                styles.todaysVerseCTA,
+                { backgroundColor: colors.primary + "16", borderColor: colors.primary + "35" },
+              ]}
+            >
+              <Text style={[styles.todaysVerseLink, { color: colors.primary }]}>
+                Read now
+              </Text>
+              <Ionicons name="arrow-forward" size={14} color={colors.primary} />
+            </View>
           </View>
         </LinearGradient>
       </Pressable>
@@ -212,36 +252,62 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
   },
   todaysVerseGradient: {
-    padding: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md + 2,
   },
   todaysVerseHeader: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    gap: 8,
-    marginBottom: 8,
-  },
-  todaysVerseLabel: {
-    fontSize: 13,
-    fontWeight: "600" as const,
-    letterSpacing: 0.5,
-  },
-  todaysVerseRef: {
-    fontSize: 16,
-    fontWeight: "700" as const,
+    justifyContent: "space-between" as const,
     marginBottom: 6,
   },
+  todaysVerseTitleRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 8,
+  },
+  todaysVerseLabel: {
+    fontSize: 12,
+    fontWeight: "700" as const,
+    letterSpacing: 0.4,
+    textTransform: "uppercase" as const,
+  },
+  todaysVerseBadge: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  todaysVerseBadgeText: {
+    fontSize: 10,
+    fontWeight: "700" as const,
+  },
+  todaysVerseRef: {
+    fontSize: 17,
+    fontWeight: "700" as const,
+    marginBottom: 4,
+  },
   todaysVersePreview: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 12,
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 10,
   },
   todaysVerseFooter: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    gap: 4,
+    justifyContent: "flex-start" as const,
+  },
+  todaysVerseCTA: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
   todaysVerseLink: {
-    fontSize: 14,
-    fontWeight: "600" as const,
+    fontSize: 12,
+    fontWeight: "700" as const,
   },
 });

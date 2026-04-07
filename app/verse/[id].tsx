@@ -1,10 +1,10 @@
 // app/verse/[id].tsx
 
-import { View, ScrollView, StyleSheet, Pressable, Button } from "react-native";
+import { View, ScrollView, StyleSheet, Pressable } from "react-native";
 import { Text } from "react-native-paper";
 import { useLocalSearchParams, Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -47,6 +47,7 @@ import { STORAGE_KEYS } from "@/constants/storageKeys";
 import CelebrationModal from "../../components/CelebrationModal";
 import { SkeletonVerseDetail } from "../../components/SkeletonLoader";
 import { VerseAudioPlayer } from "../../components/VerseAudioPlayer";
+import { ShareCardView, captureShareCardRef, shareImage } from "@/lib/shareCard";
 
 const getVerseData = (id: string) => {
   const allVerses = [
@@ -126,8 +127,10 @@ export default function VerseScreen() {
   const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [autoPlayAudio, setAutoPlayAudio] = useState(false);
+  const [isCommentaryExpanded, setIsCommentaryExpanded] = useState(true);
   const router = useRouter();
   const [showCelebration, setShowCelebration] = useState(false);
+  const shareCardRef = useRef<View | null>(null);
   
   const { showToast } = useToast();
   const {
@@ -238,6 +241,19 @@ export default function VerseScreen() {
       console.error("Error toggling verse save:", error);
     }
   }, [verse, isSaved, showToast]);
+
+  const handleShare = useCallback(async () => {
+    if (!verse) return;
+    if (!shareCardRef.current) return;
+    try {
+      const uri = await captureShareCardRef(shareCardRef.current);
+      await shareImage(uri);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {
+      console.error("Share failed:", e);
+      showToast("Could not share right now", "error", "alert-circle");
+    }
+  }, [verse?.id, showToast]);
 
   const copyToClipboard = useCallback(async (text: string | undefined, label: string) => {
     const value = text ?? "";
@@ -353,20 +369,30 @@ export default function VerseScreen() {
             ? `Chapter ${verse.chapter}, Verse ${verse.verse_number}`
             : "Verse Not Found",
           headerRight: () => (
-            <Pressable
-              onPress={toggleSave}
-              style={versestyles.saveButton}
-              accessibilityLabel={isSaved ? "Remove from saved" : "Save verse"}
-              accessibilityRole="button"
-            >
-              <Animated.View style={bookmarkAnimatedStyle}>
-                <Ionicons
-                  name={isSaved ? "bookmark" : "bookmark-outline"}
-                  size={24}
-                  color={colors.primary}
-                />
-              </Animated.View>
-            </Pressable>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <Pressable
+                onPress={handleShare}
+                style={versestyles.saveButton}
+                accessibilityLabel="Share verse"
+                accessibilityRole="button"
+              >
+                <Ionicons name="share-social-outline" size={22} color={colors.primary} />
+              </Pressable>
+              <Pressable
+                onPress={toggleSave}
+                style={versestyles.saveButton}
+                accessibilityLabel={isSaved ? "Remove from saved" : "Save verse"}
+                accessibilityRole="button"
+              >
+                <Animated.View style={bookmarkAnimatedStyle}>
+                  <Ionicons
+                    name={isSaved ? "bookmark" : "bookmark-outline"}
+                    size={24}
+                    color={colors.primary}
+                  />
+                </Animated.View>
+              </Pressable>
+            </View>
           ),
           headerStyle: {
             backgroundColor: colors.background,
@@ -380,6 +406,21 @@ export default function VerseScreen() {
           headerShadowVisible: false,
         }}
       />
+
+      {/* Offscreen share card renderer (captured as image) */}
+      <View
+        // @ts-expect-error - view-shot accepts View refs
+        ref={shareCardRef}
+        style={{ position: "absolute", left: -9999, top: -9999, opacity: 0 }}
+        collapsable={false}
+      >
+        <ShareCardView
+          title={`Chapter ${verse.chapter}`}
+          subtitle={`Verse ${verse.verse_number}`}
+          sloka={verse.teluguSloka}
+          meaning={verse.meaning}
+        />
+      </View>
 
       <GestureDetector gesture={swipeGesture}>
         <Animated.View style={[{ flex: 1 }, animatedContentStyle]}>
@@ -463,23 +504,47 @@ export default function VerseScreen() {
               </Animated.View>
             </GestureDetector>
 
-            {/* Commentary Section with long press to copy */}
-            <GestureDetector gesture={createLongPressGesture(verse.commentary ?? "", "Commentary")}>
-              <Animated.View
-                entering={FadeIn.delay(400)}
-                style={[
-                  versestyles.commentaryContainer,
-                  { backgroundColor: colors.surface, borderColor: colors.outline },
-                ]}
+            {/* Commentary Section with progressive disclosure */}
+            <Animated.View
+              entering={FadeIn.delay(400)}
+              style={[
+                versestyles.commentaryContainer,
+                { backgroundColor: colors.surface, borderColor: colors.outline },
+              ]}
+            >
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setIsCommentaryExpanded((v) => !v);
+                }}
+                style={localStyles.commentaryHeader}
+                accessibilityRole="button"
+                accessibilityLabel={isCommentaryExpanded ? "Collapse commentary" : "Expand commentary"}
               >
                 <Text style={[versestyles.sectionTitle, { color: colors.primary }]}>
                   Commentary
                 </Text>
-                <Text style={[versestyles.commentaryText, { color: colors.text }]}>
-                  {verse.commentary}
-                </Text>
-              </Animated.View>
-            </GestureDetector>
+                <View style={localStyles.commentaryToggle}>
+                  <Text style={[localStyles.commentaryToggleText, { color: colors.textMuted }]}>
+                    {isCommentaryExpanded ? "Hide" : "Read"}
+                  </Text>
+                  <Ionicons
+                    name={isCommentaryExpanded ? "chevron-up" : "chevron-down"}
+                    size={16}
+                    color={colors.textMuted}
+                  />
+                </View>
+              </Pressable>
+              {isCommentaryExpanded && (
+                <GestureDetector gesture={createLongPressGesture(verse.commentary ?? "", "Commentary")}>
+                  <View>
+                    <Text style={[versestyles.commentaryText, { color: colors.text }]}>
+                      {verse.commentary}
+                    </Text>
+                  </View>
+                </GestureDetector>
+              )}
+            </Animated.View>
 
             {/* Bottom spacing for navigation buttons */}
             <View style={{ height: 100 }} />
@@ -558,5 +623,19 @@ const localStyles = StyleSheet.create({
   swipeHintText: {
     fontSize: 12,
     marginHorizontal: 4,
+  },
+  commentaryHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  commentaryToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  commentaryToggleText: {
+    fontSize: 12,
+    fontWeight: "600",
   },
 });

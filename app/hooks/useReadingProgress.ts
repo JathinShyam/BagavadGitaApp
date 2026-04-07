@@ -27,6 +27,37 @@ interface LastReadVerse {
 
 const getDateKey = (d: Date) => d.toISOString().slice(0, 10);
 
+/**
+ * Converts stored verse keys (e.g. "12-13-14", "3-1-2", "2-47") into unique covered verse
+ * numbers for a chapter, so progress reflects actual verse coverage even with combined entries.
+ */
+function getCoveredVerseCount(chapterId: number, verseKeys: string[], chapterTotal: number): number {
+  const covered = new Set<number>();
+  const prefix = `${chapterId}-`;
+
+  for (const key of verseKeys) {
+    if (!key.startsWith(prefix)) continue;
+    const suffix = key.slice(prefix.length); // e.g. "13-14", "1", "20-21"
+    if (!suffix) continue;
+    const parts = suffix.split("-").map((n) => Number(n)).filter(Number.isFinite);
+    if (parts.length === 0) continue;
+
+    if (parts.length === 1) {
+      const n = parts[0];
+      if (n >= 1 && n <= chapterTotal) covered.add(n);
+      continue;
+    }
+
+    const start = Math.min(parts[0], parts[parts.length - 1]);
+    const end = Math.max(parts[0], parts[parts.length - 1]);
+    for (let n = start; n <= end; n++) {
+      if (n >= 1 && n <= chapterTotal) covered.add(n);
+    }
+  }
+
+  return covered.size;
+}
+
 export const CHAPTER_VERSES: { [key: number]: number } = {
   1: 47, 2: 72, 3: 43, 4: 42, 5: 29, 6: 47, 7: 30, 8: 28, 9: 34,
   10: 42, 11: 55, 12: 20, 13: 35, 14: 27, 15: 20, 16: 24, 17: 28, 18: 78,
@@ -148,7 +179,8 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
         }
 
         const newVersesRead = [...chapterProgress.versesRead, verseKey];
-        const chapterIsComplete = newVersesRead.length >= totalVerses;
+        const coveredCount = getCoveredVerseCount(chapterId, newVersesRead, totalVerses);
+        const chapterIsComplete = coveredCount >= totalVerses;
 
         const newProgress: ReadingProgress = {
           ...prev,
@@ -211,8 +243,13 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
       const chapterKey = chapterId.toString();
       const chapterProgress = progress[chapterKey];
       if (!chapterProgress) return 0;
+      const coveredCount = getCoveredVerseCount(
+        chapterId,
+        chapterProgress.versesRead,
+        chapterProgress.totalVerses
+      );
       return Math.round(
-        (chapterProgress.versesRead.length / chapterProgress.totalVerses) * 100
+        (coveredCount / chapterProgress.totalVerses) * 100
       );
     },
     [progress]
@@ -221,7 +258,14 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
   const isChapterComplete = useCallback(
     (chapterId: number) => {
       const chapterKey = chapterId.toString();
-      return progress[chapterKey]?.isComplete || false;
+      const chapterProgress = progress[chapterKey];
+      if (!chapterProgress) return false;
+      const coveredCount = getCoveredVerseCount(
+        chapterId,
+        chapterProgress.versesRead,
+        chapterProgress.totalVerses
+      );
+      return coveredCount >= chapterProgress.totalVerses;
     },
     [progress]
   );
@@ -238,10 +282,12 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
 
   const getTotalProgress = useCallback(() => {
     const totalVerses = Object.values(CHAPTER_VERSES).reduce((a, b) => a + b, 0);
-    const totalRead = Object.values(progress).reduce(
-      (acc, chapter) => acc + chapter.versesRead.length,
-      0
-    );
+    const totalRead = Object.entries(progress).reduce((acc, [chapterKey, chapter]) => {
+      const chapterId = Number(chapterKey);
+      if (!Number.isFinite(chapterId)) return acc;
+      const coveredCount = getCoveredVerseCount(chapterId, chapter.versesRead, chapter.totalVerses);
+      return acc + coveredCount;
+    }, 0);
     return Math.round((totalRead / totalVerses) * 100);
   }, [progress]);
 

@@ -10,20 +10,12 @@ import {
 import Animated, {
   FadeInUp,
   FadeIn,
-  ZoomIn,
-  useSharedValue,
-  withSpring,
-  useAnimatedStyle,
-  withSequence,
-  withTiming,
-  withRepeat,
-  Easing,
 } from "react-native-reanimated";
 import { Text } from "react-native-paper";
 import { Link, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { Ionicons } from "@expo/vector-icons";
 
 import { indexstyles } from "../styles";
@@ -154,26 +146,21 @@ const chapters = [
   },
 ];
 
+function getStreakVisual(days: number): { emoji: string; label: string } {
+  if (days <= 0) return { emoji: "🧊", label: "0 days" };
+  if (days < 3) return { emoji: "🔥", label: `${days} days` };
+  if (days < 7) return { emoji: "🔥🔥", label: `${days} days` };
+  if (days < 14) return { emoji: "🔥🔥🔥", label: `${days} days` };
+  if (days < 30) return { emoji: "🔥🔥🔥🔥", label: `${days} days` };
+  return { emoji: "👑🔥", label: `${days} days` };
+}
+
 export default function HomeScreen() {
   const { colors } = useAppTheme();
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const [showShuffleModal, setShowShuffleModal] = useState(false);
-  const fabScale = useSharedValue(1);
-  const fabRotate = useSharedValue(0);
-  const fabGlow = useSharedValue(0.3);
-
-  // Subtle pulsing glow animation for FAB
-  useEffect(() => {
-    fabGlow.value = withRepeat(
-      withSequence(
-        withTiming(0.6, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0.3, { duration: 1500, easing: Easing.inOut(Easing.ease) })
-      ),
-      -1,
-      true
-    );
-  }, []);
+  const [activeFilter, setActiveFilter] = useState<"all" | "continue" | "completed">("all");
 
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => {
@@ -198,18 +185,8 @@ export default function HomeScreen() {
   const openShuffleModal = useCallback(() => {
     if (shuffleModalTimerRef.current) clearTimeout(shuffleModalTimerRef.current);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    fabScale.value = withSequence(
-      withTiming(0.85, { duration: 100 }),
-      withTiming(1.1, { duration: 150 }),
-      withTiming(1, { duration: 100 })
-    );
-    fabRotate.value = withSequence(
-      withTiming(180, { duration: 300 }),
-      withTiming(360, { duration: 300 })
-    );
     shuffleModalTimerRef.current = setTimeout(() => {
       setShowShuffleModal(true);
-      fabRotate.value = 0;
       shuffleModalTimerRef.current = null;
     }, 200);
   }, []);
@@ -219,27 +196,17 @@ export default function HomeScreen() {
     router.push(`/verse/${chapterId}-${verseId}`);
   }, [router]);
 
-  const fabAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: fabScale.value },
-      { rotate: `${fabRotate.value}deg` },
-    ],
-    shadowOpacity: fabGlow.value,
-  }));
-
-  const getPairs = () => {
+  const getPairs = (source: typeof chapters) => {
     const pairs = [] as any[];
-    for (let i = 0; i < chapters.length; i += 2) {
-      if (i + 1 < chapters.length) {
-        pairs.push([chapters[i], chapters[i + 1]]);
+    for (let i = 0; i < source.length; i += 2) {
+      if (i + 1 < source.length) {
+        pairs.push([source[i], source[i + 1]]);
       } else {
-        pairs.push([chapters[i]]);
+        pairs.push([source[i]]);
       }
     }
     return pairs;
   };
-
-  const chapterPairs = getPairs();
 
   const {
     getChapterProgress,
@@ -249,11 +216,25 @@ export default function HomeScreen() {
   } = useReadingProgress();
 
   const totalProgress = getTotalProgress();
+  const filteredChapters = useMemo(() => {
+    if (activeFilter === "all") return chapters;
+    return chapters.filter((c) => {
+      const progress = getChapterProgress(c.id);
+      if (activeFilter === "continue") return progress > 0 && progress < 100;
+      return progress === 100;
+    });
+  }, [activeFilter, getChapterProgress]);
+
+  const chapterPairs = useMemo(() => getPairs(filteredChapters), [filteredChapters]);
 
   const renderChapterCard = useCallback((
     chapter: { id: number; telugu_name: string; verses: number; image: any },
     idx?: number
-  ) => (
+  ) => {
+    const progress = getChapterProgress(chapter.id);
+    const isCompleted = progress === 100;
+    const isInProgress = progress > 0 && progress < 100;
+    return (
     <Link href={`/chapter/${chapter.id}`} asChild key={chapter.id}>
       <Pressable
         onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
@@ -307,9 +288,9 @@ export default function HomeScreen() {
                     { color: colors.textMuted },
                   ]}
                 >
-                  {getChapterProgress(chapter.id)}% read
+                  {isInProgress ? `${progress}% read` : isCompleted ? "" : "Not started"}
                 </Text>
-                {getChapterProgress(chapter.id) === 100 && (
+                {isCompleted && (
                   <View
                     style={[
                       indexstyles.chapterProgressBadge,
@@ -327,28 +308,31 @@ export default function HomeScreen() {
                   </View>
                 )}
               </View>
-              <View
-                style={[
-                  indexstyles.chapterProgressBarBackground,
-                  { backgroundColor: colors.outline + "22" },
-                ]}
-              >
+              {(isInProgress || isCompleted) && (
                 <View
                   style={[
-                    indexstyles.chapterProgressBarFill,
-                    {
-                      width: `${getChapterProgress(chapter.id)}%`,
-                      backgroundColor: colors.primary,
-                    },
+                    indexstyles.chapterProgressBarBackground,
+                    { backgroundColor: colors.outline + "22" },
                   ]}
-                />
-              </View>
+                >
+                  <View
+                    style={[
+                      indexstyles.chapterProgressBarFill,
+                      {
+                        width: `${progress}%`,
+                        backgroundColor: colors.primary,
+                      },
+                    ]}
+                  />
+                </View>
+              )}
             </View>
           </View>
         </Animated.View>
       </Pressable>
     </Link>
-  ), [colors, getChapterProgress]);
+    );
+  }, [colors, getChapterProgress]);
 
   const renderPair = useCallback(({ item, index }: { item: any[]; index: number }) => (
     <View style={indexstyles.shelfRow}>
@@ -369,24 +353,91 @@ export default function HomeScreen() {
 
   const ListHeader = useCallback(() => (
     <View style={indexstyles.header}>
-      <Text style={[indexstyles.title, { color: colors.primary }]}>
-        భగవద్గీత
-      </Text>
-      <Text style={[indexstyles.subtitle, { color: colors.textMuted }]}>
-        Bhagavad Gita
-      </Text>
-      <View style={{ marginTop: 8, alignItems: "center" }}>
+      <View style={homeHeaderStyles.streakRow}>
+        <Text style={[indexstyles.title, { color: colors.primary, textAlign: "left" }]}>
+          భగవద్గీత
+        </Text>
+        <View
+          style={[
+            homeHeaderStyles.streakChip,
+            { backgroundColor: colors.primary + "18", borderColor: colors.primary + "35" },
+          ]}
+        >
+          <Text style={homeHeaderStyles.streakEmoji}>
+            {getStreakVisual(streak.currentStreak).emoji}
+          </Text>
+          <Text style={[homeHeaderStyles.streakText, { color: colors.primary }]}>
+            {getStreakVisual(streak.currentStreak).label}
+          </Text>
+        </View>
+      </View>
+      <View style={{ marginTop: 4, alignItems: "center" }}>
         <Text style={[indexstyles.subtitle, { color: colors.textMuted }]}>
           Total progress: {totalProgress}% read
         </Text>
-        <Text style={[indexstyles.subtitle, { color: colors.textMuted }]}>
-          {streak.currentStreak > 0
-            ? `🔥 ${streak.currentStreak}-day streak • Best: ${streak.longestStreak}`
-            : "Start your daily reading streak today"}
-        </Text>
+      </View>
+
+      <View style={homeHeaderStyles.quickActions}>
+        {lastReadVerseId && (
+          <Pressable
+            onPress={() => router.push(`/verse/${lastReadVerseId}`)}
+            style={[
+              homeHeaderStyles.quickCard,
+              { backgroundColor: colors.surface, borderColor: colors.outline },
+            ]}
+          >
+            <Ionicons name="play-circle" size={18} color={colors.primary} />
+            <Text style={[homeHeaderStyles.quickCardText, { color: colors.text }]}>
+              Continue reading
+            </Text>
+          </Pressable>
+        )}
+        <Pressable
+          onPress={openShuffleModal}
+          style={[
+            homeHeaderStyles.quickCard,
+            { backgroundColor: colors.surface, borderColor: colors.outline },
+          ]}
+        >
+          <Ionicons name="sparkles" size={16} color={colors.primary} />
+          <Text style={[homeHeaderStyles.quickCardText, { color: colors.text }]}>
+            Surprise
+          </Text>
+        </Pressable>
+      </View>
+
+      <View style={homeHeaderStyles.filterRow}>
+        {[
+          { id: "all", label: "All" },
+          { id: "continue", label: "Continue" },
+          { id: "completed", label: "Completed" },
+        ].map((f) => {
+          const selected = activeFilter === f.id;
+          return (
+            <Pressable
+              key={f.id}
+              onPress={() => setActiveFilter(f.id as typeof activeFilter)}
+              style={[
+                homeHeaderStyles.filterChip,
+                selected
+                  ? { backgroundColor: colors.primary + "1f", borderColor: colors.primary + "55" }
+                  : { backgroundColor: colors.surface, borderColor: colors.outline },
+              ]}
+            >
+              <Text
+                style={[
+                  homeHeaderStyles.filterChipText,
+                  { color: selected ? colors.primary : colors.textMuted },
+                ]}
+              >
+                {f.label}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
     </View>
-  ), [colors, totalProgress, streak]);
+  ), [colors, totalProgress, streak, lastReadVerseId, activeFilter, router, openShuffleModal]);
 
   return (
     <SafeAreaView
@@ -409,38 +460,6 @@ export default function HomeScreen() {
         }
       />
 
-      {/* FAB stack: right side, stacked vertically above tab bar */}
-      <View style={fabStyles.fabStack}>
-        {lastReadVerseId && (
-          <Pressable
-            onPress={() => router.push(`/verse/${lastReadVerseId}`)}
-            style={[fabStyles.continueFab, { backgroundColor: colors.primary }]}
-            accessibilityLabel="Continue reading"
-            accessibilityRole="button"
-          >
-            <Ionicons name="book" size={18} color={colors.onPrimary} />
-            <Text style={[fabStyles.fabLabel, { color: colors.onPrimary }]}>
-              Continue
-            </Text>
-          </Pressable>
-        )}
-        <Animated.View style={fabAnimatedStyle}>
-          <Pressable
-            onPress={openShuffleModal}
-            style={[fabStyles.fab, { backgroundColor: colors.primary }]}
-            accessibilityLabel="Surprise me with a random verse"
-            accessibilityRole="button"
-          >
-            <View style={fabStyles.fabContent}>
-              <Ionicons name="sparkles" size={22} color={colors.onPrimary} />
-              <Text style={[fabStyles.fabLabel, { color: colors.onPrimary }]}>
-                Surprise
-              </Text>
-            </View>
-          </Pressable>
-        </Animated.View>
-      </View>
-
       {/* Shuffle Modal */}
       <ShuffleModal
         visible={showShuffleModal}
@@ -451,47 +470,65 @@ export default function HomeScreen() {
   );
 }
 
-const fabStyles = StyleSheet.create({
-  fabStack: {
-    position: "absolute",
-    right: 16,
-    bottom: 6,
-    alignItems: "flex-end",
+const homeHeaderStyles = StyleSheet.create({
+  streakRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    marginBottom: 8,
+  },
+  streakChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  streakEmoji: {
+    fontSize: 13,
+    lineHeight: 16,
+  },
+  streakText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  quickActions: {
+    flexDirection: "row",
     gap: 10,
+    marginTop: 12,
+    width: "100%",
   },
-  fab: {
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 28,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 10,
-  },
-  continueFab: {
+  quickCard: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderRadius: 12,
     paddingVertical: 10,
-    borderRadius: 28,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 10,
+    paddingHorizontal: 12,
   },
-  fabContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  fabLabel: {
+  quickCardText: {
     fontSize: 13,
     fontWeight: "600",
-    letterSpacing: 0.3,
+  },
+  filterRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 12,
+    width: "100%",
+  },
+  filterChip: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  filterChipText: {
+    fontSize: 12,
+    fontWeight: "700",
   },
 });
