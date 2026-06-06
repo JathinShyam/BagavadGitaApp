@@ -22,19 +22,19 @@ import {
   useFonts as usePlayfair,
   PlayfairDisplay_700Bold,
 } from "@expo-google-fonts/playfair-display";
-import { ThemeProvider as AppThemeProvider } from "./context/ThemeContext";
-import { ToastProvider } from "../components/Toast";
-import { ReadingProgressProvider } from "./hooks/useReadingProgress";
-import { ErrorBoundary } from "../components/ErrorBoundary";
-import { getVerseForDate } from "@/lib/dailyVerse";
-import { scheduleNextDailyVerseNotification } from "@/lib/dailyVerseNotifications";
-import { shouldLoadExpoNotifications } from "@/lib/notificationsAvailability";
-import { setWidgetVerseData } from "@/lib/widgetData";
+import { ThemeProvider as AppThemeProvider } from "@/context/theme-context";
+import { ToastProvider } from "@/components/ui/Toast";
+import { ReadingProgressProvider } from "@/hooks/useReadingProgress";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { getVerseForDate } from "@/lib/daily-verse";
+import { scheduleNextDailyVerseNotification } from "@/lib/daily-verse-notifications";
+import { shouldLoadExpoNotifications } from "@/lib/notification-availability";
+import { setWidgetVerseData } from "@/lib/widget-data";
+import { ROUTES } from "@/constants/routes";
+import { STORAGE_KEYS } from "@/constants/storage-keys";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
-
-const ONBOARDING_KEY = "hasCompletedOnboarding";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -59,7 +59,7 @@ export default function RootLayout() {
   useEffect(() => {
     const checkOnboarding = async () => {
       try {
-        const value = await AsyncStorage.getItem(ONBOARDING_KEY);
+        const value = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING);
         setIsOnboardingComplete(value === "true");
       } catch {
         setIsOnboardingComplete(true); // Default to true if error
@@ -72,7 +72,7 @@ export default function RootLayout() {
     if (loaded && isOnboardingComplete !== null) {
       SplashScreen.hideAsync();
       if (!isOnboardingComplete) {
-        router.replace("/onboarding");
+        router.replace(ROUTES.onboarding);
       }
     }
   }, [loaded, isOnboardingComplete]);
@@ -150,7 +150,7 @@ export default function RootLayout() {
 
       if (data?.screen === "daily-verse") {
         const verse = getVerseForDate(new Date());
-        if (verse) navigateTo(`/verse/${verse.id}`);
+        if (verse) navigateTo(ROUTES.verse(verse.id));
         return;
       }
 
@@ -158,11 +158,11 @@ export default function RootLayout() {
       // In that case, just open today's verse.
       if (!data?.verseId) {
         const verse = getVerseForDate(new Date());
-        if (verse) navigateTo(`/verse/${verse.id}`);
+        if (verse) navigateTo(ROUTES.verse(verse.id));
         return;
       }
       if (data?.verseId) {
-        navigateTo(`/verse/${data.verseId}`);
+        navigateTo(ROUTES.verse(data.verseId));
       }
     };
 
@@ -202,7 +202,7 @@ export default function RootLayout() {
                     gestureDirection: "horizontal",
                   }}
                 >
-                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen name="(main)" options={{ headerShown: false }} />
                   <Stack.Screen
                     name="onboarding"
                     options={{

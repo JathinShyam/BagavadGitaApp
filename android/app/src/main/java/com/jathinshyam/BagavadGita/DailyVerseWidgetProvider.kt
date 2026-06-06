@@ -38,7 +38,7 @@ class DailyVerseWidgetProvider : AppWidgetProvider() {
       views.setTextViewText(R.id.widget_title, title)
       views.setTextViewText(R.id.widget_meaning, meaning)
 
-      val deepLink = if (verseId.isNotEmpty()) "myapp://verse/$verseId" else "myapp://(tabs)"
+      val deepLink = if (verseId.isNotEmpty()) "myapp://verses/$verseId" else "myapp://(main)/"
       val clickIntent = Intent(Intent.ACTION_VIEW, Uri.parse(deepLink))
       val pendingIntent = PendingIntent.getActivity(
         context,

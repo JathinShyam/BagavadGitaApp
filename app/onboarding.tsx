@@ -25,7 +25,9 @@ import Animated, {
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 
-import { useAppTheme } from "./hooks/useAppTheme";
+import { useAppTheme } from "@/hooks/useAppTheme";
+import { ROUTES } from "@/constants/routes";
+import { STORAGE_KEYS } from "@/constants/storage-keys";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -66,7 +68,6 @@ function PaginationDot({
   );
 }
 
-const ONBOARDING_KEY = "hasCompletedOnboarding";
 
 interface OnboardingSlide {
   id: string;
@@ -136,11 +137,11 @@ export default function OnboardingScreen() {
   const completeOnboarding = async () => {
     try {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      await AsyncStorage.setItem(ONBOARDING_KEY, "true");
-      router.replace("/(tabs)");
+      await AsyncStorage.setItem(STORAGE_KEYS.ONBOARDING, "true");
+      router.replace(ROUTES.mainTabs);
     } catch (error) {
       console.error("Error completing onboarding:", error);
-      router.replace("/(tabs)");
+      router.replace(ROUTES.mainTabs);
     }
   };
 

@@ -14,9 +14,10 @@
   },
   "jest": {
     "preset": "react-native",
-    "setupFilesAfterEnv": [
-      "@testing-library/react-native/extend-expect"
-    ]
+    "setupFilesAfterEnv": [],
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/$1"
+    }
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.1",

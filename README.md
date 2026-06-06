@@ -77,8 +77,8 @@ Notifications are implemented as **local repeating OS triggers**:
 - Notification tap resolves and opens the verse for the current day
 
 Implementation references:
-- `lib/dailyVerseNotifications.ts`
-- `lib/dailyVerse.ts`
+- `lib/daily-verse-notifications.ts`
+- `lib/daily-verse.ts`
 - `app/_layout.tsx`
 
 ### Expo Go limitation (Android)
@@ -86,7 +86,7 @@ Implementation references:
 `expo-notifications` cannot be required in Expo Go Android for this setup.  
 Use a **development build** for notification testing on Android.
 
-Reference: `lib/notificationsAvailability.ts`
+Reference: `lib/notification-availability.ts`
 
 ## Widgets
 
@@ -101,15 +101,57 @@ Widget data is pushed from app lifecycle in `app/_layout.tsx`.
 ## Project structure
 
 ```text
-app/                # Screens, tabs, routes (Expo Router)
-components/         # Reusable UI components
-constants/          # App URLs, storage keys, verse sequences
-data/               # Curated category metadata
-lib/                # Business logic (notifications, share, widgets, verse selection)
-android/            # Native Android project
-ios/                # Native iOS project
-docs/               # Public legal pages (privacy/terms)
-__tests__/          # Automated tests
+app/                              # Expo Router — routes only
+  _layout.tsx                     # Root stack (providers, onboarding gate)
+  onboarding.tsx                  # First-run flow
+  (main)/                         # Tab navigator (route group)
+    index.tsx                     # Home — chapter list (/)
+    explore/
+      index.tsx                   # Explore topic grid (/explore)
+      [categoryId].tsx            # Category verse list (/explore/:id)
+    saved.tsx                     # Saved verses (/saved)
+    settings.tsx                  # App settings (/settings)
+  chapters/[chapterId].tsx        # Chapter detail (/chapters/:id)
+  verses/[verseId].tsx            # Verse detail (/verses/:id)
+constants/routes.ts               # Typed route path builders
+components/
+  ui/                             # ErrorBoundary, EmptyState, SkeletonLoader, Toast
+  modals/                         # CelebrationModal, SurpriseVerseModal
+  verse/                          # VerseAudioPlayer, ShareCard
+context/
+  theme-context.tsx               # Light/dark theme provider
+  reading-progress-context.tsx    # Reading progress and streak state
+constants/
+  app-urls.ts                     # Privacy policy and terms URLs
+  chapter-images.ts               # Chapter hero image assets
+  chapter-summaries.ts            # Home screen chapter list
+  chapter-verse-counts.ts         # Verse counts per chapter
+  storage-keys.ts                 # AsyncStorage key names
+  verse-sequences.ts              # Verse navigation order per chapter
+data/
+  explore-categories.ts           # Explore tab topic categories
+  chapters/chapter-details.ts     # Full chapter metadata and descriptions
+  verses/
+    verse-catalog.ts              # All verses and lookup helpers
+    verse-audio.ts                # Audio file resolution
+    audio-mapper.ts               # Verse-to-MP3 asset map
+    chapters/chapter-01.ts …      # Verse content per chapter
+hooks/                            # useAppTheme, useReadingProgress, useColorScheme
+lib/
+  daily-verse.ts                  # Daily verse selection logic
+  daily-verse-notifications.ts    # Local notification scheduling
+  notification-availability.ts    # Expo Go notification guards
+  verse-id-registry.ts            # Valid verse ID set for tests
+  widget-data.ts                  # Native widget data bridge
+services/verse-share.tsx          # Share-card image capture and export
+theme/
+  design-tokens.ts                # Colors, spacing, radius palette
+  screen-styles.ts                # Shared StyleSheet definitions
+types/                            # Shared TypeScript interfaces
+android/                            # Native Android project
+ios/                              # Native iOS project
+docs/                             # Public legal pages (privacy/terms)
+__tests__/                        # Automated tests
 ```
 
 ## Getting started
@@ -152,7 +194,7 @@ npm run web
 ## Quality and testing
 
 - Category verse mapping integrity is covered by:
-  - `__tests__/categoryVerseIds.test.ts`
+  - `__tests__/category-verse-ids.test.ts`
 - Linting is configured via Expo ESLint
 - Core UX and stability issues were addressed in-app (error boundary, timer cleanup, notification handling, accessibility, and verse mapping checks).
 
@@ -201,7 +243,7 @@ Before shipping to stores:
 - Enable GitHub Pages for `/docs` so policy URLs are reachable.
 - Update “Last updated” text in `docs/privacy.html` and `docs/terms.html`.
 - Ensure release signing is configured (`eas credentials`) and do not ship debug-signed builds.
-- Confirm app URLs in `constants/appUrls.ts`.
+- Confirm app URLs in `constants/app-urls.ts`.
 - Rebuild release binaries after config/plugin changes.
 
 Recommended release build:
@@ -212,6 +254,6 @@ eas build --platform all --profile production
 
 ## Security and policy links
 
-Configured in `constants/appUrls.ts`:
+Configured in `constants/app-urls.ts`:
 - Privacy Policy: <https://jathinshyam.github.io/BagavadGita/privacy.html>
 - Terms of Service: <https://jathinshyam.github.io/BagavadGita/terms.html>
