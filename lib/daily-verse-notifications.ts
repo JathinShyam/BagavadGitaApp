@@ -1,25 +1,22 @@
 /**
  * Daily verse local notifications: permissions, scheduling, and persistence.
  *
- * Uses a single `SchedulableTriggerInputTypes.DAILY` trigger so the OS fires every day at
- * the chosen time with no day limit (unlike stacking DATE triggers). Notification copy is generic
- * because repeating locals cannot update body per day without the app; the tap handler resolves
- * today's verse with getVerseForDate(new Date()).
+ * Schedules a rolling window of one-shot DATE notifications (next 7 days) so each
+ * day's tray text can include that day's verse preview. Re-call on foreground /
+ * preference changes to refresh the window.
  *
- * Uses lazy require() only when {@link shouldLoadExpoNotifications} is true (Expo Go on Android
- * cannot load expo-notifications — use a development build).
+ * Uses lazy require() only when {@link shouldLoadExpoNotifications} is true.
  */
 
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import {
-  DAILY_VERSE_NOTIFICATION_TITLE,
-  DAILY_VERSE_NOTIFICATION_BODY_GENERIC,
+  getDailyVerseNotificationContent,
+  getVerseForDate,
 } from "./daily-verse";
 import { shouldLoadExpoNotifications } from "./notification-availability";
 
-/** Lazy-load expo-notifications; returns null in Expo Go (Android) or when require fails. */
 function getNotifications(): typeof import("expo-notifications") | null {
   if (!shouldLoadExpoNotifications()) return null;
   try {
@@ -31,13 +28,12 @@ function getNotifications(): typeof import("expo-notifications") | null {
 
 const STORAGE_KEY_ENABLED = "dailyVerseNotificationsEnabled";
 const STORAGE_KEY_TIME = "dailyVerseNotificationTime";
-const DEFAULT_TIME = "08:00"; // 8 AM
+const DEFAULT_TIME = "08:00";
 const ANDROID_CHANNEL_ID = "daily-verse";
+const ROLLING_DAYS = 7;
 
-// Prevent overlapping schedule calls from creating duplicate notifications.
 let scheduleInFlight: Promise<void> | null = null;
 
-/** Payload for repeating daily notification — verse is resolved on open, not in tray text. */
 export const DAILY_VERSE_NOTIFICATION_DATA = {
   screen: "daily-verse" as const,
 };
@@ -51,9 +47,10 @@ export async function getStoredPreferences(): Promise<{
       STORAGE_KEY_ENABLED,
       STORAGE_KEY_TIME,
     ]);
-    const enabled = enabledRaw[1] === "true";
-    const storedTime = time[1] ?? DEFAULT_TIME;
-    return { enabled, time: storedTime };
+    return {
+      enabled: enabledRaw[1] === "true",
+      time: time[1] ?? DEFAULT_TIME,
+    };
   } catch {
     return { enabled: false, time: DEFAULT_TIME };
   }
@@ -74,7 +71,6 @@ export async function setStoredPreferences(
   }
 }
 
-/** Request notification permission and ensure Android channel exists. */
 export async function requestNotificationPermissions(): Promise<boolean> {
   if (Platform.OS === "web") return false;
 
@@ -98,17 +94,14 @@ export async function requestNotificationPermissions(): Promise<boolean> {
   return status === "granted";
 }
 
-/** Parse "HH:mm" or "H:mm" into hour and minute. */
 function parseTime(timeStr: string): { hour: number; minute: number } {
   const [h, m] = timeStr.trim().split(":").map(Number);
-  const hour = Math.min(23, Math.max(0, Number.isFinite(h) ? h : 8));
-  const minute = Math.min(59, Math.max(0, Number.isFinite(m) ? m : 0));
-  return { hour, minute };
+  return {
+    hour: Math.min(23, Math.max(0, Number.isFinite(h) ? h : 8)),
+    minute: Math.min(59, Math.max(0, Number.isFinite(m) ? m : 0)),
+  };
 }
 
-/**
- * Cancel all scheduled notifications (used when user turns daily verse off).
- */
 export async function cancelDailyVerseNotifications(): Promise<void> {
   if (Platform.OS === "web") return;
   const Notifications = getNotifications();
@@ -116,9 +109,15 @@ export async function cancelDailyVerseNotifications(): Promise<void> {
   await Notifications.cancelAllScheduledNotificationsAsync();
 }
 
+function slotDate(base: Date, hour: number, minute: number, dayOffset: number): Date {
+  const d = new Date(base.getFullYear(), base.getMonth(), base.getDate());
+  d.setHours(hour, minute, 0, 0);
+  d.setDate(d.getDate() + dayOffset);
+  return d;
+}
+
 /**
- * Schedule one repeating daily notification at the user's local hour/minute.
- * Re-call on foreground / preference changes to refresh time (cancel + reschedule).
+ * Schedule the next 7 days of one-shot notifications, each with that day's verse text.
  */
 export async function scheduleNextDailyVerseNotification(): Promise<void> {
   if (Platform.OS === "web") return;
@@ -128,40 +127,50 @@ export async function scheduleNextDailyVerseNotification(): Promise<void> {
   }
 
   scheduleInFlight = (async () => {
-  const { enabled, time } = await getStoredPreferences();
-  if (!enabled) {
+    const { enabled, time } = await getStoredPreferences();
+    if (!enabled) {
+      await cancelDailyVerseNotifications();
+      return;
+    }
+
+    const granted = await requestNotificationPermissions();
+    if (!granted) {
+      await setStoredPreferences(false);
+      return;
+    }
+
     await cancelDailyVerseNotifications();
-    return;
-  }
 
-  const granted = await requestNotificationPermissions();
-  if (!granted) {
-    await setStoredPreferences(false);
-    return;
-  }
+    const Notifications = getNotifications();
+    if (!Notifications) return;
 
-  await cancelDailyVerseNotifications();
+    const { hour, minute } = parseTime(time);
+    const now = new Date();
+    const todaySlot = slotDate(now, hour, minute, 0);
+    const startOffset = todaySlot.getTime() > now.getTime() ? 0 : 1;
 
-  const { hour, minute } = parseTime(time);
+    for (let i = 0; i < ROLLING_DAYS; i++) {
+      const triggerAt = slotDate(now, hour, minute, startOffset + i);
+      const verse = getVerseForDate(triggerAt);
+      if (!verse) continue;
 
-  const Notifications = getNotifications();
-  if (!Notifications) return;
+      const { title, body, verseId } = getDailyVerseNotificationContent(verse);
 
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title: DAILY_VERSE_NOTIFICATION_TITLE,
-      body: DAILY_VERSE_NOTIFICATION_BODY_GENERIC,
-      sound: true,
-      data: { ...DAILY_VERSE_NOTIFICATION_DATA },
-      ...(Platform.OS === "android" && { channelId: ANDROID_CHANNEL_ID }),
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DAILY,
-      hour,
-      minute,
-      ...(Platform.OS === "android" && { channelId: ANDROID_CHANNEL_ID }),
-    },
-  });
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title,
+          body,
+          sound: true,
+          data: { ...DAILY_VERSE_NOTIFICATION_DATA, verseId },
+          ...(Platform.OS === "android" && { channelId: ANDROID_CHANNEL_ID }),
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: triggerAt,
+          ...(Platform.OS === "android" && { channelId: ANDROID_CHANNEL_ID }),
+        },
+      });
+    }
   })();
 
   try {

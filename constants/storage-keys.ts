@@ -9,4 +9,10 @@ export const STORAGE_KEYS = {
   READING_PROGRESS: "readingProgress",
   READING_STREAK: "readingStreak",
   LAST_READ_VERSE: "lastReadVerse",
+  READING_ACTIVITY: "readingActivity",
+  VERSE_NOTES: "verseNotes",
+  ACTIVE_PATH: "activeReadingPath",
+  WIDGET_NUDGE_DISMISSED: "widgetNudgeDismissedUntil",
+  MILESTONES_SEEN: "milestonesSeen",
+  SAVED_REVIEW_CURSOR: "savedReviewCursor",
 } as const;

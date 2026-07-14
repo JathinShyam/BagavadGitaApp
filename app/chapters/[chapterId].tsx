@@ -4,14 +4,19 @@ import { useLocalSearchParams, Link, Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
 
 import { getChapterById } from "@/data/chapters/chapter-details";
 import { CHAPTER_IMAGES } from "@/constants/chapter-images";
 import type { Verse } from "@/types";
 
-// Styles
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useReadingProgress } from "@/hooks/useReadingProgress";
 import { ROUTES } from "@/constants/routes";
@@ -19,14 +24,21 @@ import { chapterScreenStyles } from "@/theme/screen-styles";
 import { getRouteParam } from "@/lib/route-params";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
+const PATH_MARKER_WIDTH = 52;
+const PATH_MARKER_HEIGHT = 36;
+const JOURNEY_CHARIOT = require("../../assets/images/journey-chariot.png");
 
 export default function ChapterDetailScreen() {
   const { chapterId } = useLocalSearchParams<{ chapterId: string }>();
   const { colors } = useAppTheme();
   const chapter = getChapterById(getRouteParam(chapterId));
-  const { isVerseRead, getChapterProgress, isChapterComplete } = useReadingProgress();
+  const { isVerseRead, getChapterProgress, isChapterComplete, CHAPTER_VERSES } =
+    useReadingProgress();
   const [isContextExpanded, setIsContextExpanded] = useState(false);
   const listRef = useRef<FlatList<Verse> | null>(null);
+  const journeyProgress = useSharedValue(0);
+  const pathWidth = useSharedValue(SCREEN_WIDTH - 32);
+  const [pathLayoutWidth, setPathLayoutWidth] = useState(SCREEN_WIDTH - 32);
 
   const heroHeight = useMemo(() => {
     if (!chapter) return 240;
@@ -49,6 +61,53 @@ export default function ChapterDetailScreen() {
     return isChapterComplete(chapter.id);
   }, [chapter, isChapterComplete]);
 
+  const totalVerses = chapter
+    ? CHAPTER_VERSES[chapter.id] ?? chapter.verses.length
+    : 0;
+
+  const coveredVerses = useMemo(() => {
+    if (!chapter || totalVerses <= 0) return 0;
+    if (chapterDone) return totalVerses;
+    return Math.round((chapterProgress / 100) * totalVerses);
+  }, [chapter, chapterDone, chapterProgress, totalVerses]);
+
+  useEffect(() => {
+    pathWidth.value = pathLayoutWidth;
+  }, [pathLayoutWidth, pathWidth]);
+
+  useEffect(() => {
+    const next = Math.max(0, Math.min(100, chapterProgress)) / 100;
+    journeyProgress.value = withTiming(next, {
+      duration: 550,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [chapterProgress, journeyProgress]);
+
+  const journeyFillStyle = useAnimatedStyle(() => ({
+    width: Math.max(0, pathWidth.value * journeyProgress.value),
+  }));
+
+  /** Chariot sits at the leading tip of the fill (50% → middle of the bar). */
+  const journeyMarkerStyle = useAnimatedStyle(() => {
+    const tipX = pathWidth.value * journeyProgress.value;
+    const maxX = Math.max(0, pathWidth.value - PATH_MARKER_WIDTH);
+    // Center the silhouette on the tip so 50% lands in the middle
+    const x = Math.min(maxX, Math.max(0, tipX - PATH_MARKER_WIDTH / 2));
+    return {
+      transform: [{ translateX: x }],
+    };
+  });
+
+  /** First unread verse in this chapter only (not global last-read). */
+  const nextUnreadVerse = useMemo(() => {
+    if (!chapter || chapterDone) return null;
+    return (
+      chapter.verses.find((v) => !isVerseRead(chapter.id, v.verse_number)) ??
+      chapter.verses[0] ??
+      null
+    );
+  }, [chapter, chapterDone, isVerseRead]);
+
   const renderVerse = ({ item }: { item: Verse }) => {
     if (!chapter) return null;
     const read = isVerseRead(chapter.id, item.verse_number);
@@ -56,17 +115,14 @@ export default function ChapterDetailScreen() {
       <View
         style={[
           chapterScreenStyles.verseCard,
-          {
-            backgroundColor: read ? colors.surfaceElevated : colors.surface,
-            borderColor: read ? colors.primary + "45" : colors.outline,
-          },
+          { borderBottomColor: colors.outline + "33" },
         ]}
       >
         <Link href={ROUTES.verseFromChapter(chapter.id, item.verse_number)} asChild>
           <Pressable
             style={({ pressed }) => [
               { flex: 1 },
-              pressed && { transform: [{ scale: 0.985 }], opacity: 0.96 },
+              pressed && { opacity: 0.7 },
             ]}
             onPressIn={() =>
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
@@ -82,17 +138,9 @@ export default function ChapterDetailScreen() {
                   Verse {item.verse_number}
                 </Text>
                 {read && (
-                  <View
-                    style={[
-                      chapterScreenStyles.readBadge,
-                      {
-                        borderColor: colors.primary + "45",
-                        backgroundColor: colors.primary + "14",
-                      },
-                    ]}
-                  >
+                  <View style={chapterScreenStyles.readBadge}>
                     <Ionicons
-                      name="checkmark-circle"
+                      name="checkmark"
                       size={12}
                       color={colors.primary}
                     />
@@ -107,27 +155,15 @@ export default function ChapterDetailScreen() {
                   </View>
                 )}
               </View>
-              {/* <Text style={chapterScreenStyles.sanskritText}>{item.sanskrit}</Text> */}
-              <Text style={[chapterScreenStyles.teluguSloka, { color: colors.text }]}>
+              <Text
+                style={[
+                  chapterScreenStyles.teluguSloka,
+                  { color: read ? colors.textMuted : colors.text },
+                ]}
+                numberOfLines={2}
+              >
                 {item.teluguSloka}
               </Text>
-              {/* <Text style={chapterScreenStyles.translation}>{item.translation}</Text> */}
-              <View
-                style={[
-                  chapterScreenStyles.openVerseHintRow,
-                  { borderTopColor: colors.outline + "66" },
-                ]}
-              >
-                <Text
-                  style={[
-                    chapterScreenStyles.openVerseHintText,
-                    { color: colors.textMuted },
-                  ]}
-                >
-                  Open
-                </Text>
-                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-              </View>
             </View>
           </Pressable>
         </Link>
@@ -155,11 +191,11 @@ export default function ChapterDetailScreen() {
           headerStyle: {
             backgroundColor: colors.background,
           },
-          headerTintColor: colors.text,
+          headerTintColor: colors.primary,
           headerTitleStyle: {
-            color: colors.text,
+            color: colors.primary,
             fontSize: 18,
-            fontWeight: "600",
+            fontFamily: "PlayfairDisplay_700Bold",
           },
           headerShadowVisible: false,
         }}
@@ -171,6 +207,7 @@ export default function ChapterDetailScreen() {
         renderItem={renderVerse}
         keyExtractor={(item) => item.verse_number.toString()}
         contentContainerStyle={chapterScreenStyles.listContainer}
+        showsVerticalScrollIndicator={false}
         onScrollToIndexFailed={() => {
           listRef.current?.scrollToOffset({ offset: 0, animated: true });
         }}
@@ -197,27 +234,20 @@ export default function ChapterDetailScreen() {
                 />
                 <View style={chapterPageStyles.heroContent}>
                   <Text
-                    style={[chapterPageStyles.heroChapterNumber, { color: "#FFFFFFE0" }]}
+                    style={[chapterPageStyles.heroChapterNumber, { color: colors.primary }]}
                   >
                     {chapter.chapter_number}
                   </Text>
                   <Text
-                    style={[chapterPageStyles.heroTitle, { color: "#FFFFFF" }]}
+                    style={[chapterPageStyles.heroTitle, { color: colors.text }]}
                   >
                     {chapter.yogam_name}
                   </Text>
                 </View>
               </View>
             </View>
-            <View
-              style={[
-                chapterScreenStyles.descriptionCard,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.outline,
-                },
-              ]}
-            >
+
+            <View style={chapterScreenStyles.descriptionCard}>
               <Text
                 style={[chapterScreenStyles.descriptionText, { color: colors.text }]}
                 numberOfLines={isContextExpanded ? undefined : 5}
@@ -227,10 +257,8 @@ export default function ChapterDetailScreen() {
               <View style={chapterPageStyles.contextActions}>
                 <Pressable
                   onPress={() => setIsContextExpanded((v) => !v)}
-                  style={[
-                    chapterPageStyles.contextActionBtn,
-                    { borderColor: colors.primary + "55", backgroundColor: colors.primary + "12" },
-                  ]}
+                  hitSlop={8}
+                  style={chapterPageStyles.contextActionLink}
                 >
                   <Text
                     style={[
@@ -249,10 +277,8 @@ export default function ChapterDetailScreen() {
                 {isContextExpanded && (
                   <Pressable
                     onPress={jumpToVerses}
-                    style={[
-                      chapterPageStyles.contextActionBtn,
-                      { borderColor: colors.outline, backgroundColor: colors.surfaceElevated },
-                    ]}
+                    hitSlop={8}
+                    style={chapterPageStyles.contextActionLink}
                   >
                     <Text
                       style={[
@@ -267,62 +293,129 @@ export default function ChapterDetailScreen() {
                 )}
               </View>
             </View>
+
             <View
               style={[
-                chapterPageStyles.progressCard,
-                {
-                  borderColor: chapterDone ? colors.primary + "44" : colors.outline,
-                  backgroundColor: chapterDone ? colors.primary + "10" : colors.surfaceElevated,
-                },
+                chapterPageStyles.progressBlock,
+                { borderBottomColor: colors.outline + "33" },
               ]}
             >
               <View style={chapterPageStyles.progressTopRow}>
                 <Text style={[chapterPageStyles.progressLabel, { color: colors.textMuted }]}>
-                  Chapter progress
+                  Journey
                 </Text>
-                <View
-                  style={[
-                    chapterPageStyles.progressChip,
-                    {
-                      borderColor: chapterDone ? colors.primary + "55" : colors.outline,
-                      backgroundColor: chapterDone ? colors.primary + "14" : colors.surface,
-                    },
-                  ]}
-                >
+                <View style={chapterPageStyles.progressMeta}>
                   {chapterDone && (
                     <Ionicons
                       name="checkmark-circle"
-                      size={12}
+                      size={14}
                       color={colors.primary}
                     />
                   )}
                   <Text
                     style={[
-                      chapterPageStyles.progressChipText,
+                      chapterPageStyles.progressValue,
                       { color: chapterDone ? colors.primary : colors.text },
                     ]}
                   >
-                    {chapterDone ? "Completed" : `${chapterProgress}%`}
+                    {chapterDone
+                      ? "Chapter complete"
+                      : `${coveredVerses} of ${totalVerses} verses`}
                   </Text>
                 </View>
               </View>
-              <View
-                style={[
-                  chapterPageStyles.progressTrack,
-                  { backgroundColor: colors.outline + "44" },
-                ]}
-              >
+
+              <View style={chapterPageStyles.journeyPath}>
+                <View
+                  style={chapterPageStyles.journeyMarkerLane}
+                  onLayout={(e) => setPathLayoutWidth(e.nativeEvent.layout.width)}
+                >
+                  <Animated.View
+                    style={[chapterPageStyles.journeyMarkerWrap, journeyMarkerStyle]}
+                    accessibilityElementsHidden
+                  >
+                    <Image
+                      source={JOURNEY_CHARIOT}
+                      style={[
+                        chapterPageStyles.chariotImage,
+                        { tintColor: colors.primary },
+                      ]}
+                      resizeMode="contain"
+                    />
+                  </Animated.View>
+                </View>
+
                 <View
                   style={[
-                    chapterPageStyles.progressFill,
+                    chapterPageStyles.journeyTrack,
                     {
-                      backgroundColor: colors.primary,
-                      width: `${Math.max(0, Math.min(100, chapterProgress))}%`,
+                      backgroundColor: colors.outline + "28",
+                      borderColor: colors.outline + "40",
                     },
                   ]}
-                />
+                >
+                  <Animated.View
+                    style={[
+                      chapterPageStyles.journeyFill,
+                      { backgroundColor: colors.primary },
+                      journeyFillStyle,
+                    ]}
+                  />
+                </View>
               </View>
             </View>
+
+            {nextUnreadVerse && (
+              <Link
+                href={ROUTES.verseFromChapter(chapter.id, nextUnreadVerse.verse_number)}
+                asChild
+              >
+                <Pressable
+                  style={({ pressed }) => [
+                    chapterScreenStyles.continueCta,
+                    {
+                      backgroundColor: colors.primary + "14",
+                      borderColor: colors.primary + "44",
+                      opacity: pressed ? 0.85 : 1,
+                    },
+                  ]}
+                  onPressIn={() =>
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+                  }
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    chapterProgress === 0
+                      ? `Begin this chapter at verse ${nextUnreadVerse.verse_number}`
+                      : `Continue reading verse ${nextUnreadVerse.verse_number} in this chapter`
+                  }
+                >
+                  <Ionicons name="book-outline" size={22} color={colors.primary} />
+                  <View style={chapterScreenStyles.continueCtaBody}>
+                    <Text
+                      style={[
+                        chapterScreenStyles.continueCtaLabel,
+                        { color: colors.primary },
+                      ]}
+                    >
+                      {chapterProgress === 0 ? "Begin this chapter" : "Continue reading"}
+                    </Text>
+                    <Text
+                      style={[
+                        chapterScreenStyles.continueCtaSubtitle,
+                        { color: colors.textMuted },
+                      ]}
+                    >
+                      Verse {nextUnreadVerse.verse_number}
+                    </Text>
+                  </View>
+                  <Ionicons name="arrow-forward" size={18} color={colors.primary} />
+                </Pressable>
+              </Link>
+            )}
+
+            <Text style={[chapterPageStyles.versesHeading, { color: colors.text }]}>
+              Verses
+            </Text>
           </View>
         }
       />
@@ -354,50 +447,46 @@ const chapterPageStyles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: 52,
+    height: 72,
   },
   heroContent: {
     paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingVertical: 12,
   },
   heroChapterNumber: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: "600",
-    marginBottom: 1,
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    marginBottom: 4,
   },
   heroTitle: {
-    fontSize: 15,
-    fontWeight: "800",
-    lineHeight: 19,
+    fontFamily: "PlayfairDisplay_700Bold",
+    fontSize: 22,
+    lineHeight: 28,
   },
   contextActions: {
-    marginTop: 10,
+    marginTop: 12,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 16,
     flexWrap: "wrap",
   },
-  contextActionBtn: {
+  contextActionLink: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    gap: 4,
   },
   contextActionText: {
-    fontSize: 12,
-    fontWeight: "700",
+    fontSize: 13,
+    fontWeight: "600",
   },
-  progressCard: {
-    marginHorizontal: 0,
-    marginTop: -4,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 12,
+  progressBlock: {
+    marginTop: 4,
+    marginBottom: 8,
+    paddingBottom: 16,
     gap: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   progressTopRow: {
     flexDirection: "row",
@@ -406,30 +495,56 @@ const chapterPageStyles = StyleSheet.create({
   },
   progressLabel: {
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
+    letterSpacing: 0.4,
     textTransform: "uppercase",
-    letterSpacing: 0.5,
   },
-  progressChip: {
+  progressMeta: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
   },
-  progressChipText: {
-    fontSize: 11,
-    fontWeight: "700",
+  progressValue: {
+    fontSize: 13,
+    fontWeight: "600",
   },
-  progressTrack: {
-    height: 7,
+  journeyPath: {
+    marginTop: 6,
+  },
+  journeyMarkerLane: {
+    height: PATH_MARKER_HEIGHT,
+    marginBottom: -2,
+    position: "relative",
+    zIndex: 2,
+  },
+  journeyTrack: {
+    height: 8,
     borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
     overflow: "hidden",
+    zIndex: 1,
   },
-  progressFill: {
+  journeyFill: {
     height: "100%",
     borderRadius: 999,
+  },
+  journeyMarkerWrap: {
+    position: "absolute",
+    left: 0,
+    bottom: 0,
+    width: PATH_MARKER_WIDTH,
+    height: PATH_MARKER_HEIGHT,
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  chariotImage: {
+    width: PATH_MARKER_WIDTH,
+    height: PATH_MARKER_HEIGHT,
+  },
+  versesHeading: {
+    fontFamily: "PlayfairDisplay_700Bold",
+    fontSize: 22,
+    marginTop: 20,
+    marginBottom: 4,
   },
 });

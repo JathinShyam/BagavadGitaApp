@@ -14,6 +14,7 @@ export const ROUTES = {
   verse: (verseId: string) => `/verses/${verseId}` as const,
   verseFromChapter: (chapterId: number | string, verseNumber: string) =>
     `/verses/${chapterId}-${verseNumber}` as const,
+  path: (pathId: string) => `/paths/${pathId}` as const,
 } as const;
 
 /** Deep-link URIs for native widgets (scheme: myapp). */

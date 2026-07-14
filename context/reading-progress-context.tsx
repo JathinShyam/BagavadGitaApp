@@ -2,14 +2,19 @@ import React, { useState, useEffect, useCallback, createContext, useContext } fr
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { CHAPTER_VERSE_COUNTS } from "@/constants/chapter-verse-counts";
+import { DAILY_VERSE_GOAL } from "@/constants/milestones";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
+import {
+  addDaysToDateKey,
+  daysBetweenDateKeys,
+  getLocalDateKey,
+} from "@/lib/date-keys";
 import type {
   LastReadVerse,
+  ReadingActivity,
   ReadingProgress,
   ReadingStreak,
 } from "@/types";
-
-const getDateKey = (d: Date) => d.toISOString().slice(0, 10);
 
 /**
  * Converts stored verse keys (e.g. "12-13-14", "3-1-2", "2-47") into unique covered verse
@@ -21,7 +26,7 @@ function getCoveredVerseCount(chapterId: number, verseKeys: string[], chapterTot
 
   for (const key of verseKeys) {
     if (!key.startsWith(prefix)) continue;
-    const suffix = key.slice(prefix.length); // e.g. "13-14", "1", "20-21"
+    const suffix = key.slice(prefix.length);
     if (!suffix) continue;
     const parts = suffix.split("-").map((n) => Number(n)).filter(Number.isFinite);
     if (parts.length === 0) continue;
@@ -44,10 +49,22 @@ function getCoveredVerseCount(chapterId: number, verseKeys: string[], chapterTot
 
 export const CHAPTER_VERSES = CHAPTER_VERSE_COUNTS;
 
+export type MarkVerseAsReadResult = {
+  isNewCompletion: boolean;
+  totalVerses: number;
+  wasNewlyRead: boolean;
+  currentStreak: number;
+  dailyGoalJustCompleted: boolean;
+};
+
 interface ReadingProgressContextValue {
   progress: ReadingProgress;
   loading: boolean;
-  markVerseAsRead: (chapterId: number, verseNumber: string) => Promise<{ isNewCompletion: boolean; totalVerses: number }>;
+  activity: ReadingActivity;
+  markVerseAsRead: (
+    chapterId: number,
+    verseNumber: string
+  ) => Promise<MarkVerseAsReadResult>;
   isVerseRead: (chapterId: number, verseNumber: string) => boolean;
   getChapterProgress: (chapterId: number) => number;
   isChapterComplete: (chapterId: number) => boolean;
@@ -58,6 +75,10 @@ interface ReadingProgressContextValue {
   streak: ReadingStreak;
   lastReadVerseId: string | null;
   setLastReadVerse: (verseId: string) => Promise<void>;
+  getVersesReadOnDate: (dateKey: string) => number;
+  getActivityMap: () => ReadingActivity;
+  isDailyGoalComplete: (dateKey?: string) => boolean;
+  isStreakAtRisk: () => boolean;
 }
 
 const ReadingProgressContext = createContext<ReadingProgressContextValue | null>(null);
@@ -65,6 +86,7 @@ const ReadingProgressContext = createContext<ReadingProgressContextValue | null>
 export function ReadingProgressProvider({ children }: { children: React.ReactNode }) {
   const [progress, setProgress] = useState<ReadingProgress>({});
   const [loading, setLoading] = useState(true);
+  const [activity, setActivity] = useState<ReadingActivity>({});
   const [streak, setStreak] = useState<ReadingStreak>({
     currentStreak: 0,
     longestStreak: 0,
@@ -77,11 +99,13 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
 
   const loadProgress = useCallback(async () => {
     try {
-      const [storedProgress, storedStreak, storedLastRead] = await Promise.all([
-        AsyncStorage.getItem(STORAGE_KEYS.READING_PROGRESS),
-        AsyncStorage.getItem(STORAGE_KEYS.READING_STREAK),
-        AsyncStorage.getItem(STORAGE_KEYS.LAST_READ_VERSE),
-      ]);
+      const [storedProgress, storedStreak, storedLastRead, storedActivity] =
+        await Promise.all([
+          AsyncStorage.getItem(STORAGE_KEYS.READING_PROGRESS),
+          AsyncStorage.getItem(STORAGE_KEYS.READING_STREAK),
+          AsyncStorage.getItem(STORAGE_KEYS.LAST_READ_VERSE),
+          AsyncStorage.getItem(STORAGE_KEYS.READING_ACTIVITY),
+        ]);
 
       if (storedProgress) {
         setProgress(JSON.parse(storedProgress));
@@ -103,6 +127,11 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
             verseId: parsed.verseId ?? null,
             updatedAt: parsed.updatedAt ?? null,
           });
+        } catch {}
+      }
+      if (storedActivity) {
+        try {
+          setActivity(JSON.parse(storedActivity));
         } catch {}
       }
     } catch (error) {
@@ -132,6 +161,14 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
     }
   }, []);
 
+  const saveActivity = useCallback(async (data: ReadingActivity) => {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.READING_ACTIVITY, JSON.stringify(data));
+    } catch (error) {
+      console.error("Error saving reading activity:", error);
+    }
+  }, []);
+
   const saveLastReadVerse = useCallback(async (data: LastReadVerse) => {
     try {
       await AsyncStorage.setItem(STORAGE_KEYS.LAST_READ_VERSE, JSON.stringify(data));
@@ -141,73 +178,90 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
   }, []);
 
   const markVerseAsRead = useCallback(
-    async (chapterId: number, verseNumber: string) => {
+    async (chapterId: number, verseNumber: string): Promise<MarkVerseAsReadResult> => {
       const chapterKey = chapterId.toString();
       const verseKey = `${chapterId}-${verseNumber}`;
       const totalVerses = CHAPTER_VERSES[chapterId] || 0;
+      const todayKey = getLocalDateKey();
 
-      let isNewCompletion = false;
+      const chapterProgress = progress[chapterKey] || {
+        versesRead: [] as string[],
+        totalVerses,
+        isComplete: false,
+      };
 
-      setProgress((prev) => {
-        const chapterProgress = prev[chapterKey] || {
-          versesRead: [],
+      const alreadyRead = chapterProgress.versesRead.includes(verseKey);
+      if (alreadyRead) {
+        return {
+          isNewCompletion: false,
           totalVerses,
-          isComplete: false,
+          wasNewlyRead: false,
+          currentStreak: streak.currentStreak,
+          dailyGoalJustCompleted: false,
         };
+      }
 
-        if (chapterProgress.versesRead.includes(verseKey)) {
-          return prev;
-        }
+      const newVersesRead = [...chapterProgress.versesRead, verseKey];
+      const coveredCount = getCoveredVerseCount(chapterId, newVersesRead, totalVerses);
+      const chapterIsComplete = coveredCount >= totalVerses;
+      const wasComplete = chapterProgress.isComplete;
+      const isNewCompletion = !wasComplete && chapterIsComplete;
 
-        const newVersesRead = [...chapterProgress.versesRead, verseKey];
-        const coveredCount = getCoveredVerseCount(chapterId, newVersesRead, totalVerses);
-        const chapterIsComplete = coveredCount >= totalVerses;
+      const newProgress: ReadingProgress = {
+        ...progress,
+        [chapterKey]: {
+          versesRead: newVersesRead,
+          totalVerses,
+          isComplete: chapterIsComplete,
+          completedAt: chapterIsComplete ? new Date().toISOString() : undefined,
+        },
+      };
+      setProgress(newProgress);
+      await saveProgress(newProgress);
 
-        const newProgress: ReadingProgress = {
-          ...prev,
-          [chapterKey]: {
-            versesRead: newVersesRead,
-            totalVerses,
-            isComplete: chapterIsComplete,
-            completedAt: chapterIsComplete ? new Date().toISOString() : undefined,
-          },
-        };
+      const prevCount = activity[todayKey] ?? 0;
+      const nextActivity: ReadingActivity = {
+        ...activity,
+        [todayKey]: prevCount + 1,
+      };
+      setActivity(nextActivity);
+      await saveActivity(nextActivity);
+      const dailyGoalJustCompleted =
+        prevCount < DAILY_VERSE_GOAL && nextActivity[todayKey] >= DAILY_VERSE_GOAL;
 
-        saveProgress(newProgress);
-        const wasComplete = chapterProgress.isComplete;
-        isNewCompletion = !wasComplete && chapterIsComplete;
-        return newProgress;
-      });
-
-      const todayKey = getDateKey(new Date());
-      setStreak((prev) => {
-        if (prev.lastReadDate === todayKey) return prev;
-
+      let nextStreak = streak;
+      if (streak.lastReadDate !== todayKey) {
         let currentStreak: number;
-        if (!prev.lastReadDate) {
+        if (!streak.lastReadDate) {
           currentStreak = 1;
         } else {
-          const last = new Date(prev.lastReadDate + "T00:00:00Z");
-          const today = new Date(todayKey + "T00:00:00Z");
-          const diffDays = (today.getTime() - last.getTime()) / (1000 * 60 * 60 * 24);
+          const diffDays = daysBetweenDateKeys(streak.lastReadDate, todayKey);
           if (diffDays === 1) {
-            currentStreak = prev.currentStreak + 1;
+            currentStreak = streak.currentStreak + 1;
           } else if (diffDays > 1) {
             currentStreak = 1;
           } else {
-            currentStreak = prev.currentStreak || 1;
+            currentStreak = streak.currentStreak || 1;
           }
         }
+        nextStreak = {
+          currentStreak,
+          longestStreak: Math.max(streak.longestStreak, currentStreak),
+          lastReadDate: todayKey,
+        };
+        setStreak(nextStreak);
+        await saveStreak(nextStreak);
+      }
 
-        const longestStreak = Math.max(prev.longestStreak, currentStreak);
-        const next: ReadingStreak = { currentStreak, longestStreak, lastReadDate: todayKey };
-        saveStreak(next);
-        return next;
-      });
-
-      return { isNewCompletion, totalVerses };
+      return {
+        isNewCompletion,
+        totalVerses,
+        wasNewlyRead: true,
+        currentStreak: nextStreak.currentStreak,
+        dailyGoalJustCompleted,
+      };
     },
-    [saveProgress, saveStreak]
+    [progress, activity, streak, saveProgress, saveActivity, saveStreak]
   );
 
   const isVerseRead = useCallback(
@@ -229,9 +283,7 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
         chapterProgress.versesRead,
         chapterProgress.totalVerses
       );
-      return Math.round(
-        (coveredCount / chapterProgress.totalVerses) * 100
-      );
+      return Math.round((coveredCount / chapterProgress.totalVerses) * 100);
     },
     [progress]
   );
@@ -251,15 +303,12 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
     [progress]
   );
 
-  const isLastVerseInChapter = useCallback(
-    (chapterId: number, verseNumber: string) => {
-      const totalVerses = CHAPTER_VERSES[chapterId] || 0;
-      const verseNumbers = verseNumber.split("-").map(Number);
-      const lastVerseNum = Math.max(...verseNumbers);
-      return lastVerseNum >= totalVerses;
-    },
-    []
-  );
+  const isLastVerseInChapter = useCallback((chapterId: number, verseNumber: string) => {
+    const totalVerses = CHAPTER_VERSES[chapterId] || 0;
+    const verseNumbers = verseNumber.split("-").map(Number);
+    const lastVerseNum = Math.max(...verseNumbers);
+    return lastVerseNum >= totalVerses;
+  }, []);
 
   const getTotalProgress = useCallback(() => {
     const totalVerses = Object.values(CHAPTER_VERSES).reduce((a, b) => a + b, 0);
@@ -297,9 +346,34 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
     [saveLastReadVerse]
   );
 
+  const getVersesReadOnDate = useCallback(
+    (dateKey: string) => activity[dateKey] ?? 0,
+    [activity]
+  );
+
+  const getActivityMap = useCallback(() => activity, [activity]);
+
+  const isDailyGoalComplete = useCallback(
+    (dateKey?: string) => {
+      const key = dateKey ?? getLocalDateKey();
+      return (activity[key] ?? 0) >= DAILY_VERSE_GOAL;
+    },
+    [activity]
+  );
+
+  const isStreakAtRisk = useCallback(() => {
+    const today = getLocalDateKey();
+    if ((activity[today] ?? 0) > 0) return false;
+    if (!streak.lastReadDate || streak.currentStreak <= 0) return false;
+    const yesterday = addDaysToDateKey(today, -1);
+    if (streak.lastReadDate !== yesterday) return false;
+    return new Date().getHours() >= 18;
+  }, [activity, streak]);
+
   const value: ReadingProgressContextValue = {
     progress,
     loading,
+    activity,
     markVerseAsRead,
     isVerseRead,
     getChapterProgress,
@@ -311,6 +385,10 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
     streak,
     lastReadVerseId: lastReadVerse.verseId,
     setLastReadVerse,
+    getVersesReadOnDate,
+    getActivityMap,
+    isDailyGoalComplete,
+    isStreakAtRisk,
   };
 
   return React.createElement(ReadingProgressContext.Provider, { value }, children);
@@ -323,4 +401,3 @@ export const useReadingProgress = (): ReadingProgressContextValue => {
   }
   return context;
 };
-

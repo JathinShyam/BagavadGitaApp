@@ -24,12 +24,13 @@ import {
 } from "@expo-google-fonts/playfair-display";
 import { ThemeProvider as AppThemeProvider } from "@/context/theme-context";
 import { ToastProvider } from "@/components/ui/Toast";
+import { LaunchIntro } from "@/components/ui/LaunchIntro";
 import { ReadingProgressProvider } from "@/hooks/useReadingProgress";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { getVerseForDate } from "@/lib/daily-verse";
 import { scheduleNextDailyVerseNotification } from "@/lib/daily-verse-notifications";
 import { shouldLoadExpoNotifications } from "@/lib/notification-availability";
-import { setWidgetVerseData } from "@/lib/widget-data";
+import { syncDailyVerseWidget } from "@/lib/widget-data";
 import { ROUTES } from "@/constants/routes";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
 
@@ -41,6 +42,7 @@ export default function RootLayout() {
   const [interLoaded] = useInter({ Inter_400Regular, Inter_600SemiBold });
   const [playfairLoaded] = usePlayfair({ PlayfairDisplay_700Bold });
   const [isOnboardingComplete, setIsOnboardingComplete] = useState<boolean | null>(null);
+  const [showLaunchIntro, setShowLaunchIntro] = useState(true);
 
   const loaded = interLoaded && playfairLoaded;
   const pendingNavigationPathRef = useRef<string | null>(null);
@@ -50,11 +52,13 @@ export default function RootLayout() {
   const flushPendingNavigation = useCallback(() => {
     if (!isNavigationReady) return;
     if (isOnboardingComplete !== true) return;
+    // Wait for intro so deep links don't fight the entrance.
+    if (showLaunchIntro) return;
     const path = pendingNavigationPathRef.current;
     if (!path) return;
     pendingNavigationPathRef.current = null;
     router.push(path as any);
-  }, [isNavigationReady, isOnboardingComplete]);
+  }, [isNavigationReady, isOnboardingComplete, showLaunchIntro]);
 
   useEffect(() => {
     const checkOnboarding = async () => {
@@ -62,7 +66,7 @@ export default function RootLayout() {
         const value = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING);
         setIsOnboardingComplete(value === "true");
       } catch {
-        setIsOnboardingComplete(true); // Default to true if error
+        setIsOnboardingComplete(true);
       }
     };
     checkOnboarding();
@@ -70,6 +74,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (loaded && isOnboardingComplete !== null) {
+      // Reveal the animated intro underneath; native splash disappears cleanly.
       SplashScreen.hideAsync();
       if (!isOnboardingComplete) {
         router.replace(ROUTES.onboarding);
@@ -81,28 +86,24 @@ export default function RootLayout() {
     flushPendingNavigation();
   }, [flushPendingNavigation]);
 
-  // Reschedule daily verse notification: on app launch (cold start) and when coming from background
+  const handleLaunchIntroFinish = useCallback(() => {
+    setShowLaunchIntro(false);
+  }, []);
+
+  // Daily verse notification + widget: on cold start and when returning from background
   const appState = useRef<AppStateStatus>(AppState.currentState);
   useEffect(() => {
     if (loaded && isOnboardingComplete !== null) {
       scheduleNextDailyVerseNotification().catch(() => {});
-      const v = getVerseForDate(new Date());
-      if (v?.id) {
-        setWidgetVerseData({
-          verseId: v.id,
-          title: `Chapter ${v.chapter} • Verse ${v.verse_number}`,
-          sloka: v.teluguSloka ?? "",
-          meaning: v.meaning ?? "",
-          updatedAt: Date.now(),
-        }).catch(() => {});
-      }
+      syncDailyVerseWidget().catch(() => {});
     }
   }, [loaded, isOnboardingComplete]);
 
   useEffect(() => {
     const sub = AppState.addEventListener("change", (nextState) => {
-      if (appState.current === "background" && nextState === "active") {
+      if (appState.current.match(/inactive|background/) && nextState === "active") {
         scheduleNextDailyVerseNotification().catch(() => {});
+        syncDailyVerseWidget().catch(() => {});
       }
       appState.current = nextState;
     });
@@ -143,7 +144,6 @@ export default function RootLayout() {
       lastProcessedIdRef.current = id;
 
       const navigateTo = (path: string) => {
-        // Notification taps can arrive before fonts/onboarding are resolved; queue until ready.
         pendingNavigationPathRef.current = path;
         flushPendingNavigation();
       };
@@ -154,8 +154,6 @@ export default function RootLayout() {
         return;
       }
 
-      // Fallback: repeating daily notifications might arrive without our custom `screen` field.
-      // In that case, just open today's verse.
       if (!data?.verseId) {
         const verse = getVerseForDate(new Date());
         if (verse) navigateTo(ROUTES.verse(verse.id));
@@ -172,7 +170,6 @@ export default function RootLayout() {
       handleNotificationResponse(data, id);
     });
 
-    // Handle app launched from notification tap (when app was killed)
     Notifications.getLastNotificationResponseAsync().then((response) => {
       if (!response?.notification.request.content.data) return;
       const data = response.notification.request.content.data as NotificationPayload;
@@ -212,6 +209,9 @@ export default function RootLayout() {
                   />
                   <Stack.Screen name="+not-found" />
                 </Stack>
+                {showLaunchIntro && (
+                  <LaunchIntro onFinish={handleLaunchIntroFinish} />
+                )}
               </ToastProvider>
             </ThemeProvider>
           </ReadingProgressProvider>

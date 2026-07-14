@@ -1,176 +1,159 @@
-import { View, FlatList, Pressable, Dimensions, StyleSheet } from "react-native";
+import { View, FlatList, Pressable, Dimensions, StyleSheet, ScrollView } from "react-native";
 import { Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
+import { useMemo, useState } from "react";
 
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useReadingProgress } from "@/hooks/useReadingProgress";
 import { CATEGORIES } from "@/data/explore-categories";
+import { getVerseById } from "@/data/verses/verse-catalog";
 import { homeScreenStyles } from "@/theme/screen-styles";
-import { getVerseForDate, getDailyVerseNotificationContent } from "@/lib/daily-verse";
 import { ROUTES } from "@/constants/routes";
-import { Spacing, Radius } from "@/theme/design-tokens";
 
-// Match chapter tile arrangement: 2 per row, symmetrical with constant gap
-// Same as index: 16 padding each side + 16 gap between tiles
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const GAP = 16;
-const TILE_HEIGHT = Math.floor(((SCREEN_WIDTH - 32 - GAP) / 2) * 0.56); // width > height
-const TILE_BORDER_RADIUS = 14;
-
-const PREVIEW_LENGTH = 64;
-const CHAPTER_NAMES: Record<number, string> = {
-  1: "అర్జున విషాద యోగము",
-  2: "సాంఖ్య యోగము",
-  3: "కర్మ యోగము",
-  4: "జ్ఞాన, కర్మ, సన్న్యాస యోగము",
-  5: "కర్మ సన్యాస యోగము",
-  6: "ధ్యాన యోగము",
-  7: "జ్ఞాన విజ్ఞాన యోగము",
-  8: "అక్షర బ్రహ్మ యోగము",
-  9: "రాజ విద్యా యోగము",
-  10: "విభూతి యోగము",
-  11: "విశ్వ రూప దర్శన యోగము",
-  12: "భక్తి యోగము",
-  13: "క్షేత్ర క్షేత్రజ్ఞ విభాగ యోగము",
-  14: "గుణత్రయ విభాగ యోగము",
-  15: "పురుషోత్తమ యోగము",
-  16: "దైవాసుర సంపద్విభాగ యోగము",
-  17: "శ్రద్ధా త్రయ విభాగ యోగము",
-  18: "మోక్ష సన్యాస యోగము",
-};
-
-function truncatePreview(text: string, maxLen: number): string {
-  const trimmed = text.replace(/\s+/g, " ").trim();
-  if (trimmed.length <= maxLen) return trimmed;
-  return trimmed.slice(0, maxLen - 3).trim() + "...";
-}
+const GAP = 12;
+const TILE_HEIGHT = Math.floor(((SCREEN_WIDTH - 32 - GAP) / 2) * 0.5);
+const TILE_RADIUS = 12;
 
 export default function ExploreScreen() {
   const { colors } = useAppTheme();
   const router = useRouter();
-  const todaysVerse = getVerseForDate(new Date());
+  const { isVerseRead } = useReadingProgress();
+  const [selectedMoodId, setSelectedMoodId] = useState<string | null>(null);
 
-  const getPairs = () => {
+  const selectedMood = useMemo(
+    () => CATEGORIES.find((c) => c.id === selectedMoodId) ?? null,
+    [selectedMoodId]
+  );
+
+  const featuredVerse = useMemo(() => {
+    if (!selectedMood) return null;
+    for (const id of selectedMood.verses) {
+      const v = getVerseById(id);
+      if (!v) continue;
+      if (!isVerseRead(v.chapter, v.verse_number)) return v;
+    }
+    return getVerseById(selectedMood.verses[0] ?? "") ?? null;
+  }, [selectedMood, isVerseRead]);
+
+  const categoryPairs = useMemo(() => {
     const pairs: (typeof CATEGORIES)[0][][] = [];
     for (let i = 0; i < CATEGORIES.length; i += 2) {
       pairs.push(CATEGORIES.slice(i, i + 2));
     }
     return pairs;
-  };
-
-  const categoryPairs = getPairs();
+  }, []);
 
   const renderCategoryTile = (item: (typeof CATEGORIES)[0]) => (
     <View key={item.id} style={styles.tileContainer}>
       <Link href={ROUTES.exploreCategory(item.id)} asChild>
         <Pressable
           onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-          style={({ pressed }) => [
-            styles.tileWrapper,
-            {
-              borderRadius: TILE_BORDER_RADIUS,
-              opacity: pressed ? 0.9 : 1,
-            },
-          ]}
+          style={({ pressed }) => [{ opacity: pressed ? 0.88 : 1 }]}
         >
           <LinearGradient
             colors={item.gradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={[styles.tileGradient, { borderRadius: TILE_BORDER_RADIUS }]}
+            style={[styles.tileGradient, { borderRadius: TILE_RADIUS }]}
           >
+            <View style={styles.tileWash} />
             <Text style={styles.tileName} numberOfLines={2}>
               {item.name}
             </Text>
-            <View style={styles.iconRow}>
-              <Ionicons name={item.icon as any} size={28} color="#fff" />
-            </View>
+            <Ionicons name={item.icon as any} size={22} color="rgba(255,255,255,0.85)" />
           </LinearGradient>
         </Pressable>
       </Link>
     </View>
   );
 
-  const renderRow = ({ item }: { item: (typeof CATEGORIES)[0][] }) => (
-    <View style={[homeScreenStyles.shelfRow, styles.shelfRow]}>
-      {item.map((category) => renderCategoryTile(category))}
-      {item.length === 1 && <View style={styles.emptySlot} />}
-    </View>
-  );
-
-  const renderTodaysVerse = () => {
-    if (!todaysVerse) return null;
-    const { body, verseId } = getDailyVerseNotificationContent(todaysVerse);
-    const preview = truncatePreview(body, PREVIEW_LENGTH);
-    return (
-      <Pressable
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push(ROUTES.verse(verseId));
-        }}
-        style={({ pressed }) => [
-          styles.todaysVerseCard,
-          {
-            opacity: pressed ? 0.9 : 1,
-            borderColor: colors.outline,
-            backgroundColor: colors.surface,
-          },
-        ]}
+  const ListHeader = (
+    <View>
+      <Text style={[styles.moodHeading, { color: colors.text }]}>How do you feel?</Text>
+      <Text style={[styles.moodSub, { color: colors.textMuted }]}>
+        One verse for this moment
+      </Text>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.moodRow}
       >
-        <LinearGradient
-          colors={[colors.surface, colors.surfaceElevated]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.todaysVerseGradient, { borderRadius: Radius.md }]}
-        >
-          <View style={styles.todaysVerseHeader}>
-            <View style={styles.todaysVerseTitleRow}>
-              <Ionicons name="sunny" size={18} color={colors.primary} />
-              <Text style={[styles.todaysVerseLabel, { color: colors.primary }]}>
-                Today&apos;s Verse
-              </Text>
-            </View>
-            <View
+        {CATEGORIES.map((cat) => {
+          const selected = selectedMoodId === cat.id;
+          return (
+            <Pressable
+              key={cat.id}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setSelectedMoodId(selected ? null : cat.id);
+              }}
               style={[
-                styles.todaysVerseBadge,
-                { backgroundColor: colors.primary + "18", borderColor: colors.primary + "35" },
+                styles.moodChip,
+                {
+                  borderColor: selected ? colors.primary : colors.outline + "44",
+                  backgroundColor: selected ? colors.primary + "18" : "transparent",
+                },
               ]}
             >
-              <Text style={[styles.todaysVerseBadgeText, { color: colors.primary }]}>
-                Daily
+              <Ionicons
+                name={cat.icon as any}
+                size={15}
+                color={selected ? colors.primary : colors.textMuted}
+              />
+              <Text
+                style={{
+                  color: selected ? colors.primary : colors.text,
+                  fontWeight: "600",
+                  fontSize: 13,
+                }}
+              >
+                {cat.name}
               </Text>
-            </View>
-          </View>
-          <Text style={[styles.todaysVerseRef, { color: colors.text }]}>
-            {CHAPTER_NAMES[todaysVerse.chapter] ?? `Chapter ${todaysVerse.chapter}`} • Verse{" "}
-            {todaysVerse.verse_number}
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      {selectedMood && featuredVerse && (
+        <View style={styles.featuredBlock}>
+          <Text style={[styles.featuredLabel, { color: colors.primary }]}>
+            For {selectedMood.name}
+          </Text>
+          <Text style={[styles.featuredRef, { color: colors.text }]}>
+            Chapter {featuredVerse.chapter} · Verse {featuredVerse.verse_number}
           </Text>
           <Text
-            style={[styles.todaysVersePreview, { color: colors.textMuted }]}
-            numberOfLines={2}
+            style={[styles.featuredPreview, { color: colors.textMuted }]}
+            numberOfLines={3}
           >
-            {preview}
+            {featuredVerse.meaning || featuredVerse.teluguSloka}
           </Text>
-          <View style={styles.todaysVerseFooter}>
-            <View
-              style={[
-                styles.todaysVerseCTA,
-                { backgroundColor: colors.primary + "16", borderColor: colors.primary + "35" },
-              ]}
+          <View style={styles.featuredActions}>
+            <Pressable
+              onPress={() => router.push(ROUTES.verse(featuredVerse.id))}
+              style={[styles.featuredBtn, { backgroundColor: colors.primary }]}
             >
-              <Text style={[styles.todaysVerseLink, { color: colors.primary }]}>
-                Read now
-              </Text>
-              <Ionicons name="arrow-forward" size={14} color={colors.primary} />
-            </View>
+              <Text style={{ color: colors.onPrimary, fontWeight: "700" }}>Read</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => router.push(ROUTES.exploreCategory(selectedMood.id))}
+              style={styles.featuredLink}
+            >
+              <Text style={{ color: colors.textMuted, fontWeight: "600" }}>See more</Text>
+              <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+            </Pressable>
           </View>
-        </LinearGradient>
-      </Pressable>
-    );
-  };
+        </View>
+      )}
+
+      <Text style={[styles.topicsHeading, { color: colors.text }]}>Topics</Text>
+    </View>
+  );
 
   return (
     <SafeAreaView
@@ -178,20 +161,22 @@ export default function ExploreScreen() {
       edges={["top"]}
     >
       <View style={styles.header}>
-        <Text style={[homeScreenStyles.title, { color: colors.text }]}>Explore</Text>
-        <Text style={[homeScreenStyles.subtitle, { color: colors.textMuted }]}>
-          Find verses by topic or life situation
+        <Text style={[styles.title, { color: colors.text }]}>Explore</Text>
+        <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+          Find wisdom for where you are
         </Text>
       </View>
       <FlatList
         data={categoryPairs}
-        renderItem={renderRow}
+        renderItem={({ item }) => (
+          <View style={[homeScreenStyles.shelfRow, styles.shelfRow]}>
+            {item.map((category) => renderCategoryTile(category))}
+            {item.length === 1 && <View style={styles.emptySlot} />}
+          </View>
+        )}
         keyExtractor={(_, index) => index.toString()}
-        ListHeaderComponent={renderTodaysVerse()}
-        contentContainerStyle={[
-          homeScreenStyles.scrollContainer,
-          { paddingBottom: 100 },
-        ]}
+        ListHeaderComponent={ListHeader}
+        contentContainerStyle={[homeScreenStyles.scrollContainer, { paddingBottom: 100 }]}
         showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
@@ -202,7 +187,15 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 16,
     paddingTop: 8,
-    paddingBottom: 16,
+    paddingBottom: 4,
+  },
+  title: {
+    fontFamily: "PlayfairDisplay_700Bold",
+    fontSize: 28,
+  },
+  subtitle: {
+    fontSize: 14,
+    marginTop: 4,
   },
   shelfRow: {
     gap: GAP,
@@ -213,102 +206,84 @@ const styles = StyleSheet.create({
   emptySlot: {
     flex: 1,
   },
-  tileWrapper: {
-    flex: 1,
-    width: "100%" as const,
-    height: TILE_HEIGHT,
-    overflow: "hidden" as const,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-  },
   tileGradient: {
-    flex: 1,
-    padding: 14,
-    justifyContent: "space-between" as const,
+    height: TILE_HEIGHT,
+    padding: 12,
+    justifyContent: "space-between",
+    overflow: "hidden",
+  },
+  tileWash: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.22)",
   },
   tileName: {
-    fontSize: 15,
-    fontWeight: "700" as const,
+    fontSize: 14,
+    fontWeight: "700",
     color: "#fff",
-    lineHeight: 20,
-    textShadowColor: "rgba(0,0,0,0.25)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    lineHeight: 18,
   },
-  iconRow: {
-    alignSelf: "flex-start" as const,
-  },
-  todaysVerseCard: {
-    marginBottom: 20,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    overflow: "hidden",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-  },
-  todaysVerseGradient: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md + 2,
-  },
-  todaysVerseHeader: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    justifyContent: "space-between" as const,
-    marginBottom: 6,
-  },
-  todaysVerseTitleRow: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: 8,
-  },
-  todaysVerseLabel: {
-    fontSize: 12,
-    fontWeight: "700" as const,
-    letterSpacing: 0.4,
-    textTransform: "uppercase" as const,
-  },
-  todaysVerseBadge: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  todaysVerseBadgeText: {
-    fontSize: 10,
-    fontWeight: "700" as const,
-  },
-  todaysVerseRef: {
-    fontSize: 17,
-    fontWeight: "700" as const,
+  moodHeading: {
+    fontFamily: "PlayfairDisplay_700Bold",
+    fontSize: 20,
     marginBottom: 4,
   },
-  todaysVersePreview: {
+  moodSub: {
     fontSize: 13,
-    lineHeight: 19,
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  todaysVerseFooter: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    justifyContent: "flex-start" as const,
+  moodRow: {
+    gap: 8,
+    paddingBottom: 4,
   },
-  todaysVerseCTA: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
+  moodChip: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
-  todaysVerseLink: {
-    fontSize: 12,
-    fontWeight: "700" as const,
+  featuredBlock: {
+    marginTop: 18,
+    marginBottom: 4,
+  },
+  featuredLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  featuredRef: {
+    fontFamily: "PlayfairDisplay_700Bold",
+    fontSize: 18,
+    marginBottom: 6,
+  },
+  featuredPreview: {
+    fontSize: 14,
+    lineHeight: 21,
+    marginBottom: 14,
+  },
+  featuredActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  featuredBtn: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  featuredLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
+  topicsHeading: {
+    fontFamily: "PlayfairDisplay_700Bold",
+    fontSize: 20,
+    marginTop: 28,
+    marginBottom: 14,
   },
 });

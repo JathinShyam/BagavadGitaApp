@@ -1,27 +1,29 @@
 import { View, FlatList, StyleSheet, Pressable } from "react-native";
 import { Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Link, useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import Animated, { FadeInUp } from "react-native-reanimated";
 
 import { savedScreenStyles } from "@/theme/screen-styles";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonVerseCard } from "@/components/ui/SkeletonLoader";
 import { ROUTES } from "@/constants/routes";
-import { Radius, Spacing } from "@/theme/design-tokens";
+import { STORAGE_KEYS } from "@/constants/storage-keys";
+import { useToast } from "@/components/ui/Toast";
+import { getLocalDateKey, addDaysToDateKey } from "@/lib/date-keys";
 
 interface SavedVerse {
   id: string;
   chapter: number;
-  verse_number: string; // e.g. "1", "1-3", "13-14" for combined verses
+  verse_number: string;
   teluguSloka: string;
   meaning?: string;
   commentary?: string;
+  lastOpenedAt?: string | null;
 }
 
 const CHAPTER_NAMES: Record<number, string> = {
@@ -46,24 +48,44 @@ const CHAPTER_NAMES: Record<number, string> = {
 };
 
 function formatVerseLabel(verse: SavedVerse): string {
-  return `${CHAPTER_NAMES[verse.chapter] ?? `Chapter ${verse.chapter}`} • Verse ${verse.verse_number}`;
+  return `${CHAPTER_NAMES[verse.chapter] ?? `Chapter ${verse.chapter}`} · Verse ${verse.verse_number}`;
+}
+
+function pickRevisitVerse(verses: SavedVerse[]): SavedVerse | null {
+  if (verses.length === 0) return null;
+  return [...verses].sort((a, b) => {
+    const aT = a.lastOpenedAt ? Date.parse(a.lastOpenedAt) : 0;
+    const bT = b.lastOpenedAt ? Date.parse(b.lastOpenedAt) : 0;
+    return aT - bT;
+  })[0];
 }
 
 export default function SavedVersesScreen() {
   const { colors } = useAppTheme();
   const router = useRouter();
+  const { showToast } = useToast();
   const [savedVerses, setSavedVerses] = useState<SavedVerse[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const revisit = useMemo(() => pickRevisitVerse(savedVerses), [savedVerses]);
 
   const loadSavedVerses = useCallback(async () => {
     setLoading(true);
     try {
-      const saved = await AsyncStorage.getItem("savedVerses");
+      const saved = await AsyncStorage.getItem(STORAGE_KEYS.SAVED_VERSES);
       if (saved) {
-        const verses = JSON.parse(saved);
-        setSavedVerses(verses);
+        setSavedVerses(JSON.parse(saved));
       } else {
         setSavedVerses([]);
+      }
+
+      const cursor = await AsyncStorage.getItem(STORAGE_KEYS.SAVED_REVIEW_CURSOR);
+      const today = getLocalDateKey();
+      const due = !cursor || today >= addDaysToDateKey(cursor, 7);
+      const parsed: SavedVerse[] = saved ? JSON.parse(saved) : [];
+      if (due && parsed.length > 0) {
+        showToast("Revisit a verse you saved", "info", "bookmark");
+        await AsyncStorage.setItem(STORAGE_KEYS.SAVED_REVIEW_CURSOR, today);
       }
     } catch (error) {
       console.error("Error loading saved verses:", error);
@@ -71,7 +93,7 @@ export default function SavedVersesScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showToast]);
 
   useFocusEffect(
     useCallback(() => {
@@ -79,79 +101,72 @@ export default function SavedVersesScreen() {
     }, [loadSavedVerses])
   );
 
-  const renderVerse = useCallback(
-    ({ item, index }: { item: SavedVerse; index: number }) => (
-      <Animated.View entering={FadeInUp.delay(index * 50).springify()}>
-        <View
-          style={[
-            savedScreenStyles.verseCard,
-            styles.savedVerseCard,
-            { backgroundColor: colors.surface, borderColor: colors.outline },
-          ]}
-        >
-          <Link href={ROUTES.verse(item.id)} asChild>
-            <Pressable
-              style={({ pressed }) => [{ flex: 1, opacity: pressed ? 0.92 : 1 }]}
-              onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-            >
-              <View style={[styles.verseGradient, { backgroundColor: colors.surface }]}>
-                <View style={styles.rowTop}>
-                  <View style={styles.titleWrap}>
-                    <Text style={[styles.verseLabel, { color: colors.text }]} numberOfLines={2}>
-                      {formatVerseLabel(item)}
-                    </Text>
-                  </View>
-                  <Pressable
-                    onPress={async () => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      try {
-                        const next = savedVerses.filter((v) => v.id !== item.id);
-                        setSavedVerses(next);
-                        await AsyncStorage.setItem("savedVerses", JSON.stringify(next));
-                      } catch (error) {
-                        console.error("Error removing saved verse:", error);
-                        await loadSavedVerses();
-                      }
-                    }}
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel="Remove from saved verses"
-                  >
-                    <Ionicons name="bookmark" size={18} color={colors.primary} />
-                  </Pressable>
-                </View>
-                <Text style={[styles.exactVerseText, { color: colors.text }]}>
-                  {item.teluguSloka}
-                </Text>
-                <View style={[styles.footerRow, { borderTopColor: colors.outline + "88" }]}>
-                  <Text style={[styles.openText, { color: colors.primary }]}>Open verse</Text>
-                  <Ionicons name="arrow-forward" size={14} color={colors.primary} />
-                </View>
-              </View>
-            </Pressable>
-          </Link>
-        </View>
-      </Animated.View>
-    ),
-    [colors, savedVerses, loadSavedVerses]
+  const openSavedVerse = useCallback(
+    async (item: SavedVerse) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      try {
+        const next = savedVerses.map((v) =>
+          v.id === item.id ? { ...v, lastOpenedAt: new Date().toISOString() } : v
+        );
+        setSavedVerses(next);
+        await AsyncStorage.setItem(STORAGE_KEYS.SAVED_VERSES, JSON.stringify(next));
+      } catch {}
+      router.push(ROUTES.verse(item.id));
+    },
+    [savedVerses, router]
   );
 
-  const handleBrowseChapters = () => {
-    router.push(ROUTES.mainTabs);
-  };
+  const removeVerse = useCallback(
+    async (item: SavedVerse) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      try {
+        const next = savedVerses.filter((v) => v.id !== item.id);
+        setSavedVerses(next);
+        await AsyncStorage.setItem(STORAGE_KEYS.SAVED_VERSES, JSON.stringify(next));
+      } catch {
+        await loadSavedVerses();
+      }
+    },
+    [savedVerses, loadSavedVerses]
+  );
+
+  const renderVerse = useCallback(
+    ({ item }: { item: SavedVerse }) => (
+      <Pressable
+        onPress={() => openSavedVerse(item)}
+        style={[styles.row, { borderBottomColor: colors.outline + "33" }]}
+      >
+        <View style={styles.rowTop}>
+          <Text style={[styles.verseLabel, { color: colors.text }]} numberOfLines={2}>
+            {formatVerseLabel(item)}
+          </Text>
+          <Pressable
+            onPress={() => removeVerse(item)}
+            hitSlop={8}
+            accessibilityLabel="Remove from saved"
+          >
+            <Ionicons name="bookmark" size={18} color={colors.primary} />
+          </Pressable>
+        </View>
+        <Text style={[styles.sloka, { color: colors.textMuted }]} numberOfLines={2}>
+          {item.teluguSloka}
+        </Text>
+      </Pressable>
+    ),
+    [colors, openSavedVerse, removeVerse]
+  );
 
   if (loading) {
     return (
       <SafeAreaView
         style={[savedScreenStyles.container, { backgroundColor: colors.background }]}
+        edges={["top"]}
       >
         <View style={savedScreenStyles.header}>
-          <Text style={[savedScreenStyles.title, { color: colors.text }]}>
-            Saved Verses
-          </Text>
+          <Text style={[savedScreenStyles.title, { color: colors.text }]}>Saved</Text>
         </View>
         <View style={savedScreenStyles.listContainer}>
-          {[1, 2, 3, 4].map((i) => (
+          {[1, 2, 3].map((i) => (
             <SkeletonVerseCard key={i} style={{ marginBottom: 8 }} />
           ))}
         </View>
@@ -162,11 +177,10 @@ export default function SavedVersesScreen() {
   return (
     <SafeAreaView
       style={[savedScreenStyles.container, { backgroundColor: colors.background }]}
+      edges={["top"]}
     >
       <View style={savedScreenStyles.header}>
-        <Text style={[savedScreenStyles.title, { color: colors.text }]}>
-          Saved Verses
-        </Text>
+        <Text style={[savedScreenStyles.title, { color: colors.text }]}>Saved</Text>
       </View>
       {savedVerses.length > 0 ? (
         <FlatList
@@ -175,14 +189,30 @@ export default function SavedVersesScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={savedScreenStyles.listContainer}
           showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            revisit ? (
+              <Pressable onPress={() => openSavedVerse(revisit)} style={styles.revisit}>
+                <Text style={[styles.revisitLabel, { color: colors.primary }]}>Revisit</Text>
+                <View style={styles.revisitRow}>
+                  <Text
+                    style={[styles.revisitTitle, { color: colors.text }]}
+                    numberOfLines={1}
+                  >
+                    {formatVerseLabel(revisit)}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                </View>
+              </Pressable>
+            ) : null
+          }
         />
       ) : (
         <EmptyState
           icon="bookmark-outline"
           title="No saved verses yet"
-          subtitle="Double-tap any verse or tap the bookmark icon to save your favorite verses for quick access"
-          actionLabel="Browse Chapters"
-          onAction={handleBrowseChapters}
+          subtitle="Double-tap any verse or tap the bookmark icon to save verses for later"
+          actionLabel="Browse chapters"
+          onAction={() => router.push(ROUTES.mainTabs)}
         />
       )}
     </SafeAreaView>
@@ -190,17 +220,9 @@ export default function SavedVersesScreen() {
 }
 
 const styles = StyleSheet.create({
-  savedVerseCard: {
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    overflow: "hidden",
-    elevation: 0,
-    shadowOpacity: 0,
-    shadowRadius: 0,
-  },
-  verseGradient: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
+  row: {
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   rowTop: {
     flexDirection: "row",
@@ -208,35 +230,37 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 10,
   },
-  titleWrap: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
   verseLabel: {
+    flex: 1,
     fontSize: 14,
     fontWeight: "700",
     lineHeight: 20,
   },
-  exactVerseText: {
-    marginTop: 8,
-    marginBottom: 8,
-    fontSize: 15,
-    lineHeight: 22,
-    textAlign: "center",
+  sloka: {
+    marginTop: 6,
+    fontSize: 14,
+    lineHeight: 21,
     fontStyle: "italic",
   },
-  footerRow: {
-    marginTop: 10,
-    paddingTop: 8,
-    borderTopWidth: 1,
+  revisit: {
+    marginBottom: 16,
+    paddingBottom: 12,
+  },
+  revisitLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  revisitRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 6,
   },
-  openText: {
-    fontSize: 12,
-    fontWeight: "700",
+  revisitTitle: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "600",
   },
 });

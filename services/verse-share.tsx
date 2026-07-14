@@ -5,6 +5,7 @@ import React from "react";
 import { View } from "react-native";
 
 import { ShareCard } from "@/components/verse/ShareCard";
+import { StreakShareCard } from "@/components/verse/StreakShareCard";
 
 export async function captureShareCardRef(viewRef: any): Promise<string> {
   const uri = await captureRef(viewRef, {
@@ -32,6 +33,16 @@ export function ShareCardView(props: React.ComponentProps<typeof ShareCard>) {
   return (
     <View style={{ position: "absolute", left: -9999, top: -9999, opacity: 0 }}>
       <ShareCard {...props} />
+    </View>
+  );
+}
+
+export function StreakShareCardView(
+  props: React.ComponentProps<typeof StreakShareCard>
+) {
+  return (
+    <View style={{ position: "absolute", left: -9999, top: -9999, opacity: 0 }}>
+      <StreakShareCard {...props} />
     </View>
   );
 }

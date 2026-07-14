@@ -4,30 +4,80 @@
   android:layout_width="match_parent"
   android:layout_height="match_parent"
   android:orientation="vertical"
-  android:padding="14dp"
-  android:background="@android:color/black">
+  android:paddingStart="18dp"
+  android:paddingEnd="18dp"
+  android:paddingTop="16dp"
+  android:paddingBottom="16dp"
+  android:background="@drawable/widget_daily_verse_bg">
+
+  <!-- Mirrors home "Today" hero: eyebrow → chapter/verse → preview → CTA -->
+  <TextView
+    android:id="@+id/widget_eyebrow"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:text="Today"
+    android:textAllCaps="true"
+    android:letterSpacing="0.1"
+    android:textColor="@color/widget_primary"
+    android:textSize="11sp"
+    android:textStyle="bold"
+    android:maxLines="1"
+    android:ellipsize="end" />
 
   <TextView
     android:id="@+id/widget_title"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:textColor="@android:color/white"
-    android:textSize="16sp"
+    android:layout_marginTop="4dp"
+    android:text="Chapter · Verse"
+    android:textColor="@color/widget_text"
+    android:textSize="18sp"
     android:textStyle="bold"
+    android:fontFamily="serif"
     android:maxLines="1"
-    android:ellipsize="end"
-    android:text="Daily Verse" />
+    android:ellipsize="end" />
+
+  <TextView
+    android:id="@+id/widget_sloka"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="8dp"
+    android:text=""
+    android:textColor="@color/widget_text"
+    android:textSize="13sp"
+    android:textStyle="italic"
+    android:lineSpacingExtra="2dp"
+    android:maxLines="2"
+    android:ellipsize="end" />
 
   <TextView
     android:id="@+id/widget_meaning"
     android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:layout_weight="1"
+    android:layout_marginTop="6dp"
+    android:text="Open BagavadGita for today’s verse."
+    android:textColor="@color/widget_text_muted"
+    android:textSize="13sp"
+    android:lineSpacingMultiplier="1.25"
+    android:maxLines="3"
+    android:ellipsize="end" />
+
+  <View
+    android:layout_width="match_parent"
+    android:layout_height="1dp"
+    android:layout_marginTop="10dp"
+    android:layout_marginBottom="10dp"
+    android:background="@color/widget_hairline" />
+
+  <TextView
+    android:id="@+id/widget_cta"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginTop="8dp"
-    android:textColor="@android:color/white"
-    android:textSize="14sp"
-    android:maxLines="4"
-    android:ellipsize="end"
-    android:text="Open the app to read today's verse." />
+    android:text="Read today’s verse →"
+    android:textColor="@color/widget_primary"
+    android:textSize="13sp"
+    android:textStyle="bold"
+    android:maxLines="1" />
 
 </LinearLayout>
-

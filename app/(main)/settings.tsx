@@ -19,7 +19,7 @@ import * as Haptics from "expo-haptics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
-import { Spacing, Radius, Palette } from "@/theme/design-tokens";
+import { Spacing, Radius } from "@/theme/design-tokens";
 import { useTheme } from "@/context/theme-context";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useReadingProgress } from "@/hooks/useReadingProgress";
@@ -40,35 +40,41 @@ interface SettingItemProps {
   onPress?: () => void;
   rightElement?: React.ReactNode;
   delay?: number;
+  isLast?: boolean;
+  colors: ReturnType<typeof useAppTheme>["colors"];
 }
 
-type ThemeColors = typeof Palette.light;
-const SettingItem: React.FC<SettingItemProps & { colors: ThemeColors }> = ({
+const SettingItem: React.FC<SettingItemProps> = ({
   title,
   subtitle,
   icon,
   onPress,
   rightElement,
   delay = 0,
+  isLast = false,
   colors,
 }) => (
   <Animated.View entering={FadeInUp.delay(delay).springify()}>
     <Pressable
-      style={[styles.settingItem, { borderBottomColor: colors.outline }]}
+      style={[
+        styles.settingItem,
+        !isLast && {
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: colors.outline + "33",
+        },
+      ]}
       onPress={() => {
         if (onPress) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         onPress?.();
       }}
     >
       <View style={styles.settingItemLeft}>
-        <View
-          style={[
-            styles.iconContainer,
-            { backgroundColor: colors.primary + "20" },
-          ]}
-        >
-          <Ionicons name={icon} size={20} color={colors.primary} />
-        </View>
+        <Ionicons
+          name={icon}
+          size={20}
+          color={colors.primary}
+          style={styles.settingIcon}
+        />
         <View style={styles.settingTextContainer}>
           <Text style={[styles.settingTitle, { color: colors.text }]}>
             {title}
@@ -269,9 +275,9 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
+      edges={["top"]}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {/* Header */}
         <Animated.View
           entering={FadeInUp.delay(0).springify()}
           style={styles.header}
@@ -284,28 +290,23 @@ export default function SettingsScreen() {
           </Text>
         </Animated.View>
 
-        {/* Appearance Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
             Appearance
           </Text>
-          <View
-            style={[
-              styles.sectionContent,
-              { backgroundColor: colors.surface, borderColor: colors.outline },
-            ]}
-          >
+          <View style={styles.sectionContent}>
             <SettingItem
               title="Dark Mode"
               subtitle="Switch between light and dark themes"
               icon="moon"
               colors={colors}
+              isLast
               rightElement={
                 <Switch
                   value={theme === "dark"}
                   onValueChange={handleThemeToggle}
                   trackColor={{
-                    false: colors.outline,
+                    false: colors.outline + "55",
                     true: colors.primary,
                   }}
                   thumbColor={
@@ -318,23 +319,21 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* Audio & Notifications Section */}
+        <View
+          style={[styles.sectionRule, { backgroundColor: colors.outline + "28" }]}
+        />
+
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
             Audio & Notifications
           </Text>
-          <View
-            style={[
-              styles.sectionContent,
-              { backgroundColor: colors.surface, borderColor: colors.outline },
-            ]}
-          >
+          <View style={styles.sectionContent}>
             <SettingItem
               title="Notifications"
               subtitle={
                 notificationsEnabled
-                  ? `Enabled • Next: ${getNextReminderDisplay(notificationTime)}`
-                  : "Off • Enable daily verse notifications"
+                  ? `Enabled · Next: ${getNextReminderDisplay(notificationTime)}`
+                  : "Off · Enable daily verse notifications"
               }
               icon="notifications"
               colors={colors}
@@ -344,7 +343,7 @@ export default function SettingsScreen() {
                   onValueChange={handleNotificationsToggle}
                   disabled={notificationsLoading}
                   trackColor={{
-                    false: colors.outline,
+                    false: colors.outline + "55",
                     true: colors.primary,
                   }}
                   thumbColor={
@@ -361,16 +360,9 @@ export default function SettingsScreen() {
               colors={colors}
               onPress={openTimePicker}
               rightElement={
-                <View
-                  style={[
-                    styles.timeBadge,
-                    { backgroundColor: colors.primary + "15", borderColor: colors.primary + "40" },
-                  ]}
-                >
-                  <Text style={[styles.timeBadgeText, { color: colors.primary }]}>
-                    {formatDisplayTime(notificationTime)}
-                  </Text>
-                </View>
+                <Text style={[styles.timeValue, { color: colors.primary }]}>
+                  {formatDisplayTime(notificationTime)}
+                </Text>
               }
               delay={250}
             />
@@ -379,12 +371,13 @@ export default function SettingsScreen() {
               subtitle="Automatically play verse audio"
               icon="play-circle"
               colors={colors}
+              isLast
               rightElement={
                 <Switch
                   value={autoPlayAudio}
                   onValueChange={handleAutoPlayToggle}
                   trackColor={{
-                    false: colors.outline,
+                    false: colors.outline + "55",
                     true: colors.primary,
                   }}
                   thumbColor={
@@ -397,27 +390,26 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* Data Section */}
+        <View
+          style={[styles.sectionRule, { backgroundColor: colors.outline + "28" }]}
+        />
+
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
             Data
           </Text>
-          <View
-            style={[
-              styles.sectionContent,
-              { backgroundColor: colors.surface, borderColor: colors.outline },
-            ]}
-          >
+          <View style={styles.sectionContent}>
             <SettingItem
               title="Reset Reading Progress"
               subtitle={`Currently ${getTotalProgress()}% complete`}
               icon="refresh-circle"
               colors={colors}
+              isLast
               onPress={handleResetProgress}
               rightElement={
                 <Ionicons
                   name="chevron-forward"
-                  size={20}
+                  size={18}
                   color={colors.textMuted}
                 />
               }
@@ -426,17 +418,15 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* About Section */}
+        <View
+          style={[styles.sectionRule, { backgroundColor: colors.outline + "28" }]}
+        />
+
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
             About
           </Text>
-          <View
-            style={[
-              styles.sectionContent,
-              { backgroundColor: colors.surface, borderColor: colors.outline },
-            ]}
-          >
+          <View style={styles.sectionContent}>
             <SettingItem
               title="Version"
               subtitle="1.0.0"
@@ -453,7 +443,7 @@ export default function SettingsScreen() {
               rightElement={
                 <Ionicons
                   name="chevron-forward"
-                  size={20}
+                  size={18}
                   color={colors.textMuted}
                 />
               }
@@ -464,11 +454,12 @@ export default function SettingsScreen() {
               subtitle="Read our terms of service"
               icon="document-text"
               colors={colors}
+              isLast
               onPress={openTermsOfService}
               rightElement={
                 <Ionicons
                   name="chevron-forward"
-                  size={20}
+                  size={18}
                   color={colors.textMuted}
                 />
               }
@@ -477,13 +468,9 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* App Description */}
         <Animated.View
           entering={FadeInUp.delay(800).springify()}
-          style={[
-            styles.aboutCard,
-            { backgroundColor: colors.surface, borderColor: colors.outline },
-          ]}
+          style={styles.aboutBlock}
         >
           <Text style={[styles.aboutTitle, { color: colors.primary }]}>
             Bhagavad Gita
@@ -501,7 +488,7 @@ export default function SettingsScreen() {
             in a modern, accessible format.
           </Text>
           <Text style={[styles.aboutFooter, { color: colors.textMuted }]}>
-            Made with ❤️ for spiritual seekers
+            Made for spiritual seekers
           </Text>
         </Animated.View>
       </ScrollView>
@@ -516,7 +503,7 @@ export default function SettingsScreen() {
           <View
             style={[
               styles.modalCard,
-              { backgroundColor: colors.surface, borderColor: colors.outline },
+              { backgroundColor: colors.surface },
             ]}
           >
             <Text style={[styles.modalTitle, { color: colors.text }]}>
@@ -538,7 +525,7 @@ export default function SettingsScreen() {
 
             <View style={styles.modalActions}>
               <Pressable
-                style={[styles.modalButton, { borderColor: colors.outline }]}
+                style={styles.modalButton}
                 onPress={() => setShowTimePicker(false)}
               >
                 <Text style={[styles.modalButtonText, { color: colors.textMuted }]}>
@@ -546,7 +533,7 @@ export default function SettingsScreen() {
                 </Text>
               </Pressable>
               <Pressable
-                style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                style={[styles.modalButtonPrimary, { backgroundColor: colors.primary }]}
                 onPress={saveNotificationTime}
               >
                 <Text style={[styles.modalButtonText, { color: colors.onPrimary }]}>
@@ -564,48 +551,46 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // backgroundColor will be set dynamically
   },
   scrollContainer: {
-    padding: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xxl,
   },
   header: {
-    alignItems: "center",
     marginBottom: Spacing.xl,
   },
   title: {
+    fontFamily: "PlayfairDisplay_700Bold",
     fontSize: 32,
-    fontWeight: "bold",
-    // color will be set dynamically
+    letterSpacing: 0.5,
     marginBottom: Spacing.xs,
   },
   subtitle: {
-    fontSize: 16,
-    // color will be set dynamically
+    fontSize: 15,
   },
   section: {
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.md,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 12,
     fontWeight: "600",
-    // color will be set dynamically
-    marginBottom: Spacing.md,
-    marginLeft: Spacing.sm,
+    letterSpacing: 1.1,
+    textTransform: "uppercase",
+    marginBottom: Spacing.sm,
   },
   sectionContent: {
-    // backgroundColor and borderColor will be set dynamically
-    borderRadius: Radius.md,
     overflow: "hidden",
-    borderWidth: 1,
+  },
+  sectionRule: {
+    height: StyleSheet.hairlineWidth,
+    marginVertical: Spacing.md,
   },
   settingItem: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: Spacing.lg,
-    borderBottomWidth: 1,
-    // borderBottomColor will be set dynamically
+    paddingVertical: Spacing.md,
   },
   settingItemLeft: {
     flexDirection: "row",
@@ -615,14 +600,9 @@ const styles = StyleSheet.create({
   settingItemRight: {
     marginLeft: Spacing.md,
   },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.sm,
-    // backgroundColor will be set dynamically
-    alignItems: "center",
-    justifyContent: "center",
+  settingIcon: {
     marginRight: Spacing.md,
+    width: 22,
   },
   settingTextContainer: {
     flex: 1,
@@ -630,21 +610,14 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 16,
     fontWeight: "500",
-    // color will be set dynamically
     marginBottom: 2,
   },
   settingSubtitle: {
-    fontSize: 14,
-    // color will be set dynamically
-  },
-  timeBadge: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: Radius.sm,
-    borderWidth: 1,
-  },
-  timeBadgeText: {
     fontSize: 13,
+    lineHeight: 18,
+  },
+  timeValue: {
+    fontSize: 14,
     fontWeight: "600",
   },
   modalBackdrop: {
@@ -657,12 +630,11 @@ const styles = StyleSheet.create({
   modalCard: {
     width: "100%",
     borderRadius: Radius.md,
-    borderWidth: 1,
     padding: Spacing.lg,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: "700",
+    fontFamily: "PlayfairDisplay_700Bold",
+    fontSize: 20,
     marginBottom: Spacing.xs,
   },
   modalSubtitle: {
@@ -678,39 +650,33 @@ const styles = StyleSheet.create({
   modalButton: {
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
+  },
+  modalButtonPrimary: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
     borderRadius: Radius.sm,
-    borderWidth: 1,
   },
   modalButtonText: {
     fontSize: 14,
     fontWeight: "600",
   },
-  aboutCard: {
-    // backgroundColor and borderColor will be set dynamically
-    borderRadius: Radius.md,
-    padding: Spacing.lg,
-    borderWidth: 1,
-    marginTop: Spacing.md,
+  aboutBlock: {
+    marginTop: Spacing.xl,
+    paddingTop: Spacing.md,
   },
   aboutTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    // color will be set dynamically
+    fontFamily: "PlayfairDisplay_700Bold",
+    fontSize: 22,
     marginBottom: Spacing.md,
-    textAlign: "center",
   },
   aboutDescription: {
-    fontSize: 16,
-    // color will be set dynamically
+    fontSize: 15,
     lineHeight: 24,
     marginBottom: Spacing.md,
-    textAlign: "justify",
   },
   aboutFooter: {
-    fontSize: 14,
-    // color will be set dynamically
-    textAlign: "center",
+    fontSize: 13,
     fontStyle: "italic",
-    marginTop: Spacing.md,
+    marginTop: Spacing.sm,
   },
 });
