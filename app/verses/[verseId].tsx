@@ -23,7 +23,6 @@ import Animated, {
   runOnJS,
   FadeIn,
 } from "react-native-reanimated";
-import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 
 import { getVerseById } from "@/data/verses/verse-catalog";
@@ -38,6 +37,8 @@ import type { StreakMilestone } from "@/constants/milestones";
 import CelebrationModal from "@/components/modals/CelebrationModal";
 import MilestoneModal from "@/components/modals/MilestoneModal";
 import { SkeletonVerseDetail } from "@/components/ui/SkeletonLoader";
+import { GoldCard } from "@/components/ui/GoldCard";
+import { OrnamentalDivider, ORNAMENTS } from "@/components/ui/OrnamentalDivider";
 import { VerseAudioPlayer } from "@/components/verse/VerseAudioPlayer";
 import {
   ShareCardView,
@@ -56,6 +57,7 @@ import { getDailyVerseNotificationContent, getVerseForDate } from "@/lib/daily-v
 import { ROUTES } from "@/constants/routes";
 import { VERSE_SEQUENCES } from "@/constants/verse-sequences";
 import { getRouteParam } from "@/lib/route-params";
+import { Spacing } from "@/theme/design-tokens";
 
 const getAdjacentVerse = (
   chapterId: number,
@@ -94,7 +96,6 @@ export default function VerseDetailScreen() {
   const [isCommentaryExpanded, setIsCommentaryExpanded] = useState(true);
   const [noteText, setNoteText] = useState("");
   const [showNoteSheet, setShowNoteSheet] = useState(false);
-  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [milestoneDays, setMilestoneDays] = useState<StreakMilestone | null>(null);
   const [showMilestone, setShowMilestone] = useState(false);
   const router = useRouter();
@@ -278,19 +279,6 @@ export default function VerseDetailScreen() {
     }
   }, [verse, isSaved, showToast, bookmarkScale]);
 
-  const handleShare = useCallback(async () => {
-    if (!verse) return;
-    if (!shareCardRef.current) return;
-    try {
-      const uri = await captureShareCardRef(shareCardRef.current);
-      await shareImage(uri);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (e) {
-      console.error("Share failed:", e);
-      showToast("Could not share right now", "error", "alert-circle");
-    }
-  }, [verse, showToast]);
-
   const handleShareStreak = useCallback(async () => {
     if (!streakShareRef.current) return;
     try {
@@ -305,17 +293,6 @@ export default function VerseDetailScreen() {
       setShowMilestone(false);
     }
   }, [milestoneDays]);
-
-  const copyToClipboard = useCallback(
-    async (text: string | undefined, label: string) => {
-      const value = text ?? "";
-      if (!value) return;
-      await Clipboard.setStringAsync(value);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      showToast(`${label} copied to clipboard`, "success", "copy");
-    },
-    [showToast]
-  );
 
   const navigateToVerse = useCallback(
     (offset: number) => {
@@ -365,13 +342,6 @@ export default function VerseDetailScreen() {
       runOnJS(toggleSave)();
     });
 
-  const createLongPressGesture = (text: string, label: string) =>
-    Gesture.LongPress()
-      .minDuration(500)
-      .onEnd(() => {
-        runOnJS(copyToClipboard)(text, label);
-      });
-
   const animatedContentStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
   }));
@@ -392,18 +362,20 @@ export default function VerseDetailScreen() {
     return (
       <SafeAreaView
         style={[verseScreenStyles.container, { backgroundColor: colors.background }]}
+        edges={["bottom"]}
       >
         <Stack.Screen
           options={{
-            headerTitle: `Chapter ${verse.chapter}, Verse ${verse.verse_number}`,
+            headerTitle: `Chapter ${verse.chapter} · Verse ${verse.verse_number}`,
             headerStyle: { backgroundColor: colors.background },
             headerTintColor: colors.primary,
             headerTitleStyle: {
               color: colors.primary,
-              fontSize: 18,
+              fontSize: 15,
               fontFamily: "PlayfairDisplay_700Bold",
             },
             headerShadowVisible: false,
+            headerTitleAlign: "center",
           }}
         />
         <SkeletonVerseDetail />
@@ -411,15 +383,18 @@ export default function VerseDetailScreen() {
     );
   }
 
+  const headerTitle = `Chapter ${verse.chapter} · Verse ${verse.verse_number}`;
+  const verseRef = `${verse.chapter}.${verse.verse_number}`;
+  const wordMeanings = verse.word_meanings ?? [];
+
   return (
     <SafeAreaView
       style={[verseScreenStyles.container, { backgroundColor: colors.background }]}
+      edges={["bottom"]}
     >
       <Stack.Screen
         options={{
-          headerTitle: verse
-            ? `Chapter ${verse.chapter}, Verse ${verse.verse_number}`
-            : "Verse Not Found",
+          headerTitle,
           headerRight: () => (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
               <Pressable
@@ -439,13 +414,17 @@ export default function VerseDetailScreen() {
               <Pressable
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setShowOptionsMenu(true);
+                  setShowNoteSheet(true);
                 }}
                 style={verseScreenStyles.saveButton}
-                accessibilityLabel="More options"
+                accessibilityLabel={noteText.trim() ? "Edit reflection" : "Add reflection"}
                 accessibilityRole="button"
               >
-                <Ionicons name="ellipsis-vertical" size={20} color={colors.primary} />
+                <Ionicons
+                  name={noteText.trim() ? "create" : "create-outline"}
+                  size={22}
+                  color={colors.primary}
+                />
               </Pressable>
             </View>
           ),
@@ -455,10 +434,11 @@ export default function VerseDetailScreen() {
           headerTintColor: colors.primary,
           headerTitleStyle: {
             color: colors.primary,
-            fontSize: 18,
+            fontSize: 15,
             fontFamily: "PlayfairDisplay_700Bold",
           },
           headerShadowVisible: false,
+          headerTitleAlign: "center",
         }}
       />
 
@@ -488,133 +468,159 @@ export default function VerseDetailScreen() {
 
       <GestureDetector gesture={swipeGesture}>
         <Animated.View style={[{ flex: 1 }, animatedContentStyle]}>
-          <ScrollView style={verseScreenStyles.content} showsVerticalScrollIndicator={false}>
-            <GestureDetector
-              gesture={Gesture.Exclusive(
-                doubleTapGesture,
-                createLongPressGesture(verse.teluguSloka ?? "", "Sloka")
-              )}
-            >
+          <ScrollView
+            style={verseScreenStyles.content}
+            contentContainerStyle={localStyles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <GestureDetector gesture={doubleTapGesture}>
               <Animated.View
                 entering={FadeIn.delay(100)}
-                style={verseScreenStyles.verseContainer}
+                style={localStyles.slokaBlock}
               >
-                <Text style={[localStyles.slokaLabel, { color: colors.primary }]}>
-                  Sloka
-                </Text>
-                <Text style={[verseScreenStyles.teluguSlokaText, { color: colors.text }]}>
+                <OrnamentalDivider
+                  source={ORNAMENTS.lotusSimple}
+                  height={32}
+                  style={localStyles.slokaTopOrnament}
+                />
+                <Text
+                  style={[
+                    verseScreenStyles.teluguSlokaText,
+                    localStyles.slokaText,
+                    { color: colors.text },
+                  ]}
+                >
                   {verse.teluguSloka}
                 </Text>
-                {verseAudioSource != null && (
-                  <VerseAudioPlayer
-                    audioSource={verseAudioSource}
-                    primaryColor={colors.primary}
-                    textMutedColor={colors.textMuted}
-                    outlineColor={colors.outline}
-                    autoPlay={autoPlayAudio}
-                  />
-                )}
-                <Text style={[localStyles.hintText, { color: colors.textMuted }]}>
-                  Long press to copy · Double tap to bookmark
+                <Text style={[localStyles.verseRef, { color: colors.primary }]}>
+                  || {verseRef} ||
                 </Text>
+                <OrnamentalDivider
+                  source={ORNAMENTS.filigree}
+                  height={26}
+                  style={localStyles.slokaBottomOrnament}
+                />
               </Animated.View>
             </GestureDetector>
 
-            <View
-              style={[localStyles.sectionRule, { borderBottomColor: colors.outline + "33" }]}
-            />
+            {wordMeanings.length > 0 && (
+              <Animated.View entering={FadeIn.delay(200)}>
+                <GoldCard style={localStyles.sectionCard}>
+                  <View style={localStyles.sectionHeader}>
+                    <Ionicons name="book-outline" size={18} color={colors.primary} />
+                    <Text style={[localStyles.sectionTitle, { color: colors.primary }]}>
+                      Word meanings
+                    </Text>
+                  </View>
+                  <View style={localStyles.wordGrid}>
+                    {wordMeanings.map((item, index) => {
+                      const isLeft = index % 2 === 0;
+                      const isLastRow =
+                        index >= wordMeanings.length - (wordMeanings.length % 2 === 0 ? 2 : 1);
+                      return (
+                        <View
+                          key={index}
+                          style={[
+                            localStyles.wordCell,
+                            {
+                              borderColor: colors.primary + "33",
+                              borderRightWidth: isLeft ? StyleSheet.hairlineWidth : 0,
+                              borderBottomWidth: isLastRow ? 0 : StyleSheet.hairlineWidth,
+                            },
+                          ]}
+                        >
+                          <Text style={[localStyles.wordCellWord, { color: colors.text }]}>
+                            {item.word}
+                          </Text>
+                          <Text style={[localStyles.wordCellMeaning, { color: colors.textMuted }]}>
+                            {item.meaning}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </GoldCard>
+              </Animated.View>
+            )}
 
-            <Animated.View
-              entering={FadeIn.delay(200)}
-              style={verseScreenStyles.wordMeaningsContainer}
-            >
-              <Text style={[verseScreenStyles.sectionTitle, { color: colors.primary }]}>
-                Word Meanings
-              </Text>
-              {(verse.word_meanings ?? []).map((item, index) => (
-                <View
-                  key={index}
-                  style={[
-                    verseScreenStyles.wordMeaningRow,
-                    { borderBottomColor: colors.outline + "33" },
-                  ]}
-                >
-                  <Text style={[verseScreenStyles.word, { color: colors.text }]}>
-                    {item.word}
-                  </Text>
-                  <Text style={[verseScreenStyles.meaning, { color: colors.textMuted }]}>
-                    {item.meaning}
+            <Animated.View entering={FadeIn.delay(300)}>
+              <GoldCard style={localStyles.sectionCard}>
+                <View style={localStyles.sectionHeader}>
+                  <Ionicons name="book" size={18} color={colors.primary} />
+                  <Text style={[localStyles.sectionTitle, { color: colors.primary }]}>
+                    Meaning
                   </Text>
                 </View>
-              ))}
-            </Animated.View>
-
-            <GestureDetector gesture={createLongPressGesture(verse.meaning ?? "", "Meaning")}>
-              <Animated.View
-                entering={FadeIn.delay(300)}
-                style={verseScreenStyles.commentaryContainer}
-              >
-                <Text style={[verseScreenStyles.sectionTitle, { color: colors.primary }]}>
-                  Meaning
-                </Text>
                 <Text style={[verseScreenStyles.meaningStyle, { color: colors.text }]}>
                   {verse.meaning}
                 </Text>
-              </Animated.View>
-            </GestureDetector>
+              </GoldCard>
+            </Animated.View>
 
-            <Animated.View
-              entering={FadeIn.delay(400)}
-              style={verseScreenStyles.commentaryContainer}
-            >
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setIsCommentaryExpanded((v) => !v);
-                }}
-                style={localStyles.commentaryHeader}
-                accessibilityRole="button"
-                accessibilityLabel={
-                  isCommentaryExpanded ? "Collapse commentary" : "Expand commentary"
-                }
-              >
-                <Text style={[verseScreenStyles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>
-                  Commentary
-                </Text>
-                <View style={localStyles.commentaryToggle}>
-                  <Text style={[localStyles.commentaryToggleText, { color: colors.textMuted }]}>
-                    {isCommentaryExpanded ? "Hide" : "Read"}
-                  </Text>
-                  <Ionicons
-                    name={isCommentaryExpanded ? "chevron-up" : "chevron-down"}
-                    size={16}
-                    color={colors.textMuted}
-                  />
-                </View>
-              </Pressable>
-              {isCommentaryExpanded && (
-                <GestureDetector
-                  gesture={createLongPressGesture(verse.commentary ?? "", "Commentary")}
+            <Animated.View entering={FadeIn.delay(400)}>
+              <GoldCard style={localStyles.sectionCard}>
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setIsCommentaryExpanded((v) => !v);
+                  }}
+                  style={localStyles.commentaryHeader}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    isCommentaryExpanded ? "Collapse commentary" : "Expand commentary"
+                  }
                 >
+                  <View style={localStyles.sectionHeader}>
+                    <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.primary} />
+                    <Text style={[localStyles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>
+                      Commentary
+                    </Text>
+                  </View>
+                  <View style={localStyles.commentaryToggle}>
+                    <Text style={[localStyles.commentaryToggleText, { color: colors.textMuted }]}>
+                      {isCommentaryExpanded ? "Hide" : "Read"}
+                    </Text>
+                    <Ionicons
+                      name={isCommentaryExpanded ? "chevron-up" : "chevron-down"}
+                      size={16}
+                      color={colors.textMuted}
+                    />
+                  </View>
+                </Pressable>
+                {isCommentaryExpanded && (
                   <View style={{ marginTop: 12 }}>
                     <Text style={[verseScreenStyles.commentaryText, { color: colors.text }]}>
                       {verse.commentary}
                     </Text>
                   </View>
-                </GestureDetector>
-              )}
+                )}
+              </GoldCard>
             </Animated.View>
 
-            <View style={{ height: 100 }} />
+            <View style={{ height: 16 }} />
           </ScrollView>
         </Animated.View>
       </GestureDetector>
 
-      <View style={localStyles.swipeHint}>
-        <Text style={[localStyles.swipeHintText, { color: colors.textMuted }]}>
-          ← Swipe to navigate →
-        </Text>
-      </View>
+      {verseAudioSource != null && (
+        <View
+          style={[
+            localStyles.audioDock,
+            {
+              backgroundColor: colors.background,
+              borderTopColor: colors.primary + "33",
+            },
+          ]}
+        >
+          <VerseAudioPlayer
+            audioSource={verseAudioSource}
+            primaryColor={colors.primary}
+            textMutedColor={colors.textMuted}
+            outlineColor={colors.outline}
+            autoPlay={autoPlayAudio}
+          />
+        </View>
+      )}
 
       <View
         style={[
@@ -631,13 +637,13 @@ export default function VerseDetailScreen() {
           disabled={!getAdjacentVerse(verse.chapter, verse.verse_number, -1)}
           style={[
             verseScreenStyles.navButton,
-            { borderColor: colors.outline + "55" },
+            { borderColor: colors.primary + "88" },
             {
               opacity: !getAdjacentVerse(verse.chapter, verse.verse_number, -1) ? 0.3 : 1,
             },
           ]}
         >
-          <Ionicons name="chevron-back" size={20} color={colors.primary} />
+          <Text style={{ fontSize: 16, color: colors.primary }}>◀</Text>
           <Text style={[verseScreenStyles.navButtonText, { color: colors.primary }]}>
             Previous
           </Text>
@@ -647,14 +653,16 @@ export default function VerseDetailScreen() {
           disabled={!getAdjacentVerse(verse.chapter, verse.verse_number, 1)}
           style={[
             verseScreenStyles.navButton,
-            { borderColor: colors.outline + "55" },
+            { borderColor: colors.primary + "88" },
             {
               opacity: !getAdjacentVerse(verse.chapter, verse.verse_number, 1) ? 0.3 : 1,
             },
           ]}
         >
-          <Text style={[verseScreenStyles.navButtonText, { color: colors.primary }]}>Next</Text>
-          <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+          <Text style={[verseScreenStyles.navButtonText, { color: colors.primary }]}>
+            Next
+          </Text>
+          <Text style={{ fontSize: 16, color: colors.primary }}>▶</Text>
         </Pressable>
       </View>
 
@@ -674,57 +682,6 @@ export default function VerseDetailScreen() {
         }}
         onShare={handleShareStreak}
       />
-
-      <Modal
-        visible={showOptionsMenu}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowOptionsMenu(false)}
-      >
-        <View style={localStyles.optionsBackdrop}>
-          <Pressable
-            style={StyleSheet.absoluteFill}
-            onPress={() => setShowOptionsMenu(false)}
-            accessibilityLabel="Dismiss options"
-          />
-          <View style={[localStyles.optionsSheet, { backgroundColor: colors.surface }]}>
-            <Text style={[localStyles.optionsTitle, { color: colors.textMuted }]}>
-              Options
-            </Text>
-            <Pressable
-              style={localStyles.optionRow}
-              onPress={() => {
-                setShowOptionsMenu(false);
-                handleShare();
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="Share verse"
-            >
-              <Ionicons name="share-social-outline" size={22} color={colors.primary} />
-              <Text style={[localStyles.optionLabel, { color: colors.text }]}>Share</Text>
-            </Pressable>
-            <View style={[localStyles.optionDivider, { backgroundColor: colors.outline + "44" }]} />
-            <Pressable
-              style={localStyles.optionRow}
-              onPress={() => {
-                setShowOptionsMenu(false);
-                setShowNoteSheet(true);
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="Your reflection"
-            >
-              <Ionicons
-                name={noteText.trim() ? "create" : "create-outline"}
-                size={22}
-                color={colors.primary}
-              />
-              <Text style={[localStyles.optionLabel, { color: colors.text }]}>
-                {noteText.trim() ? "Edit reflection" : "Add reflection"}
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
 
       <Modal
         visible={showNoteSheet}
@@ -782,31 +739,75 @@ export default function VerseDetailScreen() {
 }
 
 const localStyles = StyleSheet.create({
-  slokaLabel: {
+  scrollContent: {
+    paddingHorizontal: Spacing.md,
+    paddingBottom: Spacing.sm,
+  },
+  slokaBlock: {
+    paddingHorizontal: Spacing.sm,
+    paddingTop: Spacing.xs,
+    paddingBottom: Spacing.sm,
+    alignItems: "center",
+  },
+  slokaText: {
+    marginBottom: 6,
+    marginTop: 2,
+  },
+  verseRef: {
+    alignSelf: "flex-end",
     fontFamily: "PlayfairDisplay_700Bold",
-    fontSize: 22,
-    textAlign: "center",
-    marginBottom: 14,
+    fontSize: 14,
+    marginTop: 2,
+    marginBottom: 2,
   },
   hintText: {
     fontSize: 11,
     textAlign: "center",
-    marginTop: 14,
+    marginTop: 6,
     letterSpacing: 0.2,
   },
-  sectionRule: {
-    marginHorizontal: 20,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+  sectionCard: {
+    marginBottom: Spacing.md,
   },
-  swipeHint: {
-    position: "absolute",
-    bottom: 78,
-    alignSelf: "center",
-    opacity: 0.45,
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
   },
-  swipeHintText: {
-    fontSize: 11,
-    letterSpacing: 0.3,
+  sectionTitle: {
+    fontFamily: "PlayfairDisplay_700Bold",
+    fontSize: 18,
+  },
+  wordGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginHorizontal: -4,
+  },
+  wordCell: {
+    width: "50%",
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    alignItems: "center",
+  },
+  wordCellWord: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 2,
+    textAlign: "center",
+  },
+  wordCellMeaning: {
+    fontSize: 12,
+    lineHeight: 16,
+    textAlign: "center",
+  },
+  slokaTopOrnament: {
+    marginBottom: 4,
+    marginTop: 0,
+  },
+  slokaBottomOrnament: {
+    marginTop: 6,
+    marginBottom: 0,
   },
   commentaryHeader: {
     flexDirection: "row",
@@ -822,40 +823,11 @@ const localStyles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
   },
-  optionsBackdrop: {
-    flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.35)",
-  },
-  optionsSheet: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 8,
-    paddingTop: 16,
-    paddingBottom: 28,
-  },
-  optionsTitle: {
-    fontSize: 12,
-    fontWeight: "600",
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    paddingHorizontal: 16,
-    marginBottom: 8,
-  },
-  optionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-  },
-  optionLabel: {
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  optionDivider: {
-    height: StyleSheet.hairlineWidth,
-    marginHorizontal: 16,
+  audioDock: {
+    paddingHorizontal: Spacing.md,
+    paddingTop: 4,
+    paddingBottom: 2,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   noteBackdrop: {
     flex: 1,

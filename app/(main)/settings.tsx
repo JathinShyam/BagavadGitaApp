@@ -5,15 +5,16 @@ import {
   ScrollView,
   StyleSheet,
   Pressable,
-  Switch,
   Linking,
   Alert,
   Platform,
   Modal,
+  Image,
 } from "react-native";
 import { Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+
 import Animated, { FadeInUp } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -33,6 +34,11 @@ import {
 } from "@/lib/daily-verse-notifications";
 import { APP_URLS } from "@/constants/app-urls";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
+import { GoldCard } from "@/components/ui/GoldCard";
+import { OrnamentalDivider, ORNAMENTS } from "@/components/ui/OrnamentalDivider";
+import { IOSToggle } from "@/components/ui/IOSToggle";
+
+const BRAND_ICON = require("../../assets/images/brand-lotus-book.png");
 
 interface SettingItemProps {
   title: string;
@@ -61,7 +67,7 @@ const SettingItem: React.FC<SettingItemProps> = ({
         styles.settingItem,
         !isLast && {
           borderBottomWidth: StyleSheet.hairlineWidth,
-          borderBottomColor: colors.outline + "33",
+          borderBottomColor: colors.outline + "40",
         },
       ]}
       onPress={() => {
@@ -70,12 +76,7 @@ const SettingItem: React.FC<SettingItemProps> = ({
       }}
     >
       <View style={styles.settingItemLeft}>
-        <Ionicons
-          name={icon}
-          size={20}
-          color={colors.primary}
-          style={styles.settingIcon}
-        />
+        <Ionicons name={icon} size={22} color={colors.primary} style={styles.settingIcon} />
         <View style={styles.settingTextContainer}>
           <Text style={[styles.settingTitle, { color: colors.text }]}>
             {title}
@@ -97,7 +98,7 @@ const SettingItem: React.FC<SettingItemProps> = ({
 export default function SettingsScreen() {
   const { theme, toggleTheme } = useTheme();
   const { colors } = useAppTheme();
-  const { resetAllProgress, getTotalProgress } = useReadingProgress();
+  const { resetAllProgress } = useReadingProgress();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [notificationTime, setNotificationTime] = useState("08:00");
   const [autoPlayAudio, setAutoPlayAudio] = useState(false);
@@ -121,17 +122,6 @@ export default function SettingsScreen() {
   const formatDisplayTime = useCallback((time: string) => {
     const d = parseTimeToDate(time);
     return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-  }, [parseTimeToDate]);
-
-  const getNextReminderDisplay = useCallback((time: string) => {
-    const target = parseTimeToDate(time);
-    const now = new Date();
-    if (target <= now) target.setDate(target.getDate() + 1);
-    return target.toLocaleString([], {
-      weekday: "short",
-      hour: "numeric",
-      minute: "2-digit",
-    });
   }, [parseTimeToDate]);
 
   const loadNotificationPreference = useCallback(async () => {
@@ -277,193 +267,154 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <Animated.View
           entering={FadeInUp.delay(0).springify()}
-          style={styles.header}
+          style={styles.brandHeader}
         >
-          <Text style={[styles.title, { color: colors.primary }]}>
-            Settings
-          </Text>
-          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-            Customize your experience
-          </Text>
+          <View style={styles.brandRow}>
+            <Image source={BRAND_ICON} style={styles.brandIcon} resizeMode="contain" />
+            <Text style={[styles.brandTitle, { color: colors.primary }]}>
+              Bhagavad Gita
+            </Text>
+          </View>
+          <OrnamentalDivider source={ORNAMENTS.settingsDivider} height={22} />
+          <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
+          <OrnamentalDivider source={ORNAMENTS.settingsDivider} height={28} />
         </Animated.View>
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
-            Appearance
-          </Text>
-          <View style={styles.sectionContent}>
-            <SettingItem
-              title="Dark Mode"
-              subtitle="Switch between light and dark themes"
-              icon="moon"
-              colors={colors}
-              isLast
-              rightElement={
-                <Switch
-                  value={theme === "dark"}
-                  onValueChange={handleThemeToggle}
-                  trackColor={{
-                    false: colors.outline + "55",
-                    true: colors.primary,
-                  }}
-                  thumbColor={
-                    theme === "dark" ? colors.onPrimary : colors.textMuted
-                  }
-                />
-              }
-              delay={100}
-            />
-          </View>
-        </View>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>
+          Appearance
+        </Text>
+        <GoldCard style={styles.sectionCard}>
+          <SettingItem
+            title="Theme"
+            icon="color-palette-outline"
+            colors={colors}
+            isLast
+            rightElement={
+              <IOSToggle
+                value={theme === "dark"}
+                onValueChange={handleThemeToggle}
+                activeColor={colors.primary}
+              />
+            }
+            delay={100}
+          />
+        </GoldCard>
 
-        <View
-          style={[styles.sectionRule, { backgroundColor: colors.outline + "28" }]}
-        />
-
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
-            Audio & Notifications
-          </Text>
-          <View style={styles.sectionContent}>
-            <SettingItem
-              title="Notifications"
-              subtitle={
-                notificationsEnabled
-                  ? `Enabled · Next: ${getNextReminderDisplay(notificationTime)}`
-                  : "Off · Enable daily verse notifications"
-              }
-              icon="notifications"
-              colors={colors}
-              rightElement={
-                <Switch
-                  value={notificationsEnabled}
-                  onValueChange={handleNotificationsToggle}
-                  disabled={notificationsLoading}
-                  trackColor={{
-                    false: colors.outline + "55",
-                    true: colors.primary,
-                  }}
-                  thumbColor={
-                    notificationsEnabled ? colors.onPrimary : colors.textMuted
-                  }
-                />
-              }
-              delay={200}
-            />
-            <SettingItem
-              title="Notification time"
-              subtitle={`Daily at ${formatDisplayTime(notificationTime)}`}
-              icon="time"
-              colors={colors}
-              onPress={openTimePicker}
-              rightElement={
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>
+          Audio & Notifications
+        </Text>
+        <GoldCard style={styles.sectionCard}>
+          <SettingItem
+            title="Notifications"
+            icon="notifications-outline"
+            colors={colors}
+            rightElement={
+              <IOSToggle
+                value={notificationsEnabled}
+                onValueChange={handleNotificationsToggle}
+                disabled={notificationsLoading}
+                activeColor={colors.primary}
+              />
+            }
+            delay={200}
+          />
+          <SettingItem
+            title="Notification time"
+            icon="time-outline"
+            colors={colors}
+            onPress={openTimePicker}
+            rightElement={
+              <View style={styles.timeRow}>
                 <Text style={[styles.timeValue, { color: colors.primary }]}>
                   {formatDisplayTime(notificationTime)}
                 </Text>
-              }
-              delay={250}
-            />
-            <SettingItem
-              title="Auto-play Audio"
-              subtitle="Automatically play verse audio"
-              icon="play-circle"
-              colors={colors}
-              isLast
-              rightElement={
-                <Switch
-                  value={autoPlayAudio}
-                  onValueChange={handleAutoPlayToggle}
-                  trackColor={{
-                    false: colors.outline + "55",
-                    true: colors.primary,
-                  }}
-                  thumbColor={
-                    autoPlayAudio ? colors.onPrimary : colors.textMuted
-                  }
-                />
-              }
-              delay={300}
-            />
-          </View>
-        </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              </View>
+            }
+            delay={250}
+          />
+          <SettingItem
+            title="Auto-play Audio"
+            icon="volume-high-outline"
+            colors={colors}
+            isLast
+            rightElement={
+              <IOSToggle
+                value={autoPlayAudio}
+                onValueChange={handleAutoPlayToggle}
+                activeColor={colors.primary}
+              />
+            }
+            delay={300}
+          />
+        </GoldCard>
 
-        <View
-          style={[styles.sectionRule, { backgroundColor: colors.outline + "28" }]}
-        />
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>
+          Data
+        </Text>
+        <GoldCard style={styles.sectionCard}>
+          <SettingItem
+            title="Reset Reading Progress"
+            icon="refresh-circle"
+            colors={colors}
+            isLast
+            onPress={handleResetProgress}
+            rightElement={
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={colors.textMuted}
+              />
+            }
+            delay={350}
+          />
+        </GoldCard>
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
-            Data
-          </Text>
-          <View style={styles.sectionContent}>
-            <SettingItem
-              title="Reset Reading Progress"
-              subtitle={`Currently ${getTotalProgress()}% complete`}
-              icon="refresh-circle"
-              colors={colors}
-              isLast
-              onPress={handleResetProgress}
-              rightElement={
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color={colors.textMuted}
-                />
-              }
-              delay={350}
-            />
-          </View>
-        </View>
-
-        <View
-          style={[styles.sectionRule, { backgroundColor: colors.outline + "28" }]}
-        />
-
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
-            About
-          </Text>
-          <View style={styles.sectionContent}>
-            <SettingItem
-              title="Version"
-              subtitle={Constants.expoConfig?.version ?? "1.0.0"}
-              icon="information-circle"
-              colors={colors}
-              delay={400}
-            />
-            <SettingItem
-              title="Privacy Policy"
-              subtitle="Read our privacy policy"
-              icon="shield-checkmark"
-              colors={colors}
-              onPress={openPrivacyPolicy}
-              rightElement={
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color={colors.textMuted}
-                />
-              }
-              delay={500}
-            />
-            <SettingItem
-              title="Terms of Service"
-              subtitle="Read our terms of service"
-              icon="document-text"
-              colors={colors}
-              isLast
-              onPress={openTermsOfService}
-              rightElement={
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color={colors.textMuted}
-                />
-              }
-              delay={600}
-            />
-          </View>
-        </View>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>
+          About
+        </Text>
+        <GoldCard style={styles.sectionCard}>
+          <SettingItem
+            title="Version"
+            icon="information-circle"
+            colors={colors}
+            rightElement={
+              <Text style={[styles.timeValue, { color: colors.textMuted }]}>
+                {Constants.expoConfig?.version ?? "1.0.0"}
+              </Text>
+            }
+            delay={400}
+          />
+          <SettingItem
+            title="Privacy Policy"
+            icon="shield-checkmark-outline"
+            colors={colors}
+            onPress={openPrivacyPolicy}
+            rightElement={
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={colors.primary}
+              />
+            }
+            delay={500}
+          />
+          <SettingItem
+            title="Terms of Service"
+            icon="document-text-outline"
+            colors={colors}
+            isLast
+            onPress={openTermsOfService}
+            rightElement={
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={colors.primary}
+              />
+            }
+            delay={600}
+          />
+        </GoldCard>
 
         <Animated.View
           entering={FadeInUp.delay(800).springify()}
@@ -554,40 +505,55 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.lg,
     paddingBottom: Spacing.xxl,
   },
-  header: {
-    marginBottom: Spacing.xl,
+  brandHeader: {
+    marginBottom: Spacing.lg,
+    alignItems: "center",
+  },
+  brandRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 2,
+  },
+  brandIcon: {
+    width: 36,
+    height: 36,
+  },
+  brandTitle: {
+    fontFamily: "PlayfairDisplay_700Bold",
+    fontSize: 22,
+    letterSpacing: 0.3,
   },
   title: {
     fontFamily: "PlayfairDisplay_700Bold",
-    fontSize: 32,
+    fontSize: 34,
     letterSpacing: 0.5,
-    marginBottom: Spacing.xs,
+    textAlign: "center",
   },
   subtitle: {
-    fontSize: 15,
+    fontSize: 13,
+    textAlign: "center",
+    marginTop: 4,
+    marginBottom: 2,
   },
-  section: {
-    marginBottom: Spacing.md,
+  sectionCard: {
+    marginBottom: Spacing.lg,
+    paddingVertical: 2,
+    paddingHorizontal: Spacing.md,
   },
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: "600",
-    letterSpacing: 1.1,
-    textTransform: "uppercase",
+    fontFamily: "PlayfairDisplay_700Bold",
+    fontSize: 18,
+    letterSpacing: 0.2,
     marginBottom: Spacing.sm,
-  },
-  sectionContent: {
-    overflow: "hidden",
-  },
-  sectionRule: {
-    height: StyleSheet.hairlineWidth,
-    marginVertical: Spacing.md,
+    marginTop: Spacing.xs,
   },
   settingItem: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: Spacing.md,
+    paddingVertical: 14,
+    minHeight: 52,
   },
   settingItemLeft: {
     flexDirection: "row",
@@ -598,20 +564,24 @@ const styles = StyleSheet.create({
     marginLeft: Spacing.md,
   },
   settingIcon: {
-    marginRight: Spacing.md,
-    width: 22,
+    marginRight: 14,
+    width: 24,
   },
   settingTextContainer: {
     flex: 1,
   },
   settingTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "500",
-    marginBottom: 2,
   },
   settingSubtitle: {
     fontSize: 13,
     lineHeight: 18,
+  },
+  timeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   timeValue: {
     fontSize: 14,
@@ -658,7 +628,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   aboutBlock: {
-    marginTop: Spacing.xl,
+    marginTop: Spacing.md,
     paddingTop: Spacing.md,
   },
   aboutTitle: {

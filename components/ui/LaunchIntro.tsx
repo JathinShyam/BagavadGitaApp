@@ -220,7 +220,6 @@ const styles = StyleSheet.create({
     borderRadius: 1,
   },
   english: {
-    fontFamily: "Inter_400Regular",
     fontSize: 14,
     letterSpacing: 2,
     textTransform: "uppercase",

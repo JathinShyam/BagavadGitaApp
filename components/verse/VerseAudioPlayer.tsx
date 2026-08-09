@@ -59,6 +59,7 @@ function VerseAudioPlayerInner({
   const [isBuffering, setIsBuffering] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [durationMs, setDurationMs] = useState(0);
+  const [muted, setMuted] = useState(false);
 
   const playerRef = useRef<any>(null);
   const seekingRef = useRef(false);
@@ -91,11 +92,19 @@ function VerseAudioPlayerInner({
   });
 
   const timeText = useDerivedValue(() => {
-    return `${formatTimeWorklet(progressMs.value)} / ${formatTimeWorklet(durationSharedMs.value)}`;
+    return formatTimeWorklet(progressMs.value);
+  });
+
+  const durationText = useDerivedValue(() => {
+    return formatTimeWorklet(durationSharedMs.value);
   });
 
   const timeAnimatedProps = useAnimatedProps(() => {
     return { text: timeText.value } as any;
+  });
+
+  const durationAnimatedProps = useAnimatedProps(() => {
+    return { text: durationText.value } as any;
   });
 
   const startProgressAnimation = useCallback(() => {
@@ -366,9 +375,20 @@ function VerseAudioPlayerInner({
     if (isPlayingRef.current) startProgressAnimation();
   };
 
+  const handleMuteToggle = () => {
+    const player = playerRef.current;
+    const next = !muted;
+    setMuted(next);
+    if (player) {
+      try {
+        player.volume = next ? 0 : 1;
+      } catch {}
+    }
+  };
+
   if (loadingShown && !resolvedUri && !resolveError) {
     return (
-      <View style={[verseScreenStyles.audioContainer, { minHeight: 48 }]}>
+      <View style={[verseScreenStyles.audioContainer, { minHeight: 40 }]}>
         <ActivityIndicator size="small" color={primaryColor} />
         <TextInput
           editable={false}
@@ -381,7 +401,7 @@ function VerseAudioPlayerInner({
 
   if (resolveError) {
     return (
-      <View style={[verseScreenStyles.audioContainer, { minHeight: 48 }]}>
+      <View style={[verseScreenStyles.audioContainer, { minHeight: 40 }]}>
         <Ionicons name="alert-circle-outline" size={24} color={textMutedColor} />
         <TextInput
           editable={false}
@@ -394,7 +414,7 @@ function VerseAudioPlayerInner({
 
   if (!resolvedUri) {
     return (
-      <View style={[verseScreenStyles.audioContainer, { minHeight: 48 }]}>
+      <View style={[verseScreenStyles.audioContainer, { minHeight: 40 }]}>
         <ActivityIndicator size="small" color={primaryColor} />
         <TextInput
           editable={false}
@@ -410,17 +430,29 @@ function VerseAudioPlayerInner({
       <Pressable
         onPress={handlePlayPause}
         disabled={!resolvedUri}
-        hitSlop={12}
-        style={{ opacity: resolvedUri ? 1 : 0.6, minWidth: 44, minHeight: 44, justifyContent: "center", alignItems: "center" }}
+        hitSlop={8}
+        style={[
+          verseScreenStyles.audioPlayBtn,
+          { backgroundColor: primaryColor, opacity: resolvedUri ? 1 : 0.6 },
+        ]}
         accessibilityLabel={isPlaying ? "Pause audio" : "Play audio"}
         accessibilityRole="button"
       >
         <Ionicons
           name={isBuffering ? "hourglass" : isPlaying ? "pause" : "play"}
-          size={24}
-          color={primaryColor}
+          size={16}
+          color="#FFFFFF"
+          style={isPlaying || isBuffering ? undefined : { marginLeft: 1 }}
         />
       </Pressable>
+
+      <AnimatedTime
+        editable={false}
+        underlineColorAndroid="transparent"
+        style={[verseScreenStyles.audioTime, { color: textMutedColor }]}
+        animatedProps={timeAnimatedProps}
+      />
+
       <AnimatedSlider
         style={verseScreenStyles.slider}
         minimumValue={0}
@@ -432,16 +464,31 @@ function VerseAudioPlayerInner({
         minimumTrackTintColor={primaryColor}
         accessibilityLabel="Audio progress"
         accessibilityRole="adjustable"
-        maximumTrackTintColor={outlineColor}
+        maximumTrackTintColor={outlineColor + "66"}
         thumbTintColor={primaryColor}
         disabled={!resolvedUri}
       />
+
       <AnimatedTime
         editable={false}
         underlineColorAndroid="transparent"
         style={[verseScreenStyles.audioTime, { color: textMutedColor }]}
-        animatedProps={timeAnimatedProps}
+        animatedProps={durationAnimatedProps}
       />
+
+      <Pressable
+        onPress={handleMuteToggle}
+        hitSlop={10}
+        style={verseScreenStyles.audioMuteBtn}
+        accessibilityLabel={muted ? "Unmute" : "Mute"}
+        accessibilityRole="button"
+      >
+        <Ionicons
+          name={muted ? "volume-mute" : "volume-high"}
+          size={22}
+          color={primaryColor}
+        />
+      </Pressable>
     </View>
   );
 }

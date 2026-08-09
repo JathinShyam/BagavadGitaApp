@@ -12,12 +12,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import {
-  useFonts as useInter,
-  Inter_400Regular,
-  Inter_600SemiBold,
-} from "@expo-google-fonts/inter";
-import {
   useFonts as usePlayfair,
+  PlayfairDisplay_400Regular,
+  PlayfairDisplay_600SemiBold,
   PlayfairDisplay_700Bold,
 } from "@expo-google-fonts/playfair-display";
 import { ThemeProvider as AppThemeProvider, useTheme as useAppThemeMode } from "@/context/theme-context";
@@ -46,12 +43,15 @@ function NavigationThemeProvider({ children }: { children: ReactNode }) {
 }
 
 export default function RootLayout() {
-  const [interLoaded] = useInter({ Inter_400Regular, Inter_600SemiBold });
-  const [playfairLoaded] = usePlayfair({ PlayfairDisplay_700Bold });
+  const [playfairLoaded] = usePlayfair({
+    PlayfairDisplay_400Regular,
+    PlayfairDisplay_600SemiBold,
+    PlayfairDisplay_700Bold,
+  });
   const [isOnboardingComplete, setIsOnboardingComplete] = useState<boolean | null>(null);
   const [showLaunchIntro, setShowLaunchIntro] = useState(true);
 
-  const loaded = interLoaded && playfairLoaded;
+  const loaded = playfairLoaded;
   const pendingNavigationPathRef = useRef<string | null>(null);
 
   const isNavigationReady = loaded && isOnboardingComplete !== null;

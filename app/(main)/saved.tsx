@@ -1,7 +1,7 @@
 import { View, FlatList, StyleSheet, Pressable } from "react-native";
 import { Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -11,10 +11,13 @@ import { savedScreenStyles } from "@/theme/screen-styles";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonVerseCard } from "@/components/ui/SkeletonLoader";
+import { GoldCard } from "@/components/ui/GoldCard";
+import { ScreenCornerArt, CORNER_ART } from "@/components/ui/ScreenCornerArt";
 import { ROUTES } from "@/constants/routes";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
 import { useToast } from "@/components/ui/Toast";
 import { getLocalDateKey, addDaysToDateKey } from "@/lib/date-keys";
+import { Spacing } from "@/theme/design-tokens";
 
 interface SavedVerse {
   id: string;
@@ -26,48 +29,16 @@ interface SavedVerse {
   lastOpenedAt?: string | null;
 }
 
-const CHAPTER_NAMES: Record<number, string> = {
-  1: "అర్జున విషాద యోగము",
-  2: "సాంఖ్య యోగము",
-  3: "కర్మ యోగము",
-  4: "జ్ఞాన, కర్మ, సన్న్యాస యోగము",
-  5: "కర్మ సన్యాస యోగము",
-  6: "ధ్యాన యోగము",
-  7: "జ్ఞాన విజ్ఞాన యోగము",
-  8: "అక్షర బ్రహ్మ యోగము",
-  9: "రాజ విద్యా యోగము",
-  10: "విభూతి యోగము",
-  11: "విశ్వ రూప దర్శన యోగము",
-  12: "భక్తి యోగము",
-  13: "క్షేత్ర క్షేత్రజ్ఞ విభాగ యోగము",
-  14: "గుణత్రయ విభాగ యోగము",
-  15: "పురుషోత్తమ యోగము",
-  16: "దైవాసుర సంపద్విభాగ యోగము",
-  17: "శ్రద్ధా త్రయ విభాగ యోగము",
-  18: "మోక్ష సన్యాస యోగము",
-};
-
-function formatVerseLabel(verse: SavedVerse): string {
-  return `${CHAPTER_NAMES[verse.chapter] ?? `Chapter ${verse.chapter}`} · Verse ${verse.verse_number}`;
-}
-
-function pickRevisitVerse(verses: SavedVerse[]): SavedVerse | null {
-  if (verses.length === 0) return null;
-  return [...verses].sort((a, b) => {
-    const aT = a.lastOpenedAt ? Date.parse(a.lastOpenedAt) : 0;
-    const bT = b.lastOpenedAt ? Date.parse(b.lastOpenedAt) : 0;
-    return aT - bT;
-  })[0];
+function formatVerseRef(verse: SavedVerse): string {
+  return `Chapter ${verse.chapter} · Verse ${verse.verse_number}`;
 }
 
 export default function SavedVersesScreen() {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const router = useRouter();
   const { showToast } = useToast();
   const [savedVerses, setSavedVerses] = useState<SavedVerse[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const revisit = useMemo(() => pickRevisitVerse(savedVerses), [savedVerses]);
 
   const loadSavedVerses = useCallback(async () => {
     setLoading(true);
@@ -134,23 +105,59 @@ export default function SavedVersesScreen() {
     ({ item }: { item: SavedVerse }) => (
       <Pressable
         onPress={() => openSavedVerse(item)}
-        style={[styles.row, { borderBottomColor: colors.outline + "33" }]}
+        style={({ pressed }) => [{ opacity: pressed ? 0.92 : 1 }]}
+        accessibilityRole="button"
+        accessibilityLabel={`Open ${formatVerseRef(item)}`}
       >
-        <View style={styles.rowTop}>
-          <Text style={[styles.verseLabel, { color: colors.text }]} numberOfLines={2}>
-            {formatVerseLabel(item)}
-          </Text>
-          <Pressable
-            onPress={() => removeVerse(item)}
-            hitSlop={8}
-            accessibilityLabel="Remove from saved"
-          >
+        <GoldCard compact style={styles.card}>
+          <View style={styles.cardTop}>
+            <View
+              style={[
+                styles.bookBadge,
+                {
+                  backgroundColor: colors.primary + "18",
+                  borderColor: colors.primary + "44",
+                },
+              ]}
+            >
+              <Ionicons name="book-outline" size={14} color={colors.primary} />
+            </View>
+            <Text style={[styles.verseRef, { color: colors.text }]} numberOfLines={1}>
+              {formatVerseRef(item)}
+            </Text>
             <Ionicons name="bookmark" size={18} color={colors.primary} />
-          </Pressable>
-        </View>
-        <Text style={[styles.sloka, { color: colors.textMuted }]} numberOfLines={2}>
-          {item.teluguSloka}
-        </Text>
+          </View>
+
+          <Text style={[styles.sloka, { color: colors.text }]} numberOfLines={2}>
+            {item.teluguSloka}
+          </Text>
+
+          {item.meaning ? (
+            <Text style={[styles.meaning, { color: colors.textMuted }]} numberOfLines={2}>
+              <Text style={{ color: colors.primary, fontWeight: "700" }}>Meaning: </Text>
+              {item.meaning}
+            </Text>
+          ) : null}
+
+          <View style={[styles.cardFooter, { borderTopColor: colors.primary + "33" }]}>
+            <Pressable
+              onPress={(e) => {
+                e?.stopPropagation?.();
+                removeVerse(item);
+              }}
+              hitSlop={8}
+              style={styles.footerAction}
+              accessibilityLabel="Remove from saved"
+            >
+              <Ionicons name="heart-outline" size={16} color={colors.primary} />
+              <Text style={[styles.footerActionText, { color: colors.primary }]}>Unsave</Text>
+            </Pressable>
+            <View style={styles.footerAction}>
+              <Text style={[styles.footerActionText, { color: colors.primary }]}>View Verse</Text>
+              <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+            </View>
+          </View>
+        </GoldCard>
       </Pressable>
     ),
     [colors, openSavedVerse, removeVerse]
@@ -162,8 +169,8 @@ export default function SavedVersesScreen() {
         style={[savedScreenStyles.container, { backgroundColor: colors.background }]}
         edges={["top"]}
       >
-        <View style={savedScreenStyles.header}>
-          <Text style={[savedScreenStyles.title, { color: colors.text }]}>Saved</Text>
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: colors.primary }]}>Saved</Text>
         </View>
         <View style={savedScreenStyles.listContainer}>
           {[1, 2, 3].map((i) => (
@@ -179,32 +186,24 @@ export default function SavedVersesScreen() {
       style={[savedScreenStyles.container, { backgroundColor: colors.background }]}
       edges={["top"]}
     >
-      <View style={savedScreenStyles.header}>
-        <Text style={[savedScreenStyles.title, { color: colors.text }]}>Saved</Text>
+      <View style={styles.header}>
+        <ScreenCornerArt
+          source={CORNER_ART.chariotLine}
+          style={styles.headerArt}
+          opacity={isDark ? 0.5 : 0.62}
+        />
+        <Text style={[styles.title, { color: colors.primary }]}>Saved</Text>
+        <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+          Verses you want to return to
+        </Text>
       </View>
       {savedVerses.length > 0 ? (
         <FlatList
           data={savedVerses}
           renderItem={renderVerse}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={savedScreenStyles.listContainer}
+          contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
-          ListHeaderComponent={
-            revisit ? (
-              <Pressable onPress={() => openSavedVerse(revisit)} style={styles.revisit}>
-                <Text style={[styles.revisitLabel, { color: colors.primary }]}>Revisit</Text>
-                <View style={styles.revisitRow}>
-                  <Text
-                    style={[styles.revisitTitle, { color: colors.text }]}
-                    numberOfLines={1}
-                  >
-                    {formatVerseLabel(revisit)}
-                  </Text>
-                  <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-                </View>
-              </Pressable>
-            ) : null
-          }
         />
       ) : (
         <EmptyState
@@ -220,47 +219,86 @@ export default function SavedVersesScreen() {
 }
 
 const styles = StyleSheet.create({
-  row: {
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 22,
+    overflow: "hidden",
+    minHeight: 100,
   },
-  rowTop: {
+  headerArt: {
+    width: 176,
+    height: 136,
+    top: -6,
+    right: -14,
+    transform: [{ scaleX: -1 }],
+  },
+  title: {
+    fontFamily: "PlayfairDisplay_700Bold",
+    fontSize: 40,
+    lineHeight: 48,
+    zIndex: 1,
+  },
+  subtitle: {
+    fontSize: 15,
+    marginTop: 2,
+    zIndex: 1,
+  },
+  list: {
+    paddingHorizontal: 16,
+    paddingBottom: 24,
+  },
+  card: {
+    marginBottom: Spacing.md,
+  },
+  cardTop: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
+    alignItems: "center",
     gap: 10,
+    marginBottom: 10,
   },
-  verseLabel: {
+  bookBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  verseRef: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "700",
-    lineHeight: 20,
+    letterSpacing: 0.1,
   },
   sloka: {
-    marginTop: 6,
     fontSize: 14,
-    lineHeight: 21,
+    lineHeight: 22,
     fontStyle: "italic",
+    marginBottom: 8,
   },
-  revisit: {
-    marginBottom: 16,
-    paddingBottom: 12,
-  },
-  revisitLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+  meaning: {
+    fontSize: 13,
+    lineHeight: 19,
     marginBottom: 4,
   },
-  revisitRow: {
+  cardFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  footerAction: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },
-  revisitTitle: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: "600",
+  footerActionText: {
+    fontSize: 13,
+    fontWeight: "500",
+    letterSpacing: 0.2,
+    opacity: 0.92,
   },
 });

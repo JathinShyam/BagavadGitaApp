@@ -340,32 +340,6 @@ export default function HomeScreen() {
   const ListHeader = useCallback(
     () => (
       <View style={styles.header}>
-        {/* Brand + streak */}
-        <Animated.View entering={FadeIn.duration(400)} style={styles.brandRow}>
-          <Text style={[styles.brand, { color: colors.primary }]}>భగవద్గీత</Text>
-          <Pressable
-            onPress={() => {
-              Haptics.selectionAsync();
-              setCalendarOpen(true);
-            }}
-            onLongPress={handleShareStreak}
-            style={[
-              styles.streakChip,
-              {
-                backgroundColor: colors.primary + "14",
-                borderColor: colors.primary + "28",
-              },
-            ]}
-            accessibilityLabel="Open reading calendar. Long press to share streak."
-          >
-            <Ionicons name="flame" size={14} color={colors.primary} />
-            <Text style={[styles.streakText, { color: colors.primary }]}>
-              {getStreakLabel(streak.currentStreak)}
-              {streak.longestStreak > 0 ? ` · best ${streak.longestStreak}` : ""}
-            </Text>
-          </Pressable>
-        </Animated.View>
-
         {streakAtRisk && (
           <Text style={[styles.atRisk, { color: colors.textMuted }]}>
             Streak ends at midnight — one verse keeps it alive
@@ -412,25 +386,38 @@ export default function HomeScreen() {
           </Animated.View>
         )}
 
-        {/* Slim secondary actions — no cards */}
-        <View style={styles.actionRow}>
-          {lastReadVerseId ? (
-            <Pressable
-              onPress={() => router.push(ROUTES.verse(lastReadVerseId))}
-              hitSlop={8}
-              style={styles.actionLink}
-            >
-              <Ionicons name="play" size={14} color={colors.primary} />
-              <Text style={[styles.actionLinkText, { color: colors.text }]}>
-                Continue reading
-              </Text>
-            </Pressable>
-          ) : (
-            <View style={styles.actionLink} />
-          )}
-          <Pressable onPress={openSurpriseVerseModal} hitSlop={8} style={styles.actionLink}>
-            <Text style={[styles.actionLinkText, { color: colors.textMuted }]}>Surprise</Text>
-            <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+        {/* Continue / Surprise — soft surface like Today card */}
+        <View
+          style={[
+            styles.actionRow,
+            {
+              backgroundColor: colors.surface,
+            },
+          ]}
+        >
+          <Pressable
+            onPress={() => {
+              if (lastReadVerseId) router.push(ROUTES.verse(lastReadVerseId));
+            }}
+            disabled={!lastReadVerseId}
+            style={[styles.actionHalf, { opacity: lastReadVerseId ? 1 : 0.4 }]}
+            accessibilityRole="button"
+            accessibilityLabel="Continue reading"
+          >
+            <Ionicons name="book-outline" size={18} color={colors.primary} />
+            <Text style={[styles.actionLinkText, { color: colors.text }]}>
+              Continue reading
+            </Text>
+          </Pressable>
+          <View style={[styles.actionDivider, { backgroundColor: colors.outline + "55" }]} />
+          <Pressable
+            onPress={openSurpriseVerseModal}
+            style={styles.actionHalf}
+            accessibilityRole="button"
+            accessibilityLabel="Surprise verse"
+          >
+            <Ionicons name="gift-outline" size={18} color={colors.primary} />
+            <Text style={[styles.actionLinkText, { color: colors.text }]}>Surprise</Text>
           </Pressable>
         </View>
 
@@ -451,14 +438,18 @@ export default function HomeScreen() {
 
         {/* Chapters section */}
         <View style={styles.sectionHeader}>
-          <View style={styles.sectionTitleRow}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Chapters</Text>
-            <Text style={[styles.sectionMeta, { color: colors.textMuted }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Chapters</Text>
+          <Pressable
+            onPress={() => setPathPickerOpen(true)}
+            hitSlop={8}
+            style={styles.pathsLinkRow}
+          >
+            <Text style={[styles.sectionMeta, { color: colors.primary }]}>
               {totalProgress}%
             </Text>
-          </View>
-          <Pressable onPress={() => setPathPickerOpen(true)} hitSlop={8}>
-            <Text style={[styles.pathsLink, { color: colors.primary }]}>Guided paths</Text>
+            <Text style={[styles.pathsLink, { color: colors.primary }]}>
+              Guided paths ›
+            </Text>
           </Pressable>
         </View>
 
@@ -512,7 +503,6 @@ export default function HomeScreen() {
     ),
     [
       colors,
-      streak,
       streakAtRisk,
       todaysVerse,
       todayPreview,
@@ -525,7 +515,6 @@ export default function HomeScreen() {
       widgetNudgeVisible,
       router,
       openSurpriseVerseModal,
-      handleShareStreak,
       dismissNudge,
     ]
   );
@@ -535,11 +524,38 @@ export default function HomeScreen() {
       style={[homeScreenStyles.container, { backgroundColor: colors.background }]}
       edges={["top"]}
     >
+      <Animated.View
+        entering={FadeIn.duration(400)}
+        style={[styles.fixedBrandBar, { backgroundColor: colors.background }]}
+      >
+        <Text style={[styles.brand, { color: colors.primary }]}>భగవద్గీత</Text>
+        <Pressable
+          onPress={() => {
+            Haptics.selectionAsync();
+            setCalendarOpen(true);
+          }}
+          onLongPress={handleShareStreak}
+          style={[
+            styles.streakChip,
+            {
+              backgroundColor: colors.primary + "14",
+              borderColor: colors.primary + "28",
+            },
+          ]}
+          accessibilityLabel="Open reading calendar. Long press to share streak."
+        >
+          <Text style={styles.streakFlame}>🔥</Text>
+          <Text style={[styles.streakText, { color: colors.primary }]}>
+            {getStreakLabel(streak.currentStreak)}
+            {streak.longestStreak > 0 ? ` · Best ${streak.longestStreak}` : ""}
+          </Text>
+        </Pressable>
+      </Animated.View>
       <FlatList
         data={chapterPairRows}
         renderItem={renderPair}
         keyExtractor={(_, index) => `pair-${index}`}
-        contentContainerStyle={homeScreenStyles.scrollContainer}
+        contentContainerStyle={[homeScreenStyles.scrollContainer, { paddingTop: 16 }]}
         ListHeaderComponent={ListHeader}
         ListEmptyComponent={
           <View style={styles.emptyFilter}>
@@ -597,12 +613,14 @@ const styles = StyleSheet.create({
     width: "100%",
     paddingBottom: 8,
   },
-  brandRow: {
+  fixedBrandBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     width: "100%",
-    marginBottom: 6,
+    paddingHorizontal: 16,
+    paddingTop: 24,
+    paddingBottom: 10,
   },
   brand: {
     fontFamily: "PlayfairDisplay_700Bold",
@@ -617,6 +635,10 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 6,
+  },
+  streakFlame: {
+    fontSize: 13,
+    lineHeight: 16,
   },
   streakText: {
     fontSize: 12,
@@ -674,21 +696,30 @@ const styles = StyleSheet.create({
   },
   actionRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "stretch",
     width: "100%",
     marginTop: 16,
     marginBottom: 4,
-    paddingHorizontal: 2,
+    borderRadius: 18,
+    overflow: "hidden",
   },
-  actionLink: {
+  actionHalf: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+  },
+  actionDivider: {
+    width: StyleSheet.hairlineWidth,
+    alignSelf: "stretch",
+    marginVertical: 10,
   },
   actionLinkText: {
+    fontFamily: "PlayfairDisplay_600SemiBold",
     fontSize: 14,
-    fontWeight: "600",
   },
   pathRow: {
     flexDirection: "row",
@@ -712,22 +743,24 @@ const styles = StyleSheet.create({
     marginTop: 28,
     marginBottom: 12,
   },
-  sectionTitleRow: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    gap: 8,
-  },
   sectionTitle: {
     fontFamily: "PlayfairDisplay_700Bold",
     fontSize: 22,
   },
+  pathsLinkRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 8,
+  },
   sectionMeta: {
-    fontSize: 13,
-    fontWeight: "600",
+    fontFamily: "PlayfairDisplay_700Bold",
+    fontSize: 15,
+    fontWeight: "700",
   },
   pathsLink: {
-    fontSize: 13,
-    fontWeight: "600",
+    fontFamily: "PlayfairDisplay_700Bold",
+    fontSize: 15,
+    fontWeight: "700",
   },
   filterRow: {
     flexDirection: "row",
@@ -742,8 +775,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   filterChipText: {
-    fontSize: 12,
-    fontWeight: "600",
+    fontFamily: "PlayfairDisplay_600SemiBold",
+    fontSize: 13,
   },
   widgetTip: {
     flexDirection: "row",

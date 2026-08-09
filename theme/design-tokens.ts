@@ -81,17 +81,14 @@ export const Typography = {
     letterSpacing: 0.5,
   },
   subtitle: {
-    fontFamily: "Inter_600SemiBold",
     fontSize: 16,
     letterSpacing: 0.2,
   },
   body: {
-    fontFamily: "Inter_400Regular",
     fontSize: 16,
     lineHeight: 24,
   },
   label: {
-    fontFamily: "Inter_600SemiBold",
     fontSize: 13,
     letterSpacing: 0.4,
   },

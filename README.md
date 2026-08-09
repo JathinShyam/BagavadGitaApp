@@ -1,6 +1,22 @@
-# Bagavad Gita App
+# Bhagavad Gita App
 
 A polished Bhagavad Gita reading experience built with Expo + React Native, designed for daily practice, guided exploration, and smooth scripture study.
+
+## App preview
+
+<p align="center">
+  <img src="docs/screenshots/01-home.jpg" width="180" alt="Home — daily verse and chapters" />
+  <img src="docs/screenshots/02-explore.jpg" width="180" alt="Explore — moods and topics" />
+  <img src="docs/screenshots/03-chapter.jpg" width="180" alt="Chapter — verses and progress" />
+</p>
+<p align="center"><em>Home · Explore · Chapter</em></p>
+
+<p align="center">
+  <img src="docs/screenshots/04-verse.jpg" width="180" alt="Verse — sloka, meaning, audio" />
+  <img src="docs/screenshots/05-saved.jpg" width="180" alt="Saved — bookmarked verses" />
+  <img src="docs/screenshots/06-settings.jpg" width="180" alt="Settings — theme and notifications" />
+</p>
+<p align="center"><em>Verse · Saved · Settings</em></p>
 
 ## Why this app
 

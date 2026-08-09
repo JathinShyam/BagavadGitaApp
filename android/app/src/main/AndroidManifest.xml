@@ -35,7 +35,7 @@
 
     <receiver
       android:name=".DailyVerseWidgetProvider"
-      android:exported="false"
+      android:exported="true"
       android:label="@string/widget_daily_verse_label">
       <intent-filter>
         <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
