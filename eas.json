@@ -30,7 +30,7 @@
       "android": {
         "buildType": "apk"
       },
-      "distribution": "store",
+      "distribution": "internal",
       "autoIncrement": true
     }
   },

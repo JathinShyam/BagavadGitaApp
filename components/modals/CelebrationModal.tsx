@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { View, StyleSheet, Dimensions, Pressable } from "react-native";
 import { Text } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
@@ -10,7 +10,6 @@ import Animated, {
   withDelay,
   withSequence,
   withRepeat,
-  runOnJS,
   Easing,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
@@ -36,34 +35,43 @@ const ConfettiParticle: React.FC<{
   const opacity = useSharedValue(1);
   const scale = useSharedValue(1);
 
-  const startX = Math.random() * SCREEN_WIDTH - SCREEN_WIDTH / 2;
-  const endX = startX + (Math.random() - 0.5) * 200;
+  // Seed randoms once so re-renders don't reshuffle the layout.
+  const seed = useMemo(
+    () => {
+      const startX = Math.random() * SCREEN_WIDTH - SCREEN_WIDTH / 2;
+      return {
+        startX,
+        endX: startX + (Math.random() - 0.5) * 200,
+        fallDuration: 3000 + Math.random() * 2000,
+        spinDuration: 1000 + Math.random() * 1000,
+        size: 8 + Math.random() * 8,
+      };
+    },
+    []
+  );
 
   useEffect(() => {
     translateY.value = withDelay(
       startDelay,
       withTiming(SCREEN_HEIGHT + 100, {
-        duration: 3000 + Math.random() * 2000,
+        duration: seed.fallDuration,
         easing: Easing.out(Easing.quad),
       })
     );
     translateX.value = withDelay(
       startDelay,
       withSequence(
-        withTiming(startX, { duration: 0 }),
-        withTiming(endX, {
-          duration: 3000 + Math.random() * 2000,
+        withTiming(seed.startX, { duration: 0 }),
+        withTiming(seed.endX, {
+          duration: seed.fallDuration,
           easing: Easing.inOut(Easing.sin),
         })
       )
     );
+    // Finite spins — the particle is invisible after ~3s anyway.
     rotate.value = withDelay(
       startDelay,
-      withRepeat(
-        withTiming(360, { duration: 1000 + Math.random() * 1000 }),
-        -1,
-        false
-      )
+      withRepeat(withTiming(360, { duration: seed.spinDuration }), 5, false)
     );
     opacity.value = withDelay(
       startDelay + 2000,
@@ -73,7 +81,7 @@ const ConfettiParticle: React.FC<{
       startDelay,
       withSpring(1.2, { damping: 10 })
     );
-  }, []);
+  }, [startDelay, seed, translateY, translateX, rotate, opacity, scale]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -87,7 +95,7 @@ const ConfettiParticle: React.FC<{
 
   const shapes = ["square", "circle", "triangle"];
   const shape = shapes[index % shapes.length];
-  const size = 8 + Math.random() * 8;
+  const size = seed.size;
 
   return (
     <Animated.View
@@ -122,6 +130,11 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
   const contentOpacity = useSharedValue(0);
   const starScale = useSharedValue(0);
 
+  const confettiDelays = useMemo(
+    () => Array.from({ length: 24 }, () => Math.random() * 500),
+    []
+  );
+
   const confettiColors = [
     colors.primary,
     colors.success,
@@ -150,7 +163,7 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
       contentOpacity.value = withTiming(0, { duration: 200 });
       starScale.value = withTiming(0, { duration: 200 });
     }
-  }, [visible]);
+  }, [visible, backdropOpacity, contentScale, contentOpacity, starScale]);
 
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: backdropOpacity.value,
@@ -170,12 +183,12 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
   return (
     <View style={styles.overlay}>
       {/* Confetti */}
-      {[...Array(50)].map((_, i) => (
+      {confettiDelays.map((delay, i) => (
         <ConfettiParticle
           key={i}
           index={i}
           color={confettiColors[i % confettiColors.length]}
-          startDelay={Math.random() * 500}
+          startDelay={delay}
         />
       ))}
 

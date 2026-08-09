@@ -19,10 +19,20 @@ export function PathPickerModal({ visible, onClose, onSelect }: Props) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.backdrop}>
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={onClose}
+          accessibilityLabel="Dismiss path picker"
+        />
         <View style={[styles.sheet, { backgroundColor: colors.background }]}>
           <View style={styles.header}>
             <Text style={[styles.title, { color: colors.text }]}>Start a reading path</Text>
-            <Pressable onPress={onClose} hitSlop={12}>
+            <Pressable
+              onPress={onClose}
+              hitSlop={12}
+              accessibilityLabel="Close"
+              accessibilityRole="button"
+            >
               <Ionicons name="close" size={24} color={colors.textMuted} />
             </Pressable>
           </View>

@@ -15,19 +15,12 @@ const MAX_BODY_LENGTH = 120;
 /** Captivating title for daily verse notifications. */
 export const DAILY_VERSE_NOTIFICATION_TITLE = "Your daily verse awaits ✨";
 
-/**
- * Body for repeating daily local notifications. The OS cannot refresh text per calendar day
- * without the app running; tapping opens today's verse via {@link getVerseForDate}.
- */
-export const DAILY_VERSE_NOTIFICATION_BODY_GENERIC =
-  "Open the app to read today's verse and meaning.";
-
-/** Get 1-based day of year (1–366). */
+/** Get 1-based day of year (1–366) using local calendar date (DST-safe). */
 function getDayOfYear(date: Date): number {
-  const start = new Date(date.getFullYear(), 0, 0);
-  const diff = date.getTime() - start.getTime();
-  const oneDay = 864e5;
-  return Math.floor(diff / oneDay);
+  const start = new Date(date.getFullYear(), 0, 1);
+  const local = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diff = local.getTime() - start.getTime();
+  return Math.floor(diff / 864e5) + 1;
 }
 
 /**

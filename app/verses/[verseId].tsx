@@ -11,7 +11,7 @@ import {
 import { Text } from "react-native-paper";
 import { useLocalSearchParams, Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -118,10 +118,10 @@ export default function VerseDetailScreen() {
     ? getAudioFile(verse.chapter.toString(), verse.verse_number)?.[0] ?? null
     : null;
 
-  const todayInsight = (() => {
+  const todayInsight = useMemo(() => {
     const v = getVerseForDate(new Date());
     return v ? getDailyVerseNotificationContent(v).body.slice(0, 120) : "";
-  })();
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 480);
@@ -136,26 +136,56 @@ export default function VerseDetailScreen() {
       .catch(() => setAutoPlayAudio(false));
   }, []);
 
+  const pendingNoteRef = useRef<{ id: string; text: string } | null>(null);
+
+  const flushPendingNote = useCallback(() => {
+    if (noteSaveTimer.current) {
+      clearTimeout(noteSaveTimer.current);
+      noteSaveTimer.current = null;
+    }
+    const pending = pendingNoteRef.current;
+    if (pending) {
+      pendingNoteRef.current = null;
+      setVerseNote(pending.id, pending.text).catch(() => {});
+    }
+  }, []);
+
   useEffect(() => {
     if (!verse) return;
+    // Clear immediately so the previous verse's note never flashes.
+    setNoteText("");
+    let cancelled = false;
     getVerseNote(verse.id).then((note) => {
-      setNoteText(note?.text ?? "");
+      if (!cancelled) setNoteText(note?.text ?? "");
     });
-  }, [verse?.id]);
+    return () => {
+      cancelled = true;
+      // Persist any unsaved edits when leaving this verse (or unmounting).
+      flushPendingNote();
+    };
+  }, [verse, flushPendingNote]);
+
+  const celebrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
+  }, []);
 
   useEffect(() => {
     if (verse && !isLoading) {
       const trackReading = async () => {
         const result = await markVerseAsRead(verse.chapter, verse.verse_number);
         if (result?.isNewCompletion && isLastVerseInChapter(verse.chapter, verse.verse_number)) {
-          setTimeout(() => setShowCelebration(true), 500);
+          if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
+          celebrationTimerRef.current = setTimeout(() => {
+            celebrationTimerRef.current = null;
+            setShowCelebration(true);
+          }, 500);
         }
         if (result?.wasNewlyRead) {
           const milestone = await getUnseenMilestoneReached(result.currentStreak);
           if (milestone) {
             setMilestoneDays(milestone);
             setShowMilestone(true);
-            await markMilestoneSeen(milestone);
           }
           const pathResult = await markPathProgressForVerse(verse.id);
           if (pathResult.pathCompleted) {
@@ -167,26 +197,25 @@ export default function VerseDetailScreen() {
       };
       trackReading();
     }
-  }, [verse?.id, isLoading, markVerseAsRead, isLastVerseInChapter, showToast]);
+  }, [verse, isLoading, markVerseAsRead, isLastVerseInChapter, showToast]);
 
   useEffect(() => {
     if (verse && !isLoading) {
       setLastReadVerse(verse.id);
     }
-  }, [verse?.id, isLoading, setLastReadVerse]);
+  }, [verse, isLoading, setLastReadVerse]);
 
   const checkIfSaved = useCallback(async () => {
     if (!verse) return;
     try {
       const savedVerses = await AsyncStorage.getItem(STORAGE_KEYS.SAVED_VERSES);
-      if (savedVerses) {
-        const verses = JSON.parse(savedVerses);
-        setIsSaved(verses.some((v: { id: string }) => v.id === verse.id));
-      }
+      const verses = savedVerses ? JSON.parse(savedVerses) : [];
+      setIsSaved(verses.some((v: { id: string }) => v.id === verse.id));
     } catch (error) {
       console.error("Error checking saved verse:", error);
+      setIsSaved(false);
     }
-  }, [verse?.id]);
+  }, [verse]);
 
   useEffect(() => {
     checkIfSaved();
@@ -196,19 +225,16 @@ export default function VerseDetailScreen() {
     (text: string) => {
       setNoteText(text);
       if (!verse) return;
+      pendingNoteRef.current = { id: verse.id, text };
       if (noteSaveTimer.current) clearTimeout(noteSaveTimer.current);
       noteSaveTimer.current = setTimeout(() => {
+        noteSaveTimer.current = null;
+        pendingNoteRef.current = null;
         setVerseNote(verse.id, text).catch(() => {});
       }, 500);
     },
     [verse]
   );
-
-  useEffect(() => {
-    return () => {
-      if (noteSaveTimer.current) clearTimeout(noteSaveTimer.current);
-    };
-  }, []);
 
   const toggleSave = useCallback(async () => {
     try {
@@ -250,7 +276,7 @@ export default function VerseDetailScreen() {
     } catch (error) {
       console.error("Error toggling verse save:", error);
     }
-  }, [verse, isSaved, showToast]);
+  }, [verse, isSaved, showToast, bookmarkScale]);
 
   const handleShare = useCallback(async () => {
     if (!verse) return;
@@ -263,7 +289,7 @@ export default function VerseDetailScreen() {
       console.error("Share failed:", e);
       showToast("Could not share right now", "error", "alert-circle");
     }
-  }, [verse?.id, showToast]);
+  }, [verse, showToast]);
 
   const handleShareStreak = useCallback(async () => {
     if (!streakShareRef.current) return;
@@ -273,9 +299,12 @@ export default function VerseDetailScreen() {
     } catch (e) {
       console.error("Streak share failed:", e);
     } finally {
+      if (milestoneDays) {
+        markMilestoneSeen(milestoneDays).catch(() => {});
+      }
       setShowMilestone(false);
     }
-  }, []);
+  }, [milestoneDays]);
 
   const copyToClipboard = useCallback(
     async (text: string | undefined, label: string) => {
@@ -637,7 +666,12 @@ export default function VerseDetailScreen() {
       <MilestoneModal
         visible={showMilestone}
         days={milestoneDays}
-        onClose={() => setShowMilestone(false)}
+        onClose={() => {
+          if (milestoneDays) {
+            markMilestoneSeen(milestoneDays).catch(() => {});
+          }
+          setShowMilestone(false);
+        }}
         onShare={handleShareStreak}
       />
 

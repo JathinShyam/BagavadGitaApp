@@ -11,12 +11,9 @@ import Animated, {
   withSequence,
   withDelay,
   withSpring,
-  runOnJS,
   Easing,
   interpolate,
   FadeIn,
-  FadeOut,
-  SlideInDown,
   SlideInUp,
   ZoomIn,
 } from "react-native-reanimated";
@@ -26,7 +23,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { VERSE_SEQUENCES } from "@/constants/verse-sequences";
 import { CHAPTER_IMAGES } from "@/constants/chapter-images";
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 interface SurpriseVerseModalProps {
   visible: boolean;
@@ -112,6 +109,8 @@ const ShuffleCard: React.FC<{
       opacity.value = withTiming(0.3, { duration: 100 });
       scale.value = withTiming(0.85, { duration: 100 });
     }
+    // Shared values are stable references; only the flags drive this animation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive, isFinal]);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -255,6 +254,8 @@ const Sparkle: React.FC<{ delay: number; startX: number; startY: number }> = ({
       delay,
       withTiming(Math.sin(angle) * distance, { duration: 600 })
     );
+    // Shared values are stable references; only the delay drives this animation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [delay]);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -365,6 +366,8 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
       }
     }, 80);
     intervalIdsRef.current.push(shuffleInterval);
+    // Shared values are stable references.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [generateRandomVerse, clearAllIntervals]);
 
   useEffect(() => {
@@ -384,6 +387,8 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
       setShowSparkles(false);
       iconRotation.value = 0;
     }
+    // Shared values are stable references.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, startShuffle, clearAllIntervals]);
 
   const backdropStyle = useAnimatedStyle(() => ({

@@ -22,8 +22,8 @@ const { WidgetDataModule } = NativeModules as {
 };
 
 const ROLLING_DAYS = 7;
-const MAX_SLOKA = 90;
-const MAX_MEANING = 160;
+const MAX_SLOKA = 72;
+const MAX_MEANING = 140;
 
 function truncate(text: string, maxLen: number): string {
   const trimmed = text.replace(/\s+/g, " ").trim();
@@ -45,10 +45,14 @@ export function buildWidgetSyncPayload(now: Date = new Date()): WidgetSyncPayloa
     const slokaRaw = (verse.teluguSloka ?? "").replace(/\n/g, " ").trim();
     const meaningRaw = (verse.meaning ?? "").replace(/\n/g, " ").trim();
 
+    const weekday = new Date(y, m - 1, d).toLocaleDateString(undefined, {
+      weekday: "short",
+    });
+
     days.push({
       dateKey: key,
       verseId: verse.id,
-      eyebrow: "Today",
+      eyebrow: i === 0 ? "Today" : weekday,
       title: `Chapter ${verse.chapter} · Verse ${verse.verse_number}`,
       sloka: truncate(slokaRaw, MAX_SLOKA),
       meaning: truncate(

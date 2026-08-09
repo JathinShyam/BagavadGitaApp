@@ -18,16 +18,23 @@ export async function getVerseNote(verseId: string): Promise<VerseNote | null> {
   return notes[verseId] ?? null;
 }
 
+// Serialize read-modify-write cycles so overlapping saves can't drop notes.
+let writeQueue: Promise<unknown> = Promise.resolve();
+
 export async function setVerseNote(verseId: string, text: string): Promise<VerseNote> {
-  const notes = await getAllVerseNotes();
-  const trimmed = text.trim();
-  if (!trimmed) {
-    delete notes[verseId];
+  const task = writeQueue.then(async () => {
+    const notes = await getAllVerseNotes();
+    const trimmed = text.trim();
+    if (!trimmed) {
+      delete notes[verseId];
+      await AsyncStorage.setItem(STORAGE_KEYS.VERSE_NOTES, JSON.stringify(notes));
+      return { text: "", updatedAt: new Date().toISOString() };
+    }
+    const note: VerseNote = { text: trimmed, updatedAt: new Date().toISOString() };
+    notes[verseId] = note;
     await AsyncStorage.setItem(STORAGE_KEYS.VERSE_NOTES, JSON.stringify(notes));
-    return { text: "", updatedAt: new Date().toISOString() };
-  }
-  const note: VerseNote = { text: trimmed, updatedAt: new Date().toISOString() };
-  notes[verseId] = note;
-  await AsyncStorage.setItem(STORAGE_KEYS.VERSE_NOTES, JSON.stringify(notes));
-  return note;
+    return note;
+  });
+  writeQueue = task.catch(() => {});
+  return task;
 }

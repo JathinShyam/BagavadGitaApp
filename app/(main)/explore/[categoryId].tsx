@@ -42,6 +42,10 @@ function formatVerseLabel(verseId: string): string {
   return `${CHAPTER_NAMES[chapter] ?? `Chapter ${chapter}`} · Verse ${verseNum}`;
 }
 
+// Built once at module load — ALL_VERSES is static data.
+const VERSE_MAP: Record<string, (typeof ALL_VERSES)[number]> = {};
+for (const v of ALL_VERSES) VERSE_MAP[v.id] = v;
+
 export default function ExploreCategoryScreen() {
   const { categoryId } = useLocalSearchParams<{ categoryId: string }>();
   const { colors } = useAppTheme();
@@ -49,18 +53,11 @@ export default function ExploreCategoryScreen() {
   const router = useRouter();
 
   const category = CATEGORIES.find((c) => c.id === getRouteParam(categoryId));
-  const verseMap = ALL_VERSES.reduce<Record<string, (typeof ALL_VERSES)[number]>>(
-    (acc, v) => {
-      acc[v.id] = v;
-      return acc;
-    },
-    {}
-  );
 
   if (!category) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-        <Stack.Screen options={{ title: "Category" }} />
+        <Stack.Screen options={{ title: "Category", headerShown: true }} />
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 20 }}>
           <Text style={{ color: colors.text, fontSize: 16 }}>Category not found</Text>
         </View>
@@ -73,7 +70,7 @@ export default function ExploreCategoryScreen() {
     const chapter = parseInt(parts[0], 10);
     const verseNumber = parts.slice(1).join("-");
     const read = isVerseRead(chapter, verseNumber);
-    const verseData = verseMap[verseId];
+    const verseData = VERSE_MAP[verseId];
     const verseText = verseData?.teluguSloka?.trim() ?? "";
 
     return (
@@ -107,11 +104,12 @@ export default function ExploreCategoryScreen() {
   return (
     <SafeAreaView
       style={[savedScreenStyles.container, { backgroundColor: colors.background }]}
-      edges={["top"]}
+      edges={["bottom"]}
     >
       <Stack.Screen
         options={{
           title: category.name,
+          headerShown: true,
           headerBackTitle: "Back",
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.primary,

@@ -78,6 +78,8 @@ export function LaunchIntro({ onFinish }: Props) {
         if (finished) runOnJS(finish)();
       })
     );
+    // Shared values are stable references; the intro runs once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onFinish]);
 
   const overlayStyle = useAnimatedStyle(() => ({

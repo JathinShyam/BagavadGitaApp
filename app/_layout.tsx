@@ -3,16 +3,14 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, type ReactNode } from "react";
 import { AppState, AppStateStatus } from "react-native";
 import "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
-import { useColorScheme } from "@/hooks/useColorScheme";
 import {
   useFonts as useInter,
   Inter_400Regular,
@@ -22,7 +20,7 @@ import {
   useFonts as usePlayfair,
   PlayfairDisplay_700Bold,
 } from "@expo-google-fonts/playfair-display";
-import { ThemeProvider as AppThemeProvider } from "@/context/theme-context";
+import { ThemeProvider as AppThemeProvider, useTheme as useAppThemeMode } from "@/context/theme-context";
 import { ToastProvider } from "@/components/ui/Toast";
 import { LaunchIntro } from "@/components/ui/LaunchIntro";
 import { ReadingProgressProvider } from "@/hooks/useReadingProgress";
@@ -35,10 +33,19 @@ import { ROUTES } from "@/constants/routes";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
+
+/** Keeps React Navigation chrome in sync with the app's own theme setting. */
+function NavigationThemeProvider({ children }: { children: ReactNode }) {
+  const { theme } = useAppThemeMode();
+  return (
+    <ThemeProvider value={theme === "dark" ? DarkTheme : DefaultTheme}>
+      {children}
+    </ThemeProvider>
+  );
+}
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
   const [interLoaded] = useInter({ Inter_400Regular, Inter_600SemiBold });
   const [playfairLoaded] = usePlayfair({ PlayfairDisplay_700Bold });
   const [isOnboardingComplete, setIsOnboardingComplete] = useState<boolean | null>(null);
@@ -60,6 +67,10 @@ export default function RootLayout() {
     router.push(path as any);
   }, [isNavigationReady, isOnboardingComplete, showLaunchIntro]);
 
+  // Latest flush fn for long-lived listeners (notification handler mounts once).
+  const flushPendingNavigationRef = useRef(flushPendingNavigation);
+  flushPendingNavigationRef.current = flushPendingNavigation;
+
   useEffect(() => {
     const checkOnboarding = async () => {
       try {
@@ -75,7 +86,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (loaded && isOnboardingComplete !== null) {
       // Reveal the animated intro underneath; native splash disappears cleanly.
-      SplashScreen.hideAsync();
+      SplashScreen.hideAsync().catch(() => {});
       if (!isOnboardingComplete) {
         router.replace(ROUTES.onboarding);
       }
@@ -116,6 +127,7 @@ export default function RootLayout() {
 
     let Notifications: typeof import("expo-notifications") | null = null;
     try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy load: module throws on import in Expo Go Android (SDK 53+)
       Notifications = require("expo-notifications");
     } catch {
       return;
@@ -145,23 +157,15 @@ export default function RootLayout() {
 
       const navigateTo = (path: string) => {
         pendingNavigationPathRef.current = path;
-        flushPendingNavigation();
+        flushPendingNavigationRef.current();
       };
 
-      if (data?.screen === "daily-verse") {
-        const verse = getVerseForDate(new Date());
-        if (verse) navigateTo(ROUTES.verse(verse.id));
-        return;
-      }
-
-      if (!data?.verseId) {
-        const verse = getVerseForDate(new Date());
-        if (verse) navigateTo(ROUTES.verse(verse.id));
-        return;
-      }
       if (data?.verseId) {
         navigateTo(ROUTES.verse(data.verseId));
+        return;
       }
+      const verse = getVerseForDate(new Date());
+      if (verse) navigateTo(ROUTES.verse(verse.id));
     };
 
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
@@ -170,12 +174,14 @@ export default function RootLayout() {
       handleNotificationResponse(data, id);
     });
 
-    Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (!response?.notification.request.content.data) return;
-      const data = response.notification.request.content.data as NotificationPayload;
-      const id = response.notification.request.identifier ?? "";
-      handleNotificationResponse(data, id);
-    });
+    Notifications.getLastNotificationResponseAsync()
+      .then((response) => {
+        if (!response?.notification.request.content.data) return;
+        const data = response.notification.request.content.data as NotificationPayload;
+        const id = response.notification.request.identifier ?? "";
+        handleNotificationResponse(data, id);
+      })
+      .catch(() => {});
 
     return () => sub.remove();
   }, []);
@@ -189,7 +195,7 @@ export default function RootLayout() {
       <ErrorBoundary>
         <AppThemeProvider>
           <ReadingProgressProvider>
-            <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+            <NavigationThemeProvider>
               <ToastProvider>
                 <Stack
                   screenOptions={{
@@ -213,7 +219,7 @@ export default function RootLayout() {
                   <LaunchIntro onFinish={handleLaunchIntroFinish} />
                 )}
               </ToastProvider>
-            </ThemeProvider>
+            </NavigationThemeProvider>
           </ReadingProgressProvider>
         </AppThemeProvider>
       </ErrorBoundary>

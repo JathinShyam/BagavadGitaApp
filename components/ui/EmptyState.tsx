@@ -77,7 +77,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
       )}
 
       {/* Decorative elements */}
-      <View style={styles.decorContainer}>
+      <View style={styles.decorContainer} pointerEvents="none">
         {[...Array(6)].map((_, i) => (
           <Animated.View
             key={i}

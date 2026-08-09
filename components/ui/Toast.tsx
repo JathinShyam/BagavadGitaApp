@@ -1,7 +1,14 @@
-import React, { useEffect, useCallback } from "react";
-import { View, StyleSheet, Dimensions } from "react-native";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import { StyleSheet } from "react-native";
 import { Text } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -10,8 +17,6 @@ import Animated, {
   runOnJS,
 } from "react-native-reanimated";
 import { useAppTheme } from "@/hooks/useAppTheme";
-
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 export type ToastType = "success" | "info" | "warning" | "error";
 
@@ -22,6 +27,8 @@ interface ToastProps {
   duration?: number;
   onHide: () => void;
   icon?: keyof typeof Ionicons.glyphMap;
+  /** Changes on every show so repeat toasts restart the animation. */
+  nonce?: number;
 }
 
 const Toast: React.FC<ToastProps> = ({
@@ -31,8 +38,10 @@ const Toast: React.FC<ToastProps> = ({
   duration = 2000,
   onHide,
   icon,
+  nonce = 0,
 }) => {
   const { colors, isDark } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const translateY = useSharedValue(-100);
   const opacity = useSharedValue(0);
 
@@ -73,20 +82,21 @@ const Toast: React.FC<ToastProps> = ({
 
   useEffect(() => {
     if (visible) {
+      const restingY = Math.max(insets.top, 12) + 8;
       translateY.value = withSequence(
-        withTiming(60, { duration: 300 }),
-        withTiming(60, { duration: duration }),
+        withTiming(restingY, { duration: 300 }),
+        withTiming(restingY, { duration: duration }),
         withTiming(-100, { duration: 300 })
       );
       opacity.value = withSequence(
         withTiming(1, { duration: 300 }),
         withTiming(1, { duration: duration }),
-        withTiming(0, { duration: 300 }, () => {
-          runOnJS(hideToast)();
+        withTiming(0, { duration: 300 }, (finished) => {
+          if (finished) runOnJS(hideToast)();
         })
       );
     }
-  }, [visible, duration, hideToast]);
+  }, [visible, nonce, duration, hideToast, translateY, opacity, insets.top]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
@@ -97,6 +107,7 @@ const Toast: React.FC<ToastProps> = ({
 
   return (
     <Animated.View
+      accessibilityLiveRegion="polite"
       style={[
         styles.container,
         {
@@ -112,9 +123,6 @@ const Toast: React.FC<ToastProps> = ({
   );
 };
 
-// Toast Context for global usage
-import { createContext, useContext, useState } from "react";
-
 interface ToastContextType {
   showToast: (message: string, type?: ToastType, icon?: keyof typeof Ionicons.glyphMap) => void;
 }
@@ -129,19 +137,29 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
     message: "",
     type: "success" as ToastType,
     icon: undefined as keyof typeof Ionicons.glyphMap | undefined,
+    nonce: 0,
   });
 
-  const showToast = (
-    message: string,
-    type: ToastType = "success",
-    icon?: keyof typeof Ionicons.glyphMap
-  ) => {
-    setToastState({ visible: true, message, type, icon });
-  };
+  const showToast = useCallback(
+    (
+      message: string,
+      type: ToastType = "success",
+      icon?: keyof typeof Ionicons.glyphMap
+    ) => {
+      setToastState((prev) => ({
+        visible: true,
+        message,
+        type,
+        icon,
+        nonce: prev.nonce + 1,
+      }));
+    },
+    []
+  );
 
-  const hideToast = () => {
+  const hideToast = useCallback(() => {
     setToastState((prev) => ({ ...prev, visible: false }));
-  };
+  }, []);
 
   return (
     <ToastContext.Provider value={{ showToast }}>
@@ -151,6 +169,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
         message={toastState.message}
         type={toastState.type}
         icon={toastState.icon}
+        nonce={toastState.nonce}
         onHide={hideToast}
       />
     </ToastContext.Provider>

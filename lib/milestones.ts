@@ -23,18 +23,22 @@ export async function markMilestoneSeen(days: StreakMilestone): Promise<void> {
   await AsyncStorage.setItem(STORAGE_KEYS.MILESTONES_SEEN, JSON.stringify(seen));
 }
 
-/** Returns the milestone just hit if it hasn't been celebrated yet. */
+/**
+ * Returns the highest unseen milestone the streak has reached.
+ * Uses >= so a jump past a threshold still unlocks celebration.
+ */
 export async function getUnseenMilestoneReached(
   currentStreak: number
 ): Promise<StreakMilestone | null> {
   const seen = await getMilestonesSeen();
+  let found: StreakMilestone | null = null;
   for (const milestone of STREAK_MILESTONES) {
     if (
-      currentStreak === milestone &&
+      currentStreak >= milestone &&
       !seen[String(milestone) as keyof MilestonesSeen]
     ) {
-      return milestone;
+      found = milestone;
     }
   }
-  return null;
+  return found;
 }

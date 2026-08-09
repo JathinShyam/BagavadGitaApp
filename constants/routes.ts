@@ -17,8 +17,8 @@ export const ROUTES = {
   path: (pathId: string) => `/paths/${pathId}` as const,
 } as const;
 
-/** Deep-link URIs for native widgets (scheme: myapp). */
+/** Deep-link URIs for native widgets (scheme: bagavadgita). */
 export const DEEP_LINKS = {
-  mainTabs: "myapp://(main)",
-  verse: (verseId: string) => `myapp://verses/${verseId}` as const,
+  mainTabs: "bagavadgita://",
+  verse: (verseId: string) => `bagavadgita://verses/${verseId}` as const,
 } as const;

@@ -6,6 +6,7 @@ import {
   Pressable,
   RefreshControl,
   Platform,
+  Alert,
 } from "react-native";
 import Animated, { FadeIn, FadeInUp } from "react-native-reanimated";
 import { Text } from "react-native-paper";
@@ -64,6 +65,15 @@ export default function HomeScreen() {
   const [sharingStreak, setSharingStreak] = useState(false);
   const streakShareRef = useRef<View>(null);
 
+  const refreshPracticeState = useCallback(async () => {
+    const [path, showNudge] = await Promise.all([
+      getActivePath(),
+      shouldShowWidgetNudge(),
+    ]);
+    setActivePathState(path);
+    setWidgetNudgeVisible(Platform.OS === "android" && showNudge);
+  }, []);
+
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => {
     if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
@@ -73,11 +83,12 @@ export default function HomeScreen() {
     if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     setRefreshing(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    refreshPracticeState().catch(() => {});
     refreshTimerRef.current = setTimeout(() => {
       setRefreshing(false);
       refreshTimerRef.current = null;
     }, 800);
-  }, []);
+  }, [refreshPracticeState]);
 
   const shuffleModalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => {
@@ -134,15 +145,6 @@ export default function HomeScreen() {
     };
   }, [activePath]);
 
-  const refreshPracticeState = useCallback(async () => {
-    const [path, showNudge] = await Promise.all([
-      getActivePath(),
-      shouldShowWidgetNudge(),
-    ]);
-    setActivePathState(path);
-    setWidgetNudgeVisible(Platform.OS === "android" && showNudge);
-  }, []);
-
   useFocusEffect(
     useCallback(() => {
       refreshPracticeState();
@@ -151,12 +153,38 @@ export default function HomeScreen() {
 
   const handleSelectPath = useCallback(
     async (path: ReadingPath) => {
-      const active = await setActivePath(path.id);
-      setActivePathState(active);
-      setPathPickerOpen(false);
-      router.push(ROUTES.path(path.id));
+      const startPath = async () => {
+        const active = await setActivePath(path.id);
+        setActivePathState(active);
+        setPathPickerOpen(false);
+        router.push(ROUTES.path(path.id));
+      };
+
+      // Switching away from a path with progress wipes it — confirm first.
+      const hasProgress =
+        activePath !== null &&
+        activePath.pathId !== path.id &&
+        activePath.completedDayIds.length > 0;
+      if (hasProgress) {
+        Alert.alert(
+          "Switch reading path?",
+          "Your progress on the current path will be lost.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Switch", style: "destructive", onPress: () => { startPath(); } },
+          ]
+        );
+        return;
+      }
+      // Re-selecting the current path keeps its progress.
+      if (activePath?.pathId === path.id) {
+        setPathPickerOpen(false);
+        router.push(ROUTES.path(path.id));
+        return;
+      }
+      await startPath();
     },
-    [router]
+    [router, activePath]
   );
 
   const handleShareStreak = useCallback(async () => {
@@ -188,7 +216,7 @@ export default function HomeScreen() {
   }, [activeFilter, getChapterProgress]);
 
   const chapterPairRows = useMemo(() => {
-    const rows: Array<typeof filteredChapters> = [];
+    const rows: (typeof filteredChapters)[] = [];
     for (let i = 0; i < filteredChapters.length; i += 2) {
       rows.push(filteredChapters.slice(i, i + 2));
     }
@@ -298,7 +326,7 @@ export default function HomeScreen() {
       item,
       index,
     }: {
-      item: Array<{ id: number; telugu_name: string; verses: number; image: any }>;
+      item: { id: number; telugu_name: string; verses: number; image: any }[];
       index: number;
     }) => (
       <View style={homeScreenStyles.shelfRow}>
@@ -513,6 +541,16 @@ export default function HomeScreen() {
         keyExtractor={(_, index) => `pair-${index}`}
         contentContainerStyle={homeScreenStyles.scrollContainer}
         ListHeaderComponent={ListHeader}
+        ListEmptyComponent={
+          <View style={styles.emptyFilter}>
+            <Ionicons name="book-outline" size={28} color={colors.textMuted} />
+            <Text style={[styles.emptyFilterText, { color: colors.textMuted }]}>
+              {activeFilter === "continue"
+                ? "No chapters in progress yet — open any chapter to begin"
+                : "No completed chapters yet — your journey starts with one verse"}
+            </Text>
+          </View>
+        }
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -717,5 +755,16 @@ const styles = StyleSheet.create({
   },
   widgetTipText: {
     fontSize: 12,
+  },
+  emptyFilter: {
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 32,
+    paddingHorizontal: 24,
+  },
+  emptyFilterText: {
+    fontSize: 13,
+    textAlign: "center",
+    lineHeight: 19,
   },
 });

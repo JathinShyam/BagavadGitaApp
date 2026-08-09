@@ -57,13 +57,28 @@ class DailyVerseWidgetProvider : AppWidgetProvider() {
 
       views.setTextViewText(
         R.id.widget_cta,
-        if (payload.verseId.isNotEmpty()) "Read today’s verse →" else "Open BagavadGita →"
+        if (payload.verseId.isNotEmpty()) "Read today’s verse →" else "Open Bhagavad Gita →"
       )
 
+      // Accessibility: one spoken summary for the whole card.
+      val a11y = buildString {
+        append(payload.eyebrow)
+        append(". ")
+        append(payload.title)
+        if (payload.meaning.isNotBlank()) {
+          append(". ")
+          append(payload.meaning)
+        }
+      }
+      views.setContentDescription(R.id.widget_root, a11y)
+
       val deepLink =
-        if (payload.verseId.isNotEmpty()) "myapp://verses/${payload.verseId}"
-        else "myapp://(main)"
-      val clickIntent = Intent(Intent.ACTION_VIEW, Uri.parse(deepLink))
+        if (payload.verseId.isNotEmpty()) "bagavadgita://verses/${payload.verseId}"
+        else "bagavadgita://"
+      val clickIntent = Intent(Intent.ACTION_VIEW, Uri.parse(deepLink)).apply {
+        setPackage(context.packageName)
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+      }
       val pendingIntent = PendingIntent.getActivity(
         context,
         appWidgetId,
@@ -98,7 +113,7 @@ class DailyVerseWidgetProvider : AppWidgetProvider() {
       eyebrow = "Today",
       title = "Daily Verse",
       sloka = "",
-      meaning = "Open BagavadGita to load today’s verse."
+      meaning = "Open Bhagavad Gita to load today’s verse."
     )
     if (raw.isNullOrBlank()) return fallback
 
@@ -122,7 +137,7 @@ class DailyVerseWidgetProvider : AppWidgetProvider() {
         }
         // Stale window — show prompt to open app
         return fallback.copy(
-          meaning = "Open BagavadGita once to refresh today’s verse."
+          meaning = "Open Bhagavad Gita once to refresh today’s verse."
         )
       }
 
@@ -130,7 +145,7 @@ class DailyVerseWidgetProvider : AppWidgetProvider() {
       val legacyDate = root.optString("dateKey", "")
       if (legacyDate.isNotEmpty() && legacyDate != today) {
         return fallback.copy(
-          meaning = "Open BagavadGita once to refresh today’s verse."
+          meaning = "Open Bhagavad Gita once to refresh today’s verse."
         )
       }
       Payload(

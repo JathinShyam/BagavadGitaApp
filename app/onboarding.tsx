@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { Text } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import Animated, {
@@ -137,6 +137,7 @@ function formatChipLabel(time: string): string {
 
 export default function OnboardingScreen() {
   const { colors } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [reminderTime, setReminderTime] = useState<string>("08:00");
   const [enablingReminder, setEnablingReminder] = useState(false);
@@ -288,7 +289,10 @@ export default function OnboardingScreen() {
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
     >
-      <Animated.View entering={FadeIn.delay(600)} style={styles.skipContainer}>
+      <Animated.View
+        entering={FadeIn.delay(600)}
+        style={[styles.skipContainer, { top: Math.max(insets.top, 12) + 8 }]}
+      >
         <Pressable onPress={skipOnboarding} style={styles.skipButton}>
           <Text style={[styles.skipText, { color: colors.textMuted }]}>Skip</Text>
         </Pressable>
@@ -363,7 +367,6 @@ const styles = StyleSheet.create({
   },
   skipContainer: {
     position: "absolute",
-    top: 60,
     right: 20,
     zIndex: 10,
   },

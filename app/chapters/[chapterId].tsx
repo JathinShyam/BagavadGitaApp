@@ -45,7 +45,7 @@ export default function ChapterDetailScreen() {
     const source = Image.resolveAssetSource(CHAPTER_IMAGES[chapter.id]);
     if (!source?.width || !source?.height) return 240;
     return Math.round(SCREEN_WIDTH * (source.height / source.width));
-  }, [chapter?.id]);
+  }, [chapter]);
 
   const jumpToVerses = useCallback(() => {
     listRef.current?.scrollToIndex({ index: 0, animated: true, viewPosition: 0 });

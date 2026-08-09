@@ -18,6 +18,7 @@ import Animated, { FadeInUp } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import Constants from "expo-constants";
 
 import { Spacing, Radius } from "@/theme/design-tokens";
 import { useTheme } from "@/context/theme-context";
@@ -96,7 +97,7 @@ const SettingItem: React.FC<SettingItemProps> = ({
 export default function SettingsScreen() {
   const { theme, toggleTheme } = useTheme();
   const { colors } = useAppTheme();
-  const { CHAPTER_VERSES, resetChapterProgress, getTotalProgress } = useReadingProgress();
+  const { resetAllProgress, getTotalProgress } = useReadingProgress();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [notificationTime, setNotificationTime] = useState("08:00");
   const [autoPlayAudio, setAutoPlayAudio] = useState(false);
@@ -165,7 +166,9 @@ export default function SettingsScreen() {
 
   const handleNotificationsToggle = useCallback(async () => {
     if (Platform.OS === "web") {
-      setNotificationsEnabled((v) => !v);
+      const next = !notificationsEnabled;
+      setNotificationsEnabled(next);
+      setStoredPreferences(next, notificationTime).catch(() => {});
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -192,7 +195,7 @@ export default function SettingsScreen() {
       }
     } else {
       try {
-        await setStoredPreferences(false);
+        await setStoredPreferences(false, notificationTime);
         setNotificationsEnabled(false);
         await cancelDailyVerseNotifications();
       } catch {
@@ -254,13 +257,7 @@ export default function SettingsScreen() {
           text: "Reset Everything",
           style: "destructive",
           onPress: async () => {
-            for (const chId of Object.keys(CHAPTER_VERSES)) {
-              await resetChapterProgress(parseInt(chId));
-            }
-            await AsyncStorage.multiRemove([
-              "readingStreak",
-              "lastReadVerse",
-            ]);
+            await resetAllProgress();
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             Alert.alert("Done", "All reading progress has been reset.");
           },
@@ -429,7 +426,7 @@ export default function SettingsScreen() {
           <View style={styles.sectionContent}>
             <SettingItem
               title="Version"
-              subtitle="1.0.0"
+              subtitle={Constants.expoConfig?.version ?? "1.0.0"}
               icon="information-circle"
               colors={colors}
               delay={400}

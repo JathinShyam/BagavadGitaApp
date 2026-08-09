@@ -19,7 +19,8 @@ This project focuses on three outcomes:
 - Share card image generation for social sharing
 - Reading streak + chapter/overall progress tracking
 - Surprise verse modal and continue-reading shortcut
-- Android widget integration + iOS widget data bridge
+- Android home-screen daily verse widget (+ iOS data bridge stub)
+- Guided reading paths and offline-first progress
 
 ## Tech stack
 
@@ -27,7 +28,7 @@ This project focuses on three outcomes:
 - **Navigation:** Expo Router
 - **UI:** React Native Paper, Reanimated, Gesture Handler, Haptics
 - **Persistence:** AsyncStorage
-- **Notifications:** `expo-notifications` (local repeating reminders)
+- **Notifications:** `expo-notifications` (rolling 7-day local DATE schedules)
 - **Sharing:** `react-native-view-shot`, `expo-sharing`, `expo-file-system`
 - **Native bridge:** Kotlin/Swift widget data modules
 
@@ -71,10 +72,11 @@ This project focuses on three outcomes:
 
 ## Notifications model
 
-Notifications are implemented as **local repeating OS triggers**:
-- One repeating daily trigger (`DAILY`) at selected time
-- No 30-day scheduling cap
-- Notification tap resolves and opens the verse for the current day
+Notifications are implemented as a **rolling window of one-shot DATE notifications**:
+- Schedules the next 7 days at the selected time
+- Each day's tray text includes that day's verse preview
+- Re-schedules on app foreground / preference changes
+- Notification tap opens the verse for the tapped day (or today's verse)
 
 Implementation references:
 - `lib/daily-verse-notifications.ts`
@@ -90,11 +92,10 @@ Reference: `lib/notification-availability.ts`
 
 ## Widgets
 
-- **Android:** AppWidget provider and native module are implemented.
+- **Android:** AppWidget provider and native module are shipped.
   - `android/app/src/main/java/com/jathinshyam/BagavadGita/DailyVerseWidgetProvider.kt`
   - `android/app/src/main/java/com/jathinshyam/BagavadGita/WidgetDataModule.kt`
-- **iOS:** widget data bridge module exists (widget extension integration path ready).
-  - `ios/BagavadGita/WidgetDataModule.swift`
+- **iOS:** `WidgetDataModule.swift` is a storage bridge stub only (no widget extension / App Group yet).
 
 Widget data is pushed from app lifecycle in `app/_layout.tsx`.
 
@@ -255,5 +256,5 @@ eas build --platform all --profile production
 ## Security and policy links
 
 Configured in `constants/app-urls.ts`:
-- Privacy Policy: <https://jathinshyam.github.io/BagavadGita/privacy.html>
-- Terms of Service: <https://jathinshyam.github.io/BagavadGita/terms.html>
+- Privacy Policy: <https://jathinshyam.github.io/BagavadGitaApp/privacy.html>
+- Terms of Service: <https://jathinshyam.github.io/BagavadGitaApp/terms.html>

@@ -135,7 +135,9 @@ export async function scheduleNextDailyVerseNotification(): Promise<void> {
 
     const granted = await requestNotificationPermissions();
     if (!granted) {
-      await setStoredPreferences(false);
+      // Disable, but keep the user's chosen time for when they re-enable.
+      await setStoredPreferences(false, time);
+      await cancelDailyVerseNotifications();
       return;
     }
 

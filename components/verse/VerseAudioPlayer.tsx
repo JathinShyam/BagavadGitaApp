@@ -6,7 +6,7 @@
  * This prevents the player-recreation loop that caused duplicate
  * audio playback in Android release builds.
  */
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Pressable, ActivityIndicator, Platform, TextInput } from "react-native";
 import Slider from "@react-native-community/slider";
 import { Ionicons } from "@expo/vector-icons";
@@ -56,7 +56,6 @@ function VerseAudioPlayerInner({
   const [resolvedUri, setResolvedUri] = useState<string | null>(null);
   const [resolveError, setResolveError] = useState(false);
   const [loadingShown, setLoadingShown] = useState(true);
-  const [isLoaded, setIsLoaded] = useState(false);
   const [isBuffering, setIsBuffering] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [durationMs, setDurationMs] = useState(0);
@@ -99,7 +98,7 @@ function VerseAudioPlayerInner({
     return { text: timeText.value } as any;
   });
 
-  const startProgressAnimation = () => {
+  const startProgressAnimation = useCallback(() => {
     const d = durationSharedMs.value;
     if (!d || d <= 0) return;
     cancelAnimation(progressMs);
@@ -108,17 +107,16 @@ function VerseAudioPlayerInner({
       duration: Math.max(0, Math.round(remaining)),
       easing: Easing.linear,
     });
-  };
+  }, [durationSharedMs, progressMs]);
 
-  const stopProgressAnimation = () => {
+  const stopProgressAnimation = useCallback(() => {
     cancelAnimation(progressMs);
-  };
+  }, [progressMs]);
 
   // Resolve asset to a proper file URI
   useEffect(() => {
     setResolveError(false);
     setResolvedUri(null);
-    setIsLoaded(false);
     setIsBuffering(false);
     setIsPlaying(false);
     isLoadedRef.current = false;
@@ -162,6 +160,8 @@ function VerseAudioPlayerInner({
       cancelled = true;
       clearTimeout(t);
     };
+    // Shared values are stable references; only the source drives this reset.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [audioSource]);
 
   useEffect(() => () => {
@@ -222,7 +222,6 @@ function VerseAudioPlayerInner({
       durationSharedMs.value = dMs;
       progressMs.value = pMs;
       setDurationMs(dMs);
-      setIsLoaded(true);
       isLoadedRef.current = true;
       setIsBuffering(!!st.isBuffering);
       isBufferingRef.current = !!st.isBuffering;
@@ -250,7 +249,6 @@ function VerseAudioPlayerInner({
 
       if (!isLoadedRef.current) {
         isLoadedRef.current = true;
-        setIsLoaded(true);
         if (autoPlay && !st.playing) {
           try {
             player.play();
@@ -300,6 +298,9 @@ function VerseAudioPlayerInner({
       } catch {}
       if (playerRef.current === player) playerRef.current = null;
     };
+    // sourceForPlayer/shared values/animation helpers are stable per sourceKey;
+    // depending on them would re-create the player every render (Android dup-audio bug).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sourceKey, autoPlay]);
 
   const handlePlayPause = () => {
@@ -328,6 +329,8 @@ function VerseAudioPlayerInner({
         if (playPauseTimeoutRef.current) clearTimeout(playPauseTimeoutRef.current);
         playPauseTimeoutRef.current = setTimeout(() => {
           playPauseTimeoutRef.current = null;
+          // Player may have been replaced if the verse changed meanwhile.
+          if (playerRef.current !== player) return;
           try {
             const st = player.currentStatus;
             if (st?.isLoaded && st.duration > 0) {
@@ -335,7 +338,6 @@ function VerseAudioPlayerInner({
               durationSharedMs.value = dMs;
               setDurationMs(dMs);
               isLoadedRef.current = true;
-              setIsLoaded(true);
               startProgressAnimation();
             }
           } catch {}
@@ -408,7 +410,8 @@ function VerseAudioPlayerInner({
       <Pressable
         onPress={handlePlayPause}
         disabled={!resolvedUri}
-        style={{ opacity: resolvedUri ? 1 : 0.6 }}
+        hitSlop={12}
+        style={{ opacity: resolvedUri ? 1 : 0.6, minWidth: 44, minHeight: 44, justifyContent: "center", alignItems: "center" }}
         accessibilityLabel={isPlaying ? "Pause audio" : "Play audio"}
         accessibilityRole="button"
       >

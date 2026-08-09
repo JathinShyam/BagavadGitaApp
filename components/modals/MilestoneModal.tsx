@@ -59,7 +59,7 @@ export default function MilestoneModal({ visible, days, onClose, onShare }: Prop
       opacity.value = withTiming(0, { duration: 160 });
       scale.value = withTiming(0.9, { duration: 160, easing: Easing.out(Easing.quad) });
     }
-  }, [visible, days]);
+  }, [visible, days, opacity, scale]);
 
   const backdropStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
   const cardStyle = useAnimatedStyle(() => ({
