@@ -1,0 +1,16 @@
+---
+description: Cream/gold theme, typography, and shared UI components
+globs: app/**/*.tsx,components/**/*.tsx,theme/**/*.ts
+alwaysApply: false
+---
+
+# UI & theme
+
+- Colors: `useAppTheme()` → `colors.*`. Tokens in `theme/design-tokens.ts`.
+- Light primary `#B8860B`, dark primary `#E6B74A`, light bg `#FFF8E7`.
+- Headings: Playfair (`PlayfairDisplay_700Bold` / `_600SemiBold` / `_400Regular`). Body: system font.
+- Reuse `GoldCard`, `OrnamentalDivider`, `DiamondDivider`, `IOSToggle`, `ScreenCornerArt` before inventing new chrome.
+- Shared layout styles: `theme/screen-styles.ts`.
+- Tint silhouette ornaments with `colors.primary` unless the asset is meant to stay full-color (`tint={false}`).
+- README screenshots in `docs/screenshots/` are the visual reference for polish work.
+- Match existing screen patterns; do not introduce a second design system.

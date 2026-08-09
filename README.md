@@ -48,6 +48,14 @@ This project focuses on three outcomes:
 - **Sharing:** `react-native-view-shot`, `expo-sharing`, `expo-file-system`
 - **Native bridge:** Kotlin/Swift widget data modules
 
+## Agent / contributor docs
+
+For AI agents and humans orienting in the codebase:
+
+- [`AGENTS.md`](AGENTS.md) — stack map, conventions, feature touchpoints
+- [`.cursor/rules/`](.cursor/rules/) — Cursor rules (core, UI theme, verse data)
+- [`.cursor/skills/`](.cursor/skills/) — task skills (UI polish, verse content, practice systems)
+
 ## Feature walkthrough
 
 ### Home

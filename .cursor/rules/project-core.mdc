@@ -1,0 +1,14 @@
+---
+description: Core Bhagavad Gita app conventions — stack, routes, scope, tabs
+alwaysApply: true
+---
+
+# Project core
+
+- Expo Router app; keep `app/` thin. Business logic in `lib/`, `hooks/`, `components/`.
+- Import via `@/` path alias.
+- Navigate with `ROUTES` / `DEEP_LINKS` from `constants/routes.ts` only.
+- Main tabs are exactly Home, Explore, Saved, Settings (`app/(main)/_layout.tsx`).
+- AsyncStorage keys only through `constants/storage-keys.ts`.
+- Do not commit unless the user asks. Prefer minimal diffs.
+- Package/`scheme` spelling `bagavadgita` is intentional; UI copy uses “Bhagavad Gita”.
