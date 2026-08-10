@@ -52,10 +52,42 @@ jobs:
 
       - name: 🖼️ Validate Image Files
         run: |
+          failed=0
           for f in ./assets/images/*; do
-            file "$f" | grep -q "JPEG" && { echo "❌ $f is JPEG, expected PNG"; exit 1; }
+            [ -f "$f" ] || continue
+            case "$f" in
+              *.png)
+                if ! file "$f" | grep -q "PNG image"; then
+                  echo "❌ $f: extension is .png but content is not PNG"
+                  file "$f"
+                  failed=1
+                fi
+                ;;
+              *.jpg|*.jpeg)
+                if ! file "$f" | grep -q "JPEG image"; then
+                  echo "❌ $f: extension is .jpg/.jpeg but content is not JPEG"
+                  file "$f"
+                  failed=1
+                fi
+                ;;
+              *.webp)
+                if ! file "$f" | grep -qi "Web/P\|WebP"; then
+                  echo "❌ $f: extension is .webp but content is not WebP"
+                  file "$f"
+                  failed=1
+                fi
+                ;;
+              *)
+                echo "❌ $f: unsupported image extension (use .png, .jpg, or .webp)"
+                failed=1
+                ;;
+            esac
           done
-          echo "✅ All images valid"
+          if [ "$failed" -ne 0 ]; then
+            echo "Image validation failed"
+            exit 1
+          fi
+          echo "✅ All images valid (content matches extension)"
 
       - name: 💻 EAS Build - APK (direct install)
         run: |
