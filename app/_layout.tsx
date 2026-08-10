@@ -18,6 +18,7 @@ import {
   PlayfairDisplay_700Bold,
 } from "@expo-google-fonts/playfair-display";
 import { ThemeProvider as AppThemeProvider, useTheme as useAppThemeMode } from "@/context/theme-context";
+import { LanguageProvider } from "@/context/language-context";
 import { ToastProvider } from "@/components/ui/Toast";
 import { LaunchIntro } from "@/components/ui/LaunchIntro";
 import { ReadingProgressProvider } from "@/hooks/useReadingProgress";
@@ -144,15 +145,44 @@ export default function RootLayout() {
     });
 
     const lastProcessedIdRef = { current: "" };
+    const notificationsApi = Notifications;
 
     type NotificationPayload = {
       verseId?: string;
       screen?: string;
     };
 
-    const handleNotificationResponse = (data: NotificationPayload | undefined, responseId: string) => {
-      const id = responseId || `fallback-${Date.now()}`;
+    const clearLastResponse = () => {
+      try {
+        notificationsApi.clearLastNotificationResponse();
+      } catch {
+        // Older builds may only expose the async alias
+        notificationsApi.clearLastNotificationResponseAsync?.().catch(() => {});
+      }
+    };
+
+    const handleNotificationResponse = async (
+      data: NotificationPayload | undefined,
+      responseId: string
+    ) => {
+      const id = responseId.trim();
+      // Without a stable id we cannot safely dedupe; skip rather than auto-open every launch.
+      if (!id) return;
       if (id === lastProcessedIdRef.current) return;
+
+      try {
+        const alreadyHandled = await AsyncStorage.getItem(
+          STORAGE_KEYS.LAST_HANDLED_NOTIFICATION
+        );
+        if (alreadyHandled === id) {
+          lastProcessedIdRef.current = id;
+          clearLastResponse();
+          return;
+        }
+      } catch {
+        // Continue — still attempt one-shot navigation + clear.
+      }
+
       lastProcessedIdRef.current = id;
 
       const navigateTo = (path: string) => {
@@ -162,24 +192,39 @@ export default function RootLayout() {
 
       if (data?.verseId) {
         navigateTo(ROUTES.verse(data.verseId));
+      } else if (data?.screen === "daily-verse") {
+        const verse = getVerseForDate(new Date());
+        if (verse) navigateTo(ROUTES.verse(verse.id));
+      } else {
+        // Unknown / empty payload — do not hijack launch into today's verse.
+        clearLastResponse();
         return;
       }
-      const verse = getVerseForDate(new Date());
-      if (verse) navigateTo(ROUTES.verse(verse.id));
+
+      try {
+        await AsyncStorage.setItem(STORAGE_KEYS.LAST_HANDLED_NOTIFICATION, id);
+      } catch {
+        // ignore
+      }
+      clearLastResponse();
     };
 
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data as NotificationPayload | undefined;
       const id = response.notification.request.identifier ?? "";
-      handleNotificationResponse(data, id);
+      void handleNotificationResponse(data, id);
     });
 
+    // Cold start from a notification tap only — clear after handling so the next
+    // normal open does not re-open the same verse.
     Notifications.getLastNotificationResponseAsync()
       .then((response) => {
-        if (!response?.notification.request.content.data) return;
-        const data = response.notification.request.content.data as NotificationPayload;
+        if (!response) return;
+        const data = response.notification.request.content.data as
+          | NotificationPayload
+          | undefined;
         const id = response.notification.request.identifier ?? "";
-        handleNotificationResponse(data, id);
+        return handleNotificationResponse(data, id);
       })
       .catch(() => {});
 
@@ -194,6 +239,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ErrorBoundary>
         <AppThemeProvider>
+          <LanguageProvider>
           <ReadingProgressProvider>
             <NavigationThemeProvider>
               <ToastProvider>
@@ -221,6 +267,7 @@ export default function RootLayout() {
               </ToastProvider>
             </NavigationThemeProvider>
           </ReadingProgressProvider>
+          </LanguageProvider>
         </AppThemeProvider>
       </ErrorBoundary>
     </GestureHandlerRootView>

@@ -23,8 +23,8 @@ export function WidgetNudgeModal({ visible, onClose }: Props) {
           <Ionicons name="phone-portrait-outline" size={36} color={colors.primary} />
           <Text style={[styles.title, { color: colors.primary }]}>Daily verse on your home screen</Text>
           <Text style={[styles.body, { color: colors.textMuted }]}>
-            Long-press your home screen → Widgets → Bhagavad Gita → Daily Verse. It shows today’s
-            verse and updates each day — tap to open and read.
+            Long-press your home screen → Widgets → Bhagavad Gita → Daily Verse. Open the app once
+            so it can sync, then the widget shows today’s verse and updates each day — tap to read.
           </Text>
           <Pressable
             onPress={onClose}

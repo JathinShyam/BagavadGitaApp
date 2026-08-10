@@ -4,6 +4,8 @@
  */
 
 import { ALL_VERSES } from "@/data/verses/verse-catalog";
+import { DEFAULT_CONTENT_LANGUAGE, type ContentLanguage } from "@/constants/languages";
+import { toNotificationVerse } from "@/lib/verse-content";
 import type { VerseForNotification } from "@/types";
 
 export type { VerseForNotification };
@@ -26,18 +28,26 @@ function getDayOfYear(date: Date): number {
 /**
  * Returns the verse to show for a given day (same day = same verse every year).
  */
-export function getVerseByDayOfYear(dayOfYear: number): VerseForNotification | null {
+export function getVerseByDayOfYear(
+  dayOfYear: number,
+  language: ContentLanguage = DEFAULT_CONTENT_LANGUAGE
+): VerseForNotification | null {
   if (ALL_VERSES.length === 0) return null;
   const index = (dayOfYear - 1) % ALL_VERSES.length;
-  return ALL_VERSES[index] ?? null;
+  const verse = ALL_VERSES[index];
+  if (!verse) return null;
+  return toNotificationVerse(verse, language);
 }
 
 /**
  * Returns the verse for a specific date.
  */
-export function getVerseForDate(date: Date = new Date()): VerseForNotification | null {
+export function getVerseForDate(
+  date: Date = new Date(),
+  language: ContentLanguage = DEFAULT_CONTENT_LANGUAGE
+): VerseForNotification | null {
   const dayOfYear = getDayOfYear(date);
-  return getVerseByDayOfYear(dayOfYear);
+  return getVerseByDayOfYear(dayOfYear, language);
 }
 
 function truncate(text: string, maxLen: number): string {
@@ -58,9 +68,7 @@ export function getDailyVerseNotificationContent(verse: VerseForNotification): {
   const title = DAILY_VERSE_NOTIFICATION_TITLE;
   const rawBody =
     verse.meaning ??
-    (verse.teluguSloka
-      ? verse.teluguSloka.replace(/\n/g, " ").replace(/\s+/g, " ").trim()
-      : "");
+    (verse.sloka ? verse.sloka.replace(/\n/g, " ").replace(/\s+/g, " ").trim() : "");
   const body = rawBody
     ? truncate(rawBody, MAX_BODY_LENGTH)
     : "Open the app to read the verse.";

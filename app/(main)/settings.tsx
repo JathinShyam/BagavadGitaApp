@@ -23,6 +23,7 @@ import Constants from "expo-constants";
 
 import { Spacing, Radius } from "@/theme/design-tokens";
 import { useTheme } from "@/context/theme-context";
+import { useContentLanguage } from "@/context/language-context";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useReadingProgress } from "@/hooks/useReadingProgress";
 import {
@@ -32,8 +33,10 @@ import {
   scheduleNextDailyVerseNotification,
   cancelDailyVerseNotifications,
 } from "@/lib/daily-verse-notifications";
+import { syncDailyVerseWidget } from "@/lib/widget-data";
 import { APP_URLS } from "@/constants/app-urls";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
+import { CONTENT_LANGUAGES, type ContentLanguage } from "@/constants/languages";
 import { GoldCard } from "@/components/ui/GoldCard";
 import { OrnamentalDivider, ORNAMENTS } from "@/components/ui/OrnamentalDivider";
 import { IOSToggle } from "@/components/ui/IOSToggle";
@@ -98,12 +101,14 @@ const SettingItem: React.FC<SettingItemProps> = ({
 export default function SettingsScreen() {
   const { theme, toggleTheme } = useTheme();
   const { colors } = useAppTheme();
+  const { language, languageOption, setLanguage } = useContentLanguage();
   const { resetAllProgress } = useReadingProgress();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [notificationTime, setNotificationTime] = useState("08:00");
   const [autoPlayAudio, setAutoPlayAudio] = useState(false);
   const [notificationsLoading, setNotificationsLoading] = useState(true);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showLanguagePicker, setShowLanguagePicker] = useState(false);
   const [draftTime, setDraftTime] = useState<Date>(new Date());
 
   const parseTimeToDate = useCallback((time: string) => {
@@ -202,6 +207,27 @@ export default function SettingsScreen() {
     toggleTheme();
   };
 
+  const handleLanguageSelect = useCallback(
+    async (code: ContentLanguage) => {
+      if (code === language) {
+        setShowLanguagePicker(false);
+        return;
+      }
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setLanguage(code);
+      setShowLanguagePicker(false);
+      try {
+        await Promise.all([
+          scheduleNextDailyVerseNotification(),
+          syncDailyVerseWidget(),
+        ]);
+      } catch {
+        // Preference is saved; sync can retry on next foreground.
+      }
+    },
+    [language, setLanguage]
+  );
+
   const handleTimePickerChange = useCallback((_event: any, selected?: Date) => {
     if (!selected) return;
     setDraftTime(selected);
@@ -288,7 +314,6 @@ export default function SettingsScreen() {
             title="Theme"
             icon="color-palette-outline"
             colors={colors}
-            isLast
             rightElement={
               <IOSToggle
                 value={theme === "dark"}
@@ -297,6 +322,22 @@ export default function SettingsScreen() {
               />
             }
             delay={100}
+          />
+          <SettingItem
+            title="Content language"
+            icon="language-outline"
+            colors={colors}
+            isLast
+            onPress={() => setShowLanguagePicker(true)}
+            rightElement={
+              <View style={styles.timeRow}>
+                <Text style={[styles.timeValue, { color: colors.primary }]}>
+                  {languageOption.label}
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              </View>
+            }
+            delay={150}
           />
         </GoldCard>
 
@@ -430,16 +471,75 @@ export default function SettingsScreen() {
             world.
           </Text>
           <Text style={[styles.aboutDescription, { color: colors.text }]}>
-            This app provides the complete text of the Bhagavad Gita in Telugu
-            with English translations, word meanings, and detailed commentaries.
-            It&apos;s designed to help you study and understand this ancient wisdom
-            in a modern, accessible format.
+            This app provides the Bhagavad Gita with localized scripture content
+            (sloka, meaning, word meanings, and commentary). Choose your preferred
+            content language in Appearance. Missing translations fall back to
+            Telugu until you add them.
           </Text>
           <Text style={[styles.aboutFooter, { color: colors.textMuted }]}>
             Made for spiritual seekers
           </Text>
         </Animated.View>
       </ScrollView>
+
+      <Modal
+        visible={showLanguagePicker}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowLanguagePicker(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>
+              Content language
+            </Text>
+            <Text style={[styles.modalSubtitle, { color: colors.textMuted }]}>
+              Scripture text for verses, notifications, and widgets
+            </Text>
+            {CONTENT_LANGUAGES.map((opt, idx) => {
+              const selected = opt.code === language;
+              const isLast = idx === CONTENT_LANGUAGES.length - 1;
+              return (
+                <Pressable
+                  key={opt.code}
+                  onPress={() => handleLanguageSelect(opt.code)}
+                  style={[
+                    styles.languageRow,
+                    !isLast && {
+                      borderBottomWidth: StyleSheet.hairlineWidth,
+                      borderBottomColor: colors.outline + "40",
+                    },
+                  ]}
+                >
+                  <View>
+                    <Text style={[styles.settingTitle, { color: colors.text }]}>
+                      {opt.label}
+                    </Text>
+                    <Text style={[styles.settingSubtitle, { color: colors.textMuted }]}>
+                      {opt.nativeLabel}
+                    </Text>
+                  </View>
+                  {selected ? (
+                    <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+                  ) : (
+                    <Ionicons name="ellipse-outline" size={22} color={colors.textMuted} />
+                  )}
+                </Pressable>
+              );
+            })}
+            <View style={styles.modalActions}>
+              <Pressable
+                style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                onPress={() => setShowLanguagePicker(false)}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.onPrimary }]}>
+                  Done
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         visible={showTimePicker}
@@ -582,6 +682,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
+  },
+  languageRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
   },
   timeValue: {
     fontSize: 14,

@@ -7,12 +7,16 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useContentLanguage } from "@/context/language-context";
 import { ROUTES } from "@/constants/routes";
 import { getRouteParam } from "@/lib/route-params";
 import {
   clearActivePath,
   getActivePath,
   getNextIncompleteDay,
+  getPathDayTitle,
+  getPathDescription,
+  getPathTitle,
   getReadingPathById,
   isPathComplete,
   setActivePath,
@@ -25,9 +29,13 @@ export default function PathDetailScreen() {
   const id = getRouteParam(pathId);
   const path = getReadingPathById(id);
   const { colors } = useAppTheme();
+  const { language } = useContentLanguage();
   const router = useRouter();
   const { showToast } = useToast();
   const [active, setActive] = useState<ActiveReadingPath | null>(null);
+
+  const pathTitle = path ? getPathTitle(path, language) : "";
+  const pathDescription = path ? getPathDescription(path, language) : "";
 
   const refresh = useCallback(async () => {
     const current = await getActivePath();
@@ -96,7 +104,7 @@ export default function PathDetailScreen() {
     >
       <Stack.Screen
         options={{
-          title: path.title,
+          title: pathTitle,
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.primary,
           headerTitleStyle: {
@@ -110,7 +118,7 @@ export default function PathDetailScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.desc, { color: colors.textMuted }]}>{path.description}</Text>
+        <Text style={[styles.desc, { color: colors.textMuted }]}>{pathDescription}</Text>
 
         <Text style={[styles.meta, { color: colors.textMuted }]}>
           {path.days.length} days
@@ -146,7 +154,7 @@ export default function PathDetailScreen() {
               Up next
             </Text>
             <Text style={[styles.primaryCtaText, { color: colors.onPrimary }]}>
-              Day {nextDay.day}: {nextDay.title}
+              Day {nextDay.day}: {getPathDayTitle(nextDay, language)}
             </Text>
             <Text style={[styles.continueHint, { color: colors.onPrimary + "CC" }]}>
               Continue reading →
@@ -218,7 +226,9 @@ export default function PathDetailScreen() {
                     <Text style={[styles.doneLabel, { color: colors.primary }]}>Now</Text>
                   )}
                 </View>
-                <Text style={[styles.dayTitle, { color: colors.text }]}>{day.title}</Text>
+                <Text style={[styles.dayTitle, { color: colors.text }]}>
+                  {getPathDayTitle(day, language)}
+                </Text>
                 {day.verseIds.map((vid) => (
                   <Pressable
                     key={vid}

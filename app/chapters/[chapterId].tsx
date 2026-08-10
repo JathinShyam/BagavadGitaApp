@@ -1,6 +1,6 @@
-import { View, FlatList, StyleSheet, Pressable, ImageBackground, Image, Dimensions, Text as RNText } from "react-native";
+import { View, FlatList, StyleSheet, Pressable, ImageBackground, Image, Dimensions } from "react-native";
 import { Text } from "react-native-paper";
-import { useLocalSearchParams, Stack, useRouter, Link } from "expo-router";
+import { useLocalSearchParams, Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
@@ -18,13 +18,17 @@ import { CHAPTER_IMAGES } from "@/constants/chapter-images";
 import type { Verse } from "@/types";
 
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useContentLanguage } from "@/context/language-context";
 import { useReadingProgress } from "@/hooks/useReadingProgress";
 import { ROUTES } from "@/constants/routes";
 import { chapterScreenStyles } from "@/theme/screen-styles";
 import { getRouteParam } from "@/lib/route-params";
+import { getVerseSloka } from "@/lib/verse-content";
+import { getChapterDescription, getChapterTitle } from "@/lib/chapter-content";
 import { GoldCard } from "@/components/ui/GoldCard";
 import { OrnamentalDivider, ORNAMENTS } from "@/components/ui/OrnamentalDivider";
-import { Radius, Spacing } from "@/theme/design-tokens";
+import { VerseListCard } from "@/components/verse/VerseListCard";
+import { Spacing } from "@/theme/design-tokens";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const PATH_MARKER_WIDTH = 52;
@@ -34,11 +38,18 @@ const JOURNEY_CHARIOT = require("../../assets/images/journey-chariot.png");
 export default function ChapterDetailScreen() {
   const { chapterId } = useLocalSearchParams<{ chapterId: string }>();
   const { colors } = useAppTheme();
+  const { language } = useContentLanguage();
   const router = useRouter();
   const chapter = getChapterById(getRouteParam(chapterId));
+  const chapterTitle = chapter ? getChapterTitle(chapter.id, language) : "";
+  const chapterDescription = chapter ? getChapterDescription(chapter, language) : "";
   const { isVerseRead, getChapterProgress, isChapterComplete, CHAPTER_VERSES } =
     useReadingProgress();
   const [isContextExpanded, setIsContextExpanded] = useState(false);
+
+  useEffect(() => {
+    setIsContextExpanded(false);
+  }, [language, chapter?.id]);
   const listRef = useRef<FlatList<Verse> | null>(null);
   const journeyProgress = useSharedValue(0);
   const pathWidth = useSharedValue(SCREEN_WIDTH - 32);
@@ -102,80 +113,18 @@ export default function ChapterDetailScreen() {
     };
   });
 
-  /** First unread verse in this chapter only (not global last-read). */
-  const nextUnreadVerse = useMemo(() => {
-    if (!chapter || chapterDone) return null;
-    return (
-      chapter.verses.find((v) => !isVerseRead(chapter.id, v.verse_number)) ??
-      chapter.verses[0] ??
-      null
-    );
-  }, [chapter, chapterDone, isVerseRead]);
-
   const renderVerse = ({ item }: { item: Verse }) => {
     if (!chapter) return null;
     const read = isVerseRead(chapter.id, item.verse_number);
     return (
-      <Pressable
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push(ROUTES.verseFromChapter(chapter.id, item.verse_number));
-        }}
-        style={({ pressed }) => [
-          chapterPageStyles.verseCard,
-          {
-            backgroundColor: colors.surface,
-            borderColor: colors.primary + "70",
-            opacity: pressed ? 0.82 : 1,
-          },
-        ]}
-        accessibilityRole="button"
+      <VerseListCard
+        badge={item.verse_number}
+        title={`Verse ${item.verse_number}`}
+        preview={getVerseSloka(item, language)}
+        read={read}
+        onPress={() => router.push(ROUTES.verseFromChapter(chapter.id, item.verse_number))}
         accessibilityLabel={`Open verse ${item.verse_number}`}
-      >
-        <View
-          style={[
-            chapterPageStyles.verseNumBadge,
-            {
-              backgroundColor: colors.primary + "18",
-              borderColor: colors.primary + "55",
-            },
-          ]}
-        >
-          <RNText style={[chapterPageStyles.verseNumText, { color: colors.primary }]}>
-            {item.verse_number}
-          </RNText>
-        </View>
-
-        <View style={chapterPageStyles.verseBody}>
-          <RNText style={[chapterPageStyles.verseTitle, { color: colors.primary }]}>
-            Verse {item.verse_number}
-          </RNText>
-          <RNText
-            style={[chapterPageStyles.verseSloka, { color: colors.text }]}
-            numberOfLines={2}
-          >
-            {item.teluguSloka}
-          </RNText>
-        </View>
-
-        <View
-          style={[
-            chapterPageStyles.readBtn,
-            read && chapterPageStyles.readBtnCompleted,
-            {
-              backgroundColor: "transparent",
-              borderColor: colors.primary + "99",
-            },
-          ]}
-        >
-          {read && <Ionicons name="checkmark" size={15} color={colors.success} />}
-          <RNText
-            style={[chapterPageStyles.readBtnText, { color: colors.primary }]}
-          >
-            {read ? "Read" : "Open"}
-          </RNText>
-        </View>
-      </Pressable>
+      />
     );
   };
 
@@ -214,6 +163,7 @@ export default function ChapterDetailScreen() {
         data={chapter.verses}
         renderItem={renderVerse}
         keyExtractor={(item) => item.verse_number.toString()}
+        extraData={language}
         contentContainerStyle={chapterScreenStyles.listContainer}
         showsVerticalScrollIndicator={false}
         onScrollToIndexFailed={() => {
@@ -255,7 +205,7 @@ export default function ChapterDetailScreen() {
                   <View style={[chapterPageStyles.descDiamond, { borderColor: colors.primary }]} />
                 </View>
                 <Text style={[chapterPageStyles.descTitle, { color: colors.text }]}>
-                  {chapter.yogam_name}
+                  {chapterTitle}
                 </Text>
                 <View style={chapterPageStyles.descTitleSide}>
                   <View style={[chapterPageStyles.descDiamond, { borderColor: colors.primary }]} />
@@ -276,7 +226,7 @@ export default function ChapterDetailScreen() {
                   style={[chapterPageStyles.descText, { color: colors.text }]}
                   numberOfLines={isContextExpanded ? undefined : 4}
                 >
-                  {chapter.description}
+                  {chapterDescription}
                 </Text>
                 <View style={chapterPageStyles.contextActions}>
                   <Text style={[chapterPageStyles.contextActionText, { color: colors.primary }]}>
@@ -362,54 +312,6 @@ export default function ChapterDetailScreen() {
                 </View>
               </View>
             </GoldCard>
-
-            {nextUnreadVerse && (
-              <Link
-                href={ROUTES.verseFromChapter(chapter.id, nextUnreadVerse.verse_number)}
-                asChild
-              >
-                <Pressable
-                  style={({ pressed }) => [
-                    chapterScreenStyles.continueCta,
-                    {
-                      backgroundColor: colors.primary + "14",
-                      borderColor: colors.primary + "44",
-                      opacity: pressed ? 0.85 : 1,
-                    },
-                  ]}
-                  onPressIn={() =>
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-                  }
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    chapterProgress === 0
-                      ? `Begin this chapter at verse ${nextUnreadVerse.verse_number}`
-                      : `Continue reading verse ${nextUnreadVerse.verse_number} in this chapter`
-                  }
-                >
-                  <Ionicons name="book-outline" size={22} color={colors.primary} />
-                  <View style={chapterScreenStyles.continueCtaBody}>
-                    <Text
-                      style={[
-                        chapterScreenStyles.continueCtaLabel,
-                        { color: colors.primary },
-                      ]}
-                    >
-                      {chapterProgress === 0 ? "Begin this chapter" : "Continue reading"}
-                    </Text>
-                    <Text
-                      style={[
-                        chapterScreenStyles.continueCtaSubtitle,
-                        { color: colors.textMuted },
-                      ]}
-                    >
-                      Verse {nextUnreadVerse.verse_number}
-                    </Text>
-                  </View>
-                  <Ionicons name="arrow-forward" size={18} color={colors.primary} />
-                </Pressable>
-              </Link>
-            )}
 
             <Text style={[chapterPageStyles.versesHeading, { color: colors.text }]}>
               Verses
@@ -555,62 +457,5 @@ const chapterPageStyles = StyleSheet.create({
     fontSize: 22,
     marginTop: 12,
     marginBottom: 10,
-  },
-  verseCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: Spacing.sm,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: Radius.md,
-    gap: 12,
-  },
-  verseNumBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  verseNumText: {
-    fontFamily: "PlayfairDisplay_700Bold",
-    fontSize: 14,
-  },
-  verseBody: {
-    flex: 1,
-    flexShrink: 1,
-    minWidth: 0,
-    justifyContent: "center",
-  },
-  verseTitle: {
-    fontFamily: "PlayfairDisplay_700Bold",
-    fontSize: 15,
-    marginBottom: 4,
-  },
-  verseSloka: {
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  readBtn: {
-    borderWidth: 1,
-    borderRadius: Radius.sm,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-    alignSelf: "center",
-  },
-  readBtnCompleted: {
-    flexDirection: "row",
-    gap: 4,
-    paddingHorizontal: 10,
-  },
-  readBtnText: {
-    fontFamily: "PlayfairDisplay_700Bold",
-    fontSize: 13,
   },
 });

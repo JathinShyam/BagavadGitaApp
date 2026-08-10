@@ -16,6 +16,7 @@ import * as Haptics from "expo-haptics";
 import { useMemo, useState } from "react";
 
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useContentLanguage } from "@/context/language-context";
 import { useReadingProgress } from "@/hooks/useReadingProgress";
 import { CATEGORIES } from "@/data/explore-categories";
 import { getVerseById } from "@/data/verses/verse-catalog";
@@ -30,6 +31,7 @@ import {
   TOPIC_BACKGROUNDS,
   TOPIC_BG_FALLBACK,
 } from "@/constants/topic-icons";
+import { getVerseMeaning, getVerseSloka } from "@/lib/verse-content";
 
 const EMBLEM_MOOD = require("../../../assets/images/emblem-mood-featured.png");
 
@@ -40,6 +42,7 @@ const TILE_RADIUS = Radius.sm;
 
 export default function ExploreScreen() {
   const { colors, isDark } = useAppTheme();
+  const { language } = useContentLanguage();
   const router = useRouter();
   const { isVerseRead } = useReadingProgress();
   const [selectedMoodId, setSelectedMoodId] = useState<string>("anger");
@@ -163,12 +166,12 @@ export default function ExploreScreen() {
               <Text style={[styles.featuredRef, { color: colors.text }]}>
                 Chapter {featuredVerse.chapter} · Verse {featuredVerse.verse_number}
               </Text>
-              {featuredVerse.teluguSloka ? (
+              {getVerseSloka(featuredVerse, language) ? (
                 <Text
                   style={[styles.featuredSloka, { color: colors.text }]}
                   numberOfLines={2}
                 >
-                  {featuredVerse.teluguSloka.replace(/\n/g, " ").trim()}
+                  {getVerseSloka(featuredVerse, language).replace(/\n/g, " ").trim()}
                 </Text>
               ) : null}
               <DiamondDivider style={styles.featuredDivider} />
@@ -176,7 +179,8 @@ export default function ExploreScreen() {
                 style={[styles.featuredPreview, { color: colors.textMuted }]}
                 numberOfLines={3}
               >
-                {featuredVerse.meaning || featuredVerse.teluguSloka}
+                {getVerseMeaning(featuredVerse, language) ||
+                  getVerseSloka(featuredVerse, language)}
               </Text>
             </View>
           </View>

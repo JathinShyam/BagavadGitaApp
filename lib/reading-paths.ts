@@ -5,6 +5,9 @@ import {
   getReadingPathById,
   getNextIncompleteDay as getNextDayFromPath,
   isPathComplete as isPathDaysComplete,
+  getPathTitle,
+  getPathDescription,
+  getPathDayTitle,
   type PathDay,
   type ReadingPath,
   READING_PATHS,
@@ -12,7 +15,13 @@ import {
 import { getLocalDateKey } from "@/lib/date-keys";
 import type { ActiveReadingPath } from "@/types/reading-progress";
 
-export { READING_PATHS, getReadingPathById };
+export {
+  READING_PATHS,
+  getReadingPathById,
+  getPathTitle,
+  getPathDescription,
+  getPathDayTitle,
+};
 export type { ReadingPath, PathDay, ActiveReadingPath };
 
 export async function getActivePath(): Promise<ActiveReadingPath | null> {

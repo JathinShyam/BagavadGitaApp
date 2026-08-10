@@ -1,7 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
   <string name="app_name">Bhagavad Gita</string>
   <string name="widget_daily_verse_label">Daily Verse</string>
-  <string name="widget_daily_verse_description">Today\'s Bhagavad Gita verse — updates each day</string>
+  <string name="widget_daily_verse_description">Today\'s Bhagavad Gita verse - updates each day</string>
+  <string name="widget_eyebrow_today">Today</string>
+  <string name="widget_title_placeholder">Daily Verse</string>
+  <string name="widget_meaning_placeholder">Open Bhagavad Gita to load today\'s verse.</string>
+  <string name="widget_cta_read">Read today\'s verse</string>
+  <string name="widget_cta_open">Open Bhagavad Gita</string>
+  <string name="widget_refresh_prompt">Open Bhagavad Gita once to refresh today\'s verse.</string>
   <string name="expo_splash_screen_resize_mode" translatable="false">contain</string>
   <string name="expo_splash_screen_status_bar_translucent" translatable="false">false</string>
   <string name="expo_system_ui_user_interface_style" translatable="false">automatic</string>

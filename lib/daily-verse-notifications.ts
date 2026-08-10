@@ -16,6 +16,7 @@ import {
   getVerseForDate,
 } from "./daily-verse";
 import { shouldLoadExpoNotifications } from "./notification-availability";
+import { getStoredContentLanguage } from "./chapter-content";
 
 function getNotifications(): typeof import("expo-notifications") | null {
   if (!shouldLoadExpoNotifications()) return null;
@@ -146,6 +147,7 @@ export async function scheduleNextDailyVerseNotification(): Promise<void> {
     const Notifications = getNotifications();
     if (!Notifications) return;
 
+    const language = await getStoredContentLanguage();
     const { hour, minute } = parseTime(time);
     const now = new Date();
     const todaySlot = slotDate(now, hour, minute, 0);
@@ -153,7 +155,7 @@ export async function scheduleNextDailyVerseNotification(): Promise<void> {
 
     for (let i = 0; i < ROLLING_DAYS; i++) {
       const triggerAt = slotDate(now, hour, minute, startOffset + i);
-      const verse = getVerseForDate(triggerAt);
+      const verse = getVerseForDate(triggerAt, language);
       if (!verse) continue;
 
       const { title, body, verseId } = getDailyVerseNotificationContent(verse);

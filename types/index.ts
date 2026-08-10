@@ -1,4 +1,4 @@
-export type { Verse, VerseForNotification, WordMeaning } from "./verse";
+export type { Verse, VerseForNotification, WordMeaning, VerseLocaleContent } from "./verse";
 export type {
   ReadingProgress,
   ReadingStreak,

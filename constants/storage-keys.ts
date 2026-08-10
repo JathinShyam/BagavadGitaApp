@@ -6,6 +6,8 @@ export const STORAGE_KEYS = {
   SAVED_VERSES: "savedVerses",
   ONBOARDING: "hasCompletedOnboarding",
   THEME: "theme",
+  /** Scripture content language (`te` | `en` | `hi`). */
+  CONTENT_LANGUAGE: "contentLanguage",
   READING_PROGRESS: "readingProgress",
   READING_STREAK: "readingStreak",
   LAST_READ_VERSE: "lastReadVerse",
@@ -15,4 +17,6 @@ export const STORAGE_KEYS = {
   WIDGET_NUDGE_DISMISSED: "widgetNudgeDismissedUntil",
   MILESTONES_SEEN: "milestonesSeen",
   SAVED_REVIEW_CURSOR: "savedReviewCursor",
+  /** Last notification response id already used for in-app navigation (dedupe cold starts). */
+  LAST_HANDLED_NOTIFICATION: "lastHandledNotificationResponseId",
 } as const;

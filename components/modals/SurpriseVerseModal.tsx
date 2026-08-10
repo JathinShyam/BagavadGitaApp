@@ -19,9 +19,11 @@ import Animated, {
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useContentLanguage } from "@/context/language-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { VERSE_SEQUENCES } from "@/constants/verse-sequences";
 import { CHAPTER_IMAGES } from "@/constants/chapter-images";
+import { CHAPTER_SUMMARIES, getChapterName } from "@/constants/chapter-summaries";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -31,27 +33,11 @@ interface SurpriseVerseModalProps {
   onClose: () => void;
 }
 
-// Chapter data for shuffle
-const chapters = [
-  { id: 1, name: "అర్జున విషాద యోగము", englishName: "Arjuna Vishada Yoga", verses: 47 },
-  { id: 2, name: "సాంఖ్య యోగము", englishName: "Sankhya Yoga", verses: 72 },
-  { id: 3, name: "కర్మ యోగము", englishName: "Karma Yoga", verses: 43 },
-  { id: 4, name: "జ్ఞాన కర్మ సన్న్యాస యోగము", englishName: "Jnana Karma Sanyasa Yoga", verses: 42 },
-  { id: 5, name: "కర్మ సన్యాస యోగము", englishName: "Karma Sanyasa Yoga", verses: 29 },
-  { id: 6, name: "ధ్యాన యోగము", englishName: "Dhyana Yoga", verses: 47 },
-  { id: 7, name: "జ్ఞాన విజ్ఞాన యోగము", englishName: "Jnana Vijnana Yoga", verses: 30 },
-  { id: 8, name: "అక్షర బ్రహ్మ యోగము", englishName: "Akshara Brahma Yoga", verses: 28 },
-  { id: 9, name: "రాజ విద్యా యోగము", englishName: "Raja Vidya Yoga", verses: 34 },
-  { id: 10, name: "విభూతి యోగము", englishName: "Vibhuti Yoga", verses: 42 },
-  { id: 11, name: "విశ్వ రూప దర్శన యోగము", englishName: "Vishwarupa Darshana Yoga", verses: 55 },
-  { id: 12, name: "భక్తి యోగము", englishName: "Bhakti Yoga", verses: 20 },
-  { id: 13, name: "క్షేత్ర క్షేత్రజ్ఞ విభాగ యోగము", englishName: "Kshetra Kshetrajna Yoga", verses: 35 },
-  { id: 14, name: "గుణత్రయ విభాగ యోగము", englishName: "Gunatraya Vibhaga Yoga", verses: 27 },
-  { id: 15, name: "పురుషోత్తమ యోగము", englishName: "Purushottama Yoga", verses: 20 },
-  { id: 16, name: "దైవాసుర సంపద్విభాగ యోగము", englishName: "Daivasura Sampad Yoga", verses: 24 },
-  { id: 17, name: "శ్రద్ధా త్రయ విభాగ యోగము", englishName: "Shraddhatraya Vibhaga Yoga", verses: 28 },
-  { id: 18, name: "మోక్ష సన్యాస యోగము", englishName: "Moksha Sanyasa Yoga", verses: 78 },
-];
+const chapters = CHAPTER_SUMMARIES.map((c) => ({
+  id: c.id,
+  verses: c.verses,
+  names: c.names,
+}));
 
 // Shuffling card component with chapter image
 const ShuffleCard: React.FC<{
@@ -62,6 +48,7 @@ const ShuffleCard: React.FC<{
   isFinal: boolean;
 }> = ({ chapter, verse, index, isActive, isFinal }) => {
   const { colors, isDark } = useAppTheme();
+  const { language } = useContentLanguage();
   const scale = useSharedValue(0.8);
   const opacity = useSharedValue(0);
   const rotateY = useSharedValue(0);
@@ -182,11 +169,13 @@ const ShuffleCard: React.FC<{
         {isFinal && chapterData && (
           <Animated.View entering={FadeIn.delay(200).duration(400)} style={styles.chapterNameContainer}>
             <Text style={styles.chapterNameTelugu} numberOfLines={1}>
-              {chapterData.name}
+              {getChapterName(chapterData, language)}
             </Text>
-            <Text style={styles.chapterNameEnglish} numberOfLines={1}>
-              {chapterData.englishName}
-            </Text>
+            {chapterData.names.en && language !== "en" ? (
+              <Text style={styles.chapterNameEnglish} numberOfLines={1}>
+                {chapterData.names.en}
+              </Text>
+            ) : null}
           </Animated.View>
         )}
       </View>

@@ -15,7 +15,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 
 import { homeScreenStyles } from "@/theme/screen-styles";
 import { useAppTheme } from "@/hooks/useAppTheme";
@@ -25,15 +24,18 @@ import { PathPickerModal } from "@/components/practice/PathPickerModal";
 import { PracticeCalendarModal } from "@/components/practice/PracticeCalendarModal";
 import { WidgetNudgeModal } from "@/components/practice/WidgetNudgeModal";
 import { ROUTES } from "@/constants/routes";
-import { CHAPTER_SUMMARIES } from "@/constants/chapter-summaries";
+import { CHAPTER_SUMMARIES, getChapterName, type ChapterSummary } from "@/constants/chapter-summaries";
 import { DAILY_VERSE_GOAL } from "@/constants/milestones";
 import {
   getDailyVerseNotificationContent,
   getVerseForDate,
 } from "@/lib/daily-verse";
+import { getAppTitle } from "@/constants/languages";
+import { useContentLanguage } from "@/context/language-context";
 import {
   getActivePath,
   getNextIncompleteDay,
+  getPathDayTitle,
   getReadingPathById,
   setActivePath,
   type ActiveReadingPath,
@@ -47,12 +49,15 @@ import {
 } from "@/services/verse-share";
 import type { ReadingPath } from "@/data/reading-paths";
 
+const LOTUS_ICON = require("../../assets/images/lotus-simple.png");
+
 function getStreakLabel(days: number): string {
   return days <= 0 ? "0" : `${days}`;
 }
 
 export default function HomeScreen() {
   const { colors } = useAppTheme();
+  const { language } = useContentLanguage();
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const [showSurpriseVerseModal, setShowSurpriseVerseModal] = useState(false);
@@ -122,7 +127,7 @@ export default function HomeScreen() {
     isStreakAtRisk,
   } = useReadingProgress();
 
-  const todaysVerse = useMemo(() => getVerseForDate(new Date()), []);
+  const todaysVerse = useMemo(() => getVerseForDate(new Date(), language), [language]);
   const todayPreview = todaysVerse
     ? getDailyVerseNotificationContent(todaysVerse).body.slice(0, 110)
     : "";
@@ -140,10 +145,11 @@ export default function HomeScreen() {
     return {
       path,
       next,
+      nextTitle: next ? getPathDayTitle(next, language) : null,
       done: activePath.completedDayIds.length,
       total: path.days.length,
     };
-  }, [activePath]);
+  }, [activePath, language]);
 
   useFocusEffect(
     useCallback(() => {
@@ -215,126 +221,84 @@ export default function HomeScreen() {
     });
   }, [activeFilter, getChapterProgress]);
 
-  const chapterPairRows = useMemo(() => {
-    const rows: (typeof filteredChapters)[] = [];
-    for (let i = 0; i < filteredChapters.length; i += 2) {
-      rows.push(filteredChapters.slice(i, i + 2));
-    }
-    return rows;
-  }, [filteredChapters]);
-
-  const renderChapterCard = useCallback(
-    (
-      chapter: { id: number; telugu_name: string; verses: number; image: any },
-      idx: number
-    ) => {
+  const renderChapterTile = useCallback(
+    ({ item: chapter, index }: { item: ChapterSummary; index: number }) => {
       const progress = getChapterProgress(chapter.id);
-      const isCompleted = progress === 100;
-      const isInProgress = progress > 0 && progress < 100;
+      const chapterName = getChapterName(chapter, language);
 
       return (
-        <Link href={ROUTES.chapter(chapter.id)} asChild key={chapter.id}>
+        <Link href={ROUTES.chapter(chapter.id)} asChild>
           <Pressable
             onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-            style={{ flex: 1 }}
             accessibilityRole="button"
-            accessibilityLabel={`Chapter ${chapter.id}, ${chapter.telugu_name}`}
+            accessibilityLabel={`Chapter ${chapter.id}, ${chapterName}`}
+            style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
           >
             <Animated.View
-              entering={FadeInUp.delay(Math.min(idx, 12) * 40).springify()}
+              entering={FadeInUp.delay(Math.min(index, 12) * 35).springify()}
               style={[
-                homeScreenStyles.richCard,
+                styles.chapterTile,
                 {
                   backgroundColor: colors.surface,
-                  borderColor: isInProgress ? colors.primary + "66" : colors.outline + "40",
-                  borderWidth: StyleSheet.hairlineWidth,
+                  borderColor: colors.primary + "55",
                 },
               ]}
             >
-              <View style={homeScreenStyles.richCardMedia}>
-                <Image source={chapter.image} style={homeScreenStyles.richCardImage} />
-                <LinearGradient
-                  colors={["transparent", "rgba(18,14,10,0.55)", "rgba(12,10,8,0.92)"]}
-                  locations={[0.35, 0.7, 1]}
-                  style={homeScreenStyles.richCardFade}
-                />
-                <View style={homeScreenStyles.richCardOverlay}>
+              <View style={styles.chapterTileRow}>
+                <View
+                  style={[
+                    styles.lotusBadge,
+                    {
+                      borderColor: colors.primary + "88",
+                      backgroundColor: colors.primary + "12",
+                    },
+                  ]}
+                >
+                  <Image
+                    source={LOTUS_ICON}
+                    style={[styles.lotusIcon, { tintColor: colors.primary }]}
+                    resizeMode="contain"
+                  />
+                </View>
+
+                <View style={styles.chapterTileBody}>
                   <Text
-                    style={[homeScreenStyles.richCardEyebrow, { color: colors.primarySoft }]}
+                    style={[styles.chapterTileTitle, { color: colors.text }]}
+                    numberOfLines={1}
                   >
-                    Chapter {chapter.id}
+                    {chapter.id}. {chapterName}
                   </Text>
-                  <Text
-                    style={homeScreenStyles.richCardTitle}
-                    numberOfLines={2}
-                    ellipsizeMode="tail"
-                  >
-                    {chapter.telugu_name}
-                  </Text>
-                  <View style={homeScreenStyles.richCardStatusRow}>
-                    {isCompleted ? (
-                      <View style={homeScreenStyles.richCardStatusInline}>
-                        <Ionicons name="checkmark-circle" size={13} color={colors.primarySoft} />
-                        <Text style={[homeScreenStyles.richCardStatus, { color: colors.primarySoft }]}>
-                          Complete
-                        </Text>
-                      </View>
-                    ) : isInProgress ? (
-                      <Text style={homeScreenStyles.richCardStatus}>{progress}% read</Text>
-                    ) : (
-                      <Text style={homeScreenStyles.richCardStatus}>Not started</Text>
-                    )}
-                  </View>
-                  {(isInProgress || isCompleted) && (
-                    <View style={homeScreenStyles.richCardTrackOnImage}>
+                  <View style={styles.chapterTileProgressRow}>
+                    <View
+                      style={[
+                        styles.chapterTileTrack,
+                        { backgroundColor: colors.outline + "28" },
+                      ]}
+                    >
                       <View
                         style={[
-                          homeScreenStyles.richCardFill,
+                          styles.chapterTileFill,
                           {
-                            width: `${progress}%`,
-                            backgroundColor: colors.primarySoft,
+                            width: `${Math.max(0, Math.min(100, progress))}%`,
+                            backgroundColor: colors.primary,
                           },
                         ]}
                       />
                     </View>
-                  )}
+                    <Text style={[styles.chapterTilePct, { color: colors.textMuted }]}>
+                      {progress}%
+                    </Text>
+                  </View>
                 </View>
-                <View
-                  style={[
-                    homeScreenStyles.richCardCheck,
-                    {
-                      backgroundColor: "rgba(12,10,8,0.55)",
-                      borderColor: "rgba(255,255,255,0.35)",
-                    },
-                  ]}
-                >
-                  <Text style={[homeScreenStyles.richCardVerseCount, { color: "#FFFFFF" }]}>
-                    {chapter.verses}
-                  </Text>
-                </View>
+
+                <Ionicons name="chevron-forward" size={18} color={colors.primary} />
               </View>
             </Animated.View>
           </Pressable>
         </Link>
       );
     },
-    [colors, getChapterProgress]
-  );
-
-  const renderPair = useCallback(
-    ({
-      item,
-      index,
-    }: {
-      item: { id: number; telugu_name: string; verses: number; image: any }[];
-      index: number;
-    }) => (
-      <View style={homeScreenStyles.shelfRow}>
-        {item.map((chapter, i) => renderChapterCard(chapter, index * 2 + i))}
-        {item.length === 1 && <View style={homeScreenStyles.emptySlot} />}
-      </View>
-    ),
-    [renderChapterCard]
+    [colors, getChapterProgress, language]
   );
 
   const ListHeader = useCallback(
@@ -380,7 +344,7 @@ export default function HomeScreen() {
               style={[styles.heroCta, { backgroundColor: colors.primary }]}
             >
               <Text style={[styles.heroCtaText, { color: colors.onPrimary }]}>
-                Read today’s verse
+                Read Today’s Verse
               </Text>
             </Pressable>
           </Animated.View>
@@ -430,7 +394,7 @@ export default function HomeScreen() {
             <Text style={[styles.pathText, { color: colors.textMuted }]} numberOfLines={1}>
               Path · Day {Math.min(pathMeta.done + (pathMeta.next ? 1 : 0), pathMeta.total)} of{" "}
               {pathMeta.total}
-              {pathMeta.next ? ` · ${pathMeta.next.title}` : " · Complete"}
+              {pathMeta.nextTitle ? ` · ${pathMeta.nextTitle}` : " · Complete"}
             </Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </Pressable>
@@ -468,16 +432,19 @@ export default function HomeScreen() {
                   styles.filterChip,
                   selected
                     ? {
-                        backgroundColor: colors.primary + "1a",
-                        borderColor: colors.primary + "40",
+                        backgroundColor: colors.primary,
+                        borderColor: colors.primary,
                       }
-                    : { backgroundColor: "transparent", borderColor: colors.outline + "55" },
+                    : {
+                        backgroundColor: "transparent",
+                        borderColor: colors.primary + "66",
+                      },
                 ]}
               >
                 <Text
                   style={[
                     styles.filterChipText,
-                    { color: selected ? colors.primary : colors.textMuted },
+                    { color: selected ? colors.onPrimary : colors.primary },
                   ]}
                 >
                   {f.label}
@@ -528,7 +495,13 @@ export default function HomeScreen() {
         entering={FadeIn.duration(400)}
         style={[styles.fixedBrandBar, { backgroundColor: colors.background }]}
       >
-        <Text style={[styles.brand, { color: colors.primary }]}>భగవద్గీత</Text>
+        <Text
+          style={[styles.brand, { color: colors.primary }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+        >
+          {getAppTitle(language)}
+        </Text>
         <Pressable
           onPress={() => {
             Haptics.selectionAsync();
@@ -552,9 +525,10 @@ export default function HomeScreen() {
         </Pressable>
       </Animated.View>
       <FlatList
-        data={chapterPairRows}
-        renderItem={renderPair}
-        keyExtractor={(_, index) => `pair-${index}`}
+        data={filteredChapters}
+        renderItem={renderChapterTile}
+        keyExtractor={(item) => String(item.id)}
+        extraData={language}
         contentContainerStyle={[homeScreenStyles.scrollContainer, { paddingTop: 16 }]}
         ListHeaderComponent={ListHeader}
         ListEmptyComponent={
@@ -623,6 +597,8 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   brand: {
+    flexShrink: 1,
+    marginRight: 8,
     fontFamily: "PlayfairDisplay_700Bold",
     fontSize: 32,
     letterSpacing: 0.5,
@@ -799,5 +775,60 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: "center",
     lineHeight: 19,
+  },
+  chapterTile: {
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    marginBottom: 10,
+  },
+  chapterTileRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  lotusBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  lotusIcon: {
+    width: 22,
+    height: 22,
+  },
+  chapterTileBody: {
+    flex: 1,
+    minWidth: 0,
+    gap: 8,
+  },
+  chapterTileTitle: {
+    fontFamily: "PlayfairDisplay_600SemiBold",
+    fontSize: 15,
+    lineHeight: 20,
+  },
+  chapterTileProgressRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  chapterTileTrack: {
+    flex: 1,
+    height: 3,
+    borderRadius: 999,
+    overflow: "hidden",
+  },
+  chapterTileFill: {
+    height: "100%",
+    borderRadius: 999,
+  },
+  chapterTilePct: {
+    fontSize: 11,
+    fontWeight: "600",
+    minWidth: 28,
+    textAlign: "right",
   },
 });

@@ -9,6 +9,7 @@ import * as Haptics from "expo-haptics";
 
 import { savedScreenStyles } from "@/theme/screen-styles";
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useContentLanguage } from "@/context/language-context";
 import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonVerseCard } from "@/components/ui/SkeletonLoader";
 import { GoldCard } from "@/components/ui/GoldCard";
@@ -18,12 +19,17 @@ import { STORAGE_KEYS } from "@/constants/storage-keys";
 import { useToast } from "@/components/ui/Toast";
 import { getLocalDateKey, addDaysToDateKey } from "@/lib/date-keys";
 import { Spacing } from "@/theme/design-tokens";
+import { getVerseById } from "@/data/verses/verse-catalog";
+import { getVerseMeaning, getVerseSloka } from "@/lib/verse-content";
 
 interface SavedVerse {
   id: string;
   chapter: number;
   verse_number: string;
-  teluguSloka: string;
+  /** Snapshot at save time (preferred). */
+  sloka?: string;
+  /** Legacy field from older saves. */
+  teluguSloka?: string;
   meaning?: string;
   commentary?: string;
   lastOpenedAt?: string | null;
@@ -33,8 +39,21 @@ function formatVerseRef(verse: SavedVerse): string {
   return `Chapter ${verse.chapter} · Verse ${verse.verse_number}`;
 }
 
+function savedVerseSloka(item: SavedVerse, language: Parameters<typeof getVerseSloka>[1]): string {
+  const live = getVerseById(item.id);
+  if (live) return getVerseSloka(live, language);
+  return (item.sloka ?? item.teluguSloka ?? "").trim();
+}
+
+function savedVerseMeaning(item: SavedVerse, language: Parameters<typeof getVerseMeaning>[1]): string {
+  const live = getVerseById(item.id);
+  if (live) return getVerseMeaning(live, language);
+  return (item.meaning ?? "").trim();
+}
+
 export default function SavedVersesScreen() {
   const { colors, isDark } = useAppTheme();
+  const { language } = useContentLanguage();
   const router = useRouter();
   const { showToast } = useToast();
   const [savedVerses, setSavedVerses] = useState<SavedVerse[]>([]);
@@ -129,13 +148,13 @@ export default function SavedVersesScreen() {
           </View>
 
           <Text style={[styles.sloka, { color: colors.text }]} numberOfLines={2}>
-            {item.teluguSloka}
+            {savedVerseSloka(item, language)}
           </Text>
 
-          {item.meaning ? (
+          {savedVerseMeaning(item, language) ? (
             <Text style={[styles.meaning, { color: colors.textMuted }]} numberOfLines={2}>
               <Text style={{ color: colors.primary, fontWeight: "700" }}>Meaning: </Text>
-              {item.meaning}
+              {savedVerseMeaning(item, language)}
             </Text>
           ) : null}
 
@@ -160,7 +179,7 @@ export default function SavedVersesScreen() {
         </GoldCard>
       </Pressable>
     ),
-    [colors, openSavedVerse, removeVerse]
+    [colors, openSavedVerse, removeVerse, language]
   );
 
   if (loading) {

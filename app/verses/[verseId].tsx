@@ -27,6 +27,14 @@ import * as Haptics from "expo-haptics";
 
 import { getVerseById } from "@/data/verses/verse-catalog";
 import { getAudioFile } from "@/data/verses/verse-audio";
+import { useContentLanguage } from "@/context/language-context";
+import {
+  getVerseCommentary,
+  getVerseLocaleContent,
+  getVerseMeaning,
+  getVerseSloka,
+  getVerseWordMeanings,
+} from "@/lib/verse-content";
 
 import { verseScreenStyles } from "@/theme/screen-styles";
 import { useAppTheme } from "@/hooks/useAppTheme";
@@ -88,8 +96,13 @@ const getAdjacentVerse = (
 export default function VerseDetailScreen() {
   const { verseId } = useLocalSearchParams<{ verseId: string }>();
   const { colors } = useAppTheme();
+  const { language } = useContentLanguage();
   const idStr = getRouteParam(verseId);
   const verse = getVerseById(idStr);
+  const locale = useMemo(
+    () => (verse ? getVerseLocaleContent(verse, language) : null),
+    [verse, language]
+  );
   const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [autoPlayAudio, setAutoPlayAudio] = useState(false);
@@ -120,9 +133,9 @@ export default function VerseDetailScreen() {
     : null;
 
   const todayInsight = useMemo(() => {
-    const v = getVerseForDate(new Date());
+    const v = getVerseForDate(new Date(), language);
     return v ? getDailyVerseNotificationContent(v).body.slice(0, 120) : "";
-  }, []);
+  }, [language]);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 480);
@@ -245,9 +258,9 @@ export default function VerseDetailScreen() {
         id: verse.id,
         chapter: verse.chapter,
         verse_number: verse.verse_number,
-        teluguSloka: verse.teluguSloka,
-        meaning: verse.meaning,
-        commentary: verse.commentary,
+        sloka: getVerseSloka(verse, language),
+        meaning: getVerseMeaning(verse, language),
+        commentary: getVerseCommentary(verse, language),
       };
 
       const savedVerses = await AsyncStorage.getItem(STORAGE_KEYS.SAVED_VERSES);
@@ -277,7 +290,7 @@ export default function VerseDetailScreen() {
     } catch (error) {
       console.error("Error toggling verse save:", error);
     }
-  }, [verse, isSaved, showToast, bookmarkScale]);
+  }, [verse, isSaved, showToast, bookmarkScale, language]);
 
   const handleShareStreak = useCallback(async () => {
     if (!streakShareRef.current) return;
@@ -385,7 +398,10 @@ export default function VerseDetailScreen() {
 
   const headerTitle = `Chapter ${verse.chapter} · Verse ${verse.verse_number}`;
   const verseRef = `${verse.chapter}.${verse.verse_number}`;
-  const wordMeanings = verse.word_meanings ?? [];
+  const wordMeanings = getVerseWordMeanings(verse, language);
+  const slokaText = locale?.sloka ?? "";
+  const meaningText = locale?.meaning ?? "";
+  const commentaryText = locale?.commentary ?? "";
 
   return (
     <SafeAreaView
@@ -450,8 +466,8 @@ export default function VerseDetailScreen() {
         <ShareCardView
           title={`Chapter ${verse.chapter}`}
           subtitle={`Verse ${verse.verse_number}`}
-          sloka={verse.teluguSloka}
-          meaning={verse.meaning}
+          sloka={slokaText}
+          meaning={meaningText}
         />
       </View>
       <View
@@ -490,7 +506,7 @@ export default function VerseDetailScreen() {
                     { color: colors.text },
                   ]}
                 >
-                  {verse.teluguSloka}
+                  {slokaText}
                 </Text>
                 <Text style={[localStyles.verseRef, { color: colors.primary }]}>
                   || {verseRef} ||
@@ -543,6 +559,7 @@ export default function VerseDetailScreen() {
               </Animated.View>
             )}
 
+            {meaningText ? (
             <Animated.View entering={FadeIn.delay(300)}>
               <GoldCard style={localStyles.sectionCard}>
                 <View style={localStyles.sectionHeader}>
@@ -552,11 +569,13 @@ export default function VerseDetailScreen() {
                   </Text>
                 </View>
                 <Text style={[verseScreenStyles.meaningStyle, { color: colors.text }]}>
-                  {verse.meaning}
+                  {meaningText}
                 </Text>
               </GoldCard>
             </Animated.View>
+            ) : null}
 
+            {commentaryText ? (
             <Animated.View entering={FadeIn.delay(400)}>
               <GoldCard style={localStyles.sectionCard}>
                 <Pressable
@@ -590,12 +609,13 @@ export default function VerseDetailScreen() {
                 {isCommentaryExpanded && (
                   <View style={{ marginTop: 12 }}>
                     <Text style={[verseScreenStyles.commentaryText, { color: colors.text }]}>
-                      {verse.commentary}
+                      {commentaryText}
                     </Text>
                   </View>
                 )}
               </GoldCard>
             </Animated.View>
+            ) : null}
 
             <View style={{ height: 16 }} />
           </ScrollView>

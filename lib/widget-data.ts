@@ -2,6 +2,8 @@ import { NativeModules, Platform } from "react-native";
 
 import { addDaysToDateKey, getLocalDateKey } from "@/lib/date-keys";
 import { getVerseForDate } from "@/lib/daily-verse";
+import { getStoredContentLanguage } from "@/lib/chapter-content";
+import { DEFAULT_CONTENT_LANGUAGE, type ContentLanguage } from "@/constants/languages";
 
 export type WidgetDayPayload = {
   dateKey: string;
@@ -32,17 +34,20 @@ function truncate(text: string, maxLen: number): string {
 }
 
 /** Build a 7-day feed of daily verses so the native widget can pick today's entry. */
-export function buildWidgetSyncPayload(now: Date = new Date()): WidgetSyncPayload {
+export function buildWidgetSyncPayload(
+  now: Date = new Date(),
+  language: ContentLanguage = DEFAULT_CONTENT_LANGUAGE
+): WidgetSyncPayload {
   const todayKey = getLocalDateKey(now);
   const days: WidgetDayPayload[] = [];
 
   for (let i = 0; i < ROLLING_DAYS; i++) {
     const key = addDaysToDateKey(todayKey, i);
     const [y, m, d] = key.split("-").map(Number);
-    const verse = getVerseForDate(new Date(y, m - 1, d));
+    const verse = getVerseForDate(new Date(y, m - 1, d), language);
     if (!verse) continue;
 
-    const slokaRaw = (verse.teluguSloka ?? "").replace(/\n/g, " ").trim();
+    const slokaRaw = (verse.sloka ?? "").replace(/\n/g, " ").trim();
     const meaningRaw = (verse.meaning ?? "").replace(/\n/g, " ").trim();
 
     const weekday = new Date(y, m - 1, d).toLocaleDateString(undefined, {
@@ -73,7 +78,8 @@ export async function setWidgetVerseData(data: WidgetSyncPayload): Promise<void>
 
 /** Push rolling daily verses to the home-screen widget. */
 export async function syncDailyVerseWidget(now: Date = new Date()): Promise<void> {
-  const payload = buildWidgetSyncPayload(now);
+  const language = await getStoredContentLanguage();
+  const payload = buildWidgetSyncPayload(now, language);
   if (payload.days.length === 0) return;
   await setWidgetVerseData(payload);
 }

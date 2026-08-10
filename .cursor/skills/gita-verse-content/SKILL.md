@@ -16,12 +16,15 @@ description: >-
   id: string;              // "2-47"
   chapter: number;
   verse_number: string;    // "47" or "1-3"
-  teluguSloka?: string;
-  meaning?: string;
-  word_meanings?: { word: string; meaning: string }[];
-  commentary?: string;
+  content: {
+    te?: { sloka?, meaning?, word_meanings?, commentary? };
+    en?: { … };  // add when ready
+    hi?: { … };
+  };
 }
 ```
+
+Prefer helpers in `lib/verse-content.ts` (`getVerseSloka`, `getVerseMeaning`, …) with `useContentLanguage()`.
 
 ## Where to edit
 

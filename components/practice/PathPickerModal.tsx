@@ -5,7 +5,13 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
 import { useAppTheme } from "@/hooks/useAppTheme";
-import { READING_PATHS, type ReadingPath } from "@/data/reading-paths";
+import { useContentLanguage } from "@/context/language-context";
+import {
+  READING_PATHS,
+  getPathDescription,
+  getPathTitle,
+  type ReadingPath,
+} from "@/data/reading-paths";
 
 type Props = {
   visible: boolean;
@@ -15,6 +21,7 @@ type Props = {
 
 export function PathPickerModal({ visible, onClose, onSelect }: Props) {
   const { colors } = useAppTheme();
+  const { language } = useContentLanguage();
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -49,9 +56,11 @@ export function PathPickerModal({ visible, onClose, onSelect }: Props) {
                   { backgroundColor: colors.surface, borderColor: colors.outline },
                 ]}
               >
-                <Text style={[styles.cardTitle, { color: colors.primary }]}>{path.title}</Text>
+                <Text style={[styles.cardTitle, { color: colors.primary }]}>
+                  {getPathTitle(path, language)}
+                </Text>
                 <Text style={[styles.cardBody, { color: colors.textMuted }]}>
-                  {path.description}
+                  {getPathDescription(path, language)}
                 </Text>
                 <Text style={[styles.meta, { color: colors.text }]}>
                   {path.days.length} days

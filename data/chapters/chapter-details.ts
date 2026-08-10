@@ -1,4 +1,8 @@
 import type { Verse } from "@/types";
+import type { ContentLanguage } from "@/constants/languages";
+import { CHAPTER_DESCRIPTIONS_EN } from "@/data/chapters/chapter-descriptions-en";
+import { CHAPTER_DESCRIPTIONS_HI } from "@/data/chapters/chapter-descriptions-hi";
+import { CHAPTER_DESCRIPTIONS_TA } from "@/data/chapters/chapter-descriptions-ta";
 import {
   chapter1,
   chapter2,
@@ -24,12 +28,35 @@ export interface ChapterDetail {
   id: number;
   chapter_number: string;
   yogam_name: string;
+  /** @deprecated Prefer descriptions[lang] via getChapterDescription(). Kept as Telugu default. */
   description: string;
+  /** Localized chapter introductions. */
+  descriptions: Partial<Record<ContentLanguage, string>>;
   verses: Verse[];
 }
 
+type ChapterDetailSeed = Omit<ChapterDetail, "descriptions">;
+
+function normalizeTeDescription(raw: string): string {
+  return raw.replace(/\t+/g, "").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+function withDescriptions(seed: ChapterDetailSeed): ChapterDetail {
+  const te = normalizeTeDescription(seed.description);
+  return {
+    ...seed,
+    description: te,
+    descriptions: {
+      te,
+      en: CHAPTER_DESCRIPTIONS_EN[seed.id] ?? "",
+      hi: CHAPTER_DESCRIPTIONS_HI[seed.id] ?? "",
+      ta: CHAPTER_DESCRIPTIONS_TA[seed.id] ?? "",
+    },
+  };
+}
+
 // Built once at module load — chapter metadata is static.
-const CHAPTERS: ChapterDetail[] = [
+const CHAPTER_SEEDS: ChapterDetailSeed[] = [
     {
       id: 1,
       chapter_number: "1వ అధ్యాయము",
@@ -175,6 +202,8 @@ const CHAPTERS: ChapterDetail[] = [
       verses: chapter18,
     },
 ];
+
+const CHAPTERS: ChapterDetail[] = CHAPTER_SEEDS.map(withDescriptions);
 
 export function getChapterById(id: string): ChapterDetail | undefined {
   const chapterId = parseInt(id, 10);
