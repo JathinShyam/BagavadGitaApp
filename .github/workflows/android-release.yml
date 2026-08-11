@@ -1,4 +1,4 @@
-name: ✨ Build & Release APK + AAB
+name: ✨ Build & Release APK
 
 on:
   pull_request:
@@ -52,10 +52,42 @@ jobs:
 
       - name: 🖼️ Validate Image Files
         run: |
+          failed=0
           for f in ./assets/images/*; do
-            file "$f" | grep -q "JPEG" && { echo "❌ $f is JPEG, expected PNG"; exit 1; }
+            [ -f "$f" ] || continue
+            case "$f" in
+              *.png)
+                if ! file "$f" | grep -q "PNG image"; then
+                  echo "❌ $f: extension is .png but content is not PNG"
+                  file "$f"
+                  failed=1
+                fi
+                ;;
+              *.jpg|*.jpeg)
+                if ! file "$f" | grep -q "JPEG image"; then
+                  echo "❌ $f: extension is .jpg/.jpeg but content is not JPEG"
+                  file "$f"
+                  failed=1
+                fi
+                ;;
+              *.webp)
+                if ! file "$f" | grep -qi "Web/P\|WebP"; then
+                  echo "❌ $f: extension is .webp but content is not WebP"
+                  file "$f"
+                  failed=1
+                fi
+                ;;
+              *)
+                echo "❌ $f: unsupported image extension (use .png, .jpg, or .webp)"
+                failed=1
+                ;;
+            esac
           done
-          echo "✅ All images valid"
+          if [ "$failed" -ne 0 ]; then
+            echo "Image validation failed"
+            exit 1
+          fi
+          echo "✅ All images valid (content matches extension)"
 
       - name: 💻 EAS Build - APK (direct install)
         run: |
@@ -65,49 +97,42 @@ jobs:
           EAS_ACCESS_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
           EXPO_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
 
-      - name: 💻 EAS Build - AAB (Play Store)
-        run: |
-          echo "⚙ Building AAB (production profile) for Play Store..."
-          eas build --platform android --profile production --non-interactive
-        env:
-          EAS_ACCESS_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
-          EXPO_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
+      # AAB / Play Store build disabled — not distributing via Play Store.
+      # - name: 💻 EAS Build - AAB (Play Store)
+      #   run: |
+      #     echo "⚙ Building AAB (production profile) for Play Store..."
+      #     eas build --platform android --profile production --non-interactive
+      #   env:
+      #     EAS_ACCESS_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
+      #     EXPO_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
 
-      - name: 📥 Download both APK and AAB
+      - name: 📥 Download APK
         run: |
           mkdir -p ./artifacts
           echo "//registry.npmjs.org/:_authToken=${EAS_ACCESS_TOKEN}" > ~/.npmrc
           echo "//registry.expo.dev/:_authToken=${EAS_ACCESS_TOKEN}" >> ~/.npmrc
 
-          echo "🔍 Fetching latest 2 Android builds (order: [0]=production/AAB, [1]=release/APK)..."
-          BUILD_LIST=$(eas build:list --platform android --status finished --limit 2 --json --non-interactive)
+          echo "🔍 Fetching latest finished Android build (release/APK)..."
+          BUILD_LIST=$(eas build:list --platform android --status finished --limit 1 --json --non-interactive)
           echo "$BUILD_LIST" | jq .
 
-          # [0] = production (AAB) - built last
-          # [1] = release (APK) - built first
-          for i in 0 1; do
-            DOWNLOAD_URL=$(echo "$BUILD_LIST" | jq -r ".[$i].artifacts.buildUrl")
-            BUILD_ID=$(echo "$BUILD_LIST" | jq -r ".[$i].id")
-            if [[ -z "$DOWNLOAD_URL" || "$DOWNLOAD_URL" == "null" ]]; then
-              echo "❌ No download URL at index $i"
-              exit 1
-            fi
-            echo "📥 Downloading build $BUILD_ID..."
-            if [[ $i -eq 0 ]]; then
-              curl -L "$DOWNLOAD_URL" -o "./artifacts/app.aab"
-              echo "✅ Saved app.aab (Play Store)"
-            else
-              curl -L "$DOWNLOAD_URL" -o "./artifacts/app.apk"
-              echo "✅ Saved app.apk (direct install)"
-            fi
-          done
+          DOWNLOAD_URL=$(echo "$BUILD_LIST" | jq -r ".[0].artifacts.buildUrl")
+          BUILD_ID=$(echo "$BUILD_LIST" | jq -r ".[0].id")
+          if [[ -z "$DOWNLOAD_URL" || "$DOWNLOAD_URL" == "null" ]]; then
+            echo "❌ No download URL for latest build"
+            exit 1
+          fi
 
-          if [[ ! -f ./artifacts/app.apk || ! -f ./artifacts/app.aab ]]; then
-            echo "❌ Missing artifacts"
+          echo "📥 Downloading build $BUILD_ID..."
+          curl -L "$DOWNLOAD_URL" -o "./artifacts/app.apk"
+          echo "✅ Saved app.apk (direct install)"
+
+          if [[ ! -f ./artifacts/app.apk ]]; then
+            echo "❌ Missing APK artifact"
             ls -la ./artifacts/
             exit 1
           fi
-          echo "✅ Both artifacts ready"
+          echo "✅ Artifact ready"
           ls -la ./artifacts/
         env:
           EAS_ACCESS_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
@@ -127,15 +152,13 @@ jobs:
           tag_name: v${{ github.run_number }}
           name: Release v${{ github.run_number }}
           body: |
-            ## Android builds
+            ## Android build
             - **app.apk** – Direct install (sideload)
-            - **app.aab** – For Play Store submission
             - Commit: ${{ github.sha }}
             - Triggered by: ${{ github.actor }}
           draft: false
           prerelease: false
           files: |
             ./artifacts/app.apk
-            ./artifacts/app.aab
         env:
           GITHUB_TOKEN: ${{ github.token }}

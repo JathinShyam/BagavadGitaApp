@@ -1,6 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
   <color name="splashscreen_background">#ffffff</color>
   <color name="iconBackground">#ffffff</color>
-  <color name="colorPrimary">#023c69</color>
-  <color name="colorPrimaryDark">#ffffff</color>
+  <color name="colorPrimary">#B8860B</color>
+  <color name="colorPrimaryDark">#8B6914</color>
+
+  <!-- Match app light theme (Palette.light) -->
+  <color name="widget_background">#FFF8E7</color>
+  <color name="widget_surface">#F5F2EA</color>
+  <color name="widget_primary">#B8860B</color>
+  <color name="widget_primary_soft">#DAA520</color>
+  <color name="widget_text">#2C2A26</color>
+  <color name="widget_text_muted">#6B6B6B</color>
+  <color name="widget_outline">#B8860B</color>
+  <color name="widget_hairline">#D9CEB8</color>
 </resources>

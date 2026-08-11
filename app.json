@@ -1,17 +1,17 @@
 {
   "expo": {
-    "name": "BagavadGita",
+    "name": "Bhagavad Gita",
     "slug": "BagavadGita",
     "owner": "jathinshyam",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "bagavadgita",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0B0A09"
     },
     "ios": {
       "supportsTablet": true,

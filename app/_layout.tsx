@@ -3,46 +3,56 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, type ReactNode } from "react";
 import { AppState, AppStateStatus } from "react-native";
 import "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
-import { useColorScheme } from "@/hooks/useColorScheme";
-import {
-  useFonts as useInter,
-  Inter_400Regular,
-  Inter_600SemiBold,
-} from "@expo-google-fonts/inter";
 import {
   useFonts as usePlayfair,
+  PlayfairDisplay_400Regular,
+  PlayfairDisplay_600SemiBold,
   PlayfairDisplay_700Bold,
 } from "@expo-google-fonts/playfair-display";
-import { ThemeProvider as AppThemeProvider } from "./context/ThemeContext";
-import { ToastProvider } from "../components/Toast";
-import { ReadingProgressProvider } from "./hooks/useReadingProgress";
-import { ErrorBoundary } from "../components/ErrorBoundary";
-import { getVerseForDate } from "@/lib/dailyVerse";
-import { scheduleNextDailyVerseNotification } from "@/lib/dailyVerseNotifications";
-import { shouldLoadExpoNotifications } from "@/lib/notificationsAvailability";
-import { setWidgetVerseData } from "@/lib/widgetData";
+import { ThemeProvider as AppThemeProvider, useTheme as useAppThemeMode } from "@/context/theme-context";
+import { LanguageProvider } from "@/context/language-context";
+import { ToastProvider } from "@/components/ui/Toast";
+import { LaunchIntro } from "@/components/ui/LaunchIntro";
+import { ReadingProgressProvider } from "@/hooks/useReadingProgress";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { getVerseForDate } from "@/lib/daily-verse";
+import { scheduleNextDailyVerseNotification } from "@/lib/daily-verse-notifications";
+import { shouldLoadExpoNotifications } from "@/lib/notification-availability";
+import { syncDailyVerseWidget } from "@/lib/widget-data";
+import { ROUTES } from "@/constants/routes";
+import { STORAGE_KEYS } from "@/constants/storage-keys";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
-const ONBOARDING_KEY = "hasCompletedOnboarding";
+/** Keeps React Navigation chrome in sync with the app's own theme setting. */
+function NavigationThemeProvider({ children }: { children: ReactNode }) {
+  const { theme } = useAppThemeMode();
+  return (
+    <ThemeProvider value={theme === "dark" ? DarkTheme : DefaultTheme}>
+      {children}
+    </ThemeProvider>
+  );
+}
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [interLoaded] = useInter({ Inter_400Regular, Inter_600SemiBold });
-  const [playfairLoaded] = usePlayfair({ PlayfairDisplay_700Bold });
+  const [playfairLoaded] = usePlayfair({
+    PlayfairDisplay_400Regular,
+    PlayfairDisplay_600SemiBold,
+    PlayfairDisplay_700Bold,
+  });
   const [isOnboardingComplete, setIsOnboardingComplete] = useState<boolean | null>(null);
+  const [showLaunchIntro, setShowLaunchIntro] = useState(true);
 
-  const loaded = interLoaded && playfairLoaded;
+  const loaded = playfairLoaded;
   const pendingNavigationPathRef = useRef<string | null>(null);
 
   const isNavigationReady = loaded && isOnboardingComplete !== null;
@@ -50,19 +60,25 @@ export default function RootLayout() {
   const flushPendingNavigation = useCallback(() => {
     if (!isNavigationReady) return;
     if (isOnboardingComplete !== true) return;
+    // Wait for intro so deep links don't fight the entrance.
+    if (showLaunchIntro) return;
     const path = pendingNavigationPathRef.current;
     if (!path) return;
     pendingNavigationPathRef.current = null;
     router.push(path as any);
-  }, [isNavigationReady, isOnboardingComplete]);
+  }, [isNavigationReady, isOnboardingComplete, showLaunchIntro]);
+
+  // Latest flush fn for long-lived listeners (notification handler mounts once).
+  const flushPendingNavigationRef = useRef(flushPendingNavigation);
+  flushPendingNavigationRef.current = flushPendingNavigation;
 
   useEffect(() => {
     const checkOnboarding = async () => {
       try {
-        const value = await AsyncStorage.getItem(ONBOARDING_KEY);
+        const value = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING);
         setIsOnboardingComplete(value === "true");
       } catch {
-        setIsOnboardingComplete(true); // Default to true if error
+        setIsOnboardingComplete(true);
       }
     };
     checkOnboarding();
@@ -70,9 +86,10 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (loaded && isOnboardingComplete !== null) {
-      SplashScreen.hideAsync();
+      // Reveal the animated intro underneath; native splash disappears cleanly.
+      SplashScreen.hideAsync().catch(() => {});
       if (!isOnboardingComplete) {
-        router.replace("/onboarding");
+        router.replace(ROUTES.onboarding);
       }
     }
   }, [loaded, isOnboardingComplete]);
@@ -81,28 +98,24 @@ export default function RootLayout() {
     flushPendingNavigation();
   }, [flushPendingNavigation]);
 
-  // Reschedule daily verse notification: on app launch (cold start) and when coming from background
+  const handleLaunchIntroFinish = useCallback(() => {
+    setShowLaunchIntro(false);
+  }, []);
+
+  // Daily verse notification + widget: on cold start and when returning from background
   const appState = useRef<AppStateStatus>(AppState.currentState);
   useEffect(() => {
     if (loaded && isOnboardingComplete !== null) {
       scheduleNextDailyVerseNotification().catch(() => {});
-      const v = getVerseForDate(new Date());
-      if (v?.id) {
-        setWidgetVerseData({
-          verseId: v.id,
-          title: `Chapter ${v.chapter} • Verse ${v.verse_number}`,
-          sloka: v.teluguSloka ?? "",
-          meaning: v.meaning ?? "",
-          updatedAt: Date.now(),
-        }).catch(() => {});
-      }
+      syncDailyVerseWidget().catch(() => {});
     }
   }, [loaded, isOnboardingComplete]);
 
   useEffect(() => {
     const sub = AppState.addEventListener("change", (nextState) => {
-      if (appState.current === "background" && nextState === "active") {
+      if (appState.current.match(/inactive|background/) && nextState === "active") {
         scheduleNextDailyVerseNotification().catch(() => {});
+        syncDailyVerseWidget().catch(() => {});
       }
       appState.current = nextState;
     });
@@ -115,6 +128,7 @@ export default function RootLayout() {
 
     let Notifications: typeof import("expo-notifications") | null = null;
     try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy load: module throws on import in Expo Go Android (SDK 53+)
       Notifications = require("expo-notifications");
     } catch {
       return;
@@ -131,54 +145,88 @@ export default function RootLayout() {
     });
 
     const lastProcessedIdRef = { current: "" };
+    const notificationsApi = Notifications;
 
     type NotificationPayload = {
       verseId?: string;
       screen?: string;
     };
 
-    const handleNotificationResponse = (data: NotificationPayload | undefined, responseId: string) => {
-      const id = responseId || `fallback-${Date.now()}`;
+    const clearLastResponse = () => {
+      try {
+        notificationsApi.clearLastNotificationResponse();
+      } catch {
+        // Older builds may only expose the async alias
+        notificationsApi.clearLastNotificationResponseAsync?.().catch(() => {});
+      }
+    };
+
+    const handleNotificationResponse = async (
+      data: NotificationPayload | undefined,
+      responseId: string
+    ) => {
+      const id = responseId.trim();
+      // Without a stable id we cannot safely dedupe; skip rather than auto-open every launch.
+      if (!id) return;
       if (id === lastProcessedIdRef.current) return;
+
+      try {
+        const alreadyHandled = await AsyncStorage.getItem(
+          STORAGE_KEYS.LAST_HANDLED_NOTIFICATION
+        );
+        if (alreadyHandled === id) {
+          lastProcessedIdRef.current = id;
+          clearLastResponse();
+          return;
+        }
+      } catch {
+        // Continue — still attempt one-shot navigation + clear.
+      }
+
       lastProcessedIdRef.current = id;
 
       const navigateTo = (path: string) => {
-        // Notification taps can arrive before fonts/onboarding are resolved; queue until ready.
         pendingNavigationPathRef.current = path;
-        flushPendingNavigation();
+        flushPendingNavigationRef.current();
       };
 
-      if (data?.screen === "daily-verse") {
+      if (data?.verseId) {
+        navigateTo(ROUTES.verse(data.verseId));
+      } else if (data?.screen === "daily-verse") {
         const verse = getVerseForDate(new Date());
-        if (verse) navigateTo(`/verse/${verse.id}`);
+        if (verse) navigateTo(ROUTES.verse(verse.id));
+      } else {
+        // Unknown / empty payload — do not hijack launch into today's verse.
+        clearLastResponse();
         return;
       }
 
-      // Fallback: repeating daily notifications might arrive without our custom `screen` field.
-      // In that case, just open today's verse.
-      if (!data?.verseId) {
-        const verse = getVerseForDate(new Date());
-        if (verse) navigateTo(`/verse/${verse.id}`);
-        return;
+      try {
+        await AsyncStorage.setItem(STORAGE_KEYS.LAST_HANDLED_NOTIFICATION, id);
+      } catch {
+        // ignore
       }
-      if (data?.verseId) {
-        navigateTo(`/verse/${data.verseId}`);
-      }
+      clearLastResponse();
     };
 
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data as NotificationPayload | undefined;
       const id = response.notification.request.identifier ?? "";
-      handleNotificationResponse(data, id);
+      void handleNotificationResponse(data, id);
     });
 
-    // Handle app launched from notification tap (when app was killed)
-    Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (!response?.notification.request.content.data) return;
-      const data = response.notification.request.content.data as NotificationPayload;
-      const id = response.notification.request.identifier ?? "";
-      handleNotificationResponse(data, id);
-    });
+    // Cold start from a notification tap only — clear after handling so the next
+    // normal open does not re-open the same verse.
+    Notifications.getLastNotificationResponseAsync()
+      .then((response) => {
+        if (!response) return;
+        const data = response.notification.request.content.data as
+          | NotificationPayload
+          | undefined;
+        const id = response.notification.request.identifier ?? "";
+        return handleNotificationResponse(data, id);
+      })
+      .catch(() => {});
 
     return () => sub.remove();
   }, []);
@@ -191,8 +239,9 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ErrorBoundary>
         <AppThemeProvider>
+          <LanguageProvider>
           <ReadingProgressProvider>
-            <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+            <NavigationThemeProvider>
               <ToastProvider>
                 <Stack
                   screenOptions={{
@@ -202,7 +251,7 @@ export default function RootLayout() {
                     gestureDirection: "horizontal",
                   }}
                 >
-                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen name="(main)" options={{ headerShown: false }} />
                   <Stack.Screen
                     name="onboarding"
                     options={{
@@ -212,9 +261,13 @@ export default function RootLayout() {
                   />
                   <Stack.Screen name="+not-found" />
                 </Stack>
+                {showLaunchIntro && (
+                  <LaunchIntro onFinish={handleLaunchIntroFinish} />
+                )}
               </ToastProvider>
-            </ThemeProvider>
+            </NavigationThemeProvider>
           </ReadingProgressProvider>
+          </LanguageProvider>
         </AppThemeProvider>
       </ErrorBoundary>
     </GestureHandlerRootView>

@@ -1,7 +1,6 @@
 package com.jathinshyam.BagavadGita
 
 import android.content.Context
-import android.content.Intent
 import androidx.core.content.edit
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
@@ -22,10 +21,8 @@ class WidgetDataModule(private val reactContext: ReactApplicationContext) :
         putLong("updatedAt", System.currentTimeMillis())
       }
 
-      // Trigger widget update
-      val intent = Intent(reactContext, DailyVerseWidgetProvider::class.java)
-      intent.action = DailyVerseWidgetProvider.ACTION_REFRESH
-      reactContext.sendBroadcast(intent)
+      // Prefer the standard AppWidget UPDATE path over a custom broadcast.
+      DailyVerseWidgetProvider.requestUpdate(reactContext)
 
       promise.resolve(true)
     } catch (e: Exception) {
@@ -33,4 +30,3 @@ class WidgetDataModule(private val reactContext: ReactApplicationContext) :
     }
   }
 }
-

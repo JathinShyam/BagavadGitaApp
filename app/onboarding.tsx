@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { Text } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import Animated, {
@@ -25,9 +25,18 @@ import Animated, {
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 
-import { useAppTheme } from "./hooks/useAppTheme";
+import { useAppTheme } from "@/hooks/useAppTheme";
+import { ROUTES } from "@/constants/routes";
+import { STORAGE_KEYS } from "@/constants/storage-keys";
+import {
+  requestNotificationPermissions,
+  scheduleNextDailyVerseNotification,
+  setStoredPreferences,
+} from "@/lib/daily-verse-notifications";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
+
+const REMINDER_TIMES = ["07:00", "08:00", "09:00"] as const;
 
 function PaginationDot({
   index,
@@ -47,13 +56,13 @@ function PaginationDot({
     const width = interpolate(
       scrollX.value,
       inputRange,
-      [8, 24, 8],
+      [6, 18, 6],
       Extrapolation.CLAMP
     );
     const opacity = interpolate(
       scrollX.value,
       inputRange,
-      [0.4, 1, 0.4],
+      [0.35, 1, 0.35],
       Extrapolation.CLAMP
     );
     return { width, opacity };
@@ -66,14 +75,13 @@ function PaginationDot({
   );
 }
 
-const ONBOARDING_KEY = "hasCompletedOnboarding";
-
 interface OnboardingSlide {
   id: string;
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
   subtitle: string;
   description: string;
+  kind?: "standard" | "reminder";
 }
 
 const slides: OnboardingSlide[] = [
@@ -109,11 +117,30 @@ const slides: OnboardingSlide[] = [
     description:
       "Listen to authentic Sanskrit recitations of each verse. Follow along with the text and immerse yourself in the divine sounds.",
   },
+  {
+    id: "5",
+    icon: "notifications",
+    title: "Daily reminder?",
+    subtitle: "A verse each morning",
+    description:
+      "Get today’s verse and a short preview at a time that works for you. You can change this anytime in Settings.",
+    kind: "reminder",
+  },
 ];
+
+function formatChipLabel(time: string): string {
+  const [h, m] = time.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const hour12 = h % 12 || 12;
+  return `${hour12}:${String(m).padStart(2, "0")} ${period}`;
+}
 
 export default function OnboardingScreen() {
   const { colors } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [reminderTime, setReminderTime] = useState<string>("08:00");
+  const [enablingReminder, setEnablingReminder] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const scrollX = useSharedValue(0);
 
@@ -136,12 +163,37 @@ export default function OnboardingScreen() {
   const completeOnboarding = async () => {
     try {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      await AsyncStorage.setItem(ONBOARDING_KEY, "true");
-      router.replace("/(tabs)");
+      await AsyncStorage.setItem(STORAGE_KEYS.ONBOARDING, "true");
+      router.replace(ROUTES.mainTabs);
     } catch (error) {
       console.error("Error completing onboarding:", error);
-      router.replace("/(tabs)");
+      router.replace(ROUTES.mainTabs);
     }
+  };
+
+  const enableReminderAndFinish = async () => {
+    setEnablingReminder(true);
+    try {
+      const granted = await requestNotificationPermissions();
+      if (granted) {
+        await setStoredPreferences(true, reminderTime);
+        await scheduleNextDailyVerseNotification();
+      } else {
+        await setStoredPreferences(false, reminderTime);
+      }
+    } catch (error) {
+      console.error("Failed to enable daily reminder:", error);
+    } finally {
+      setEnablingReminder(false);
+      await completeOnboarding();
+    }
+  };
+
+  const skipReminderAndFinish = async () => {
+    try {
+      await setStoredPreferences(false, reminderTime);
+    } catch {}
+    await completeOnboarding();
   };
 
   const skipOnboarding = async () => {
@@ -149,34 +201,21 @@ export default function OnboardingScreen() {
     await completeOnboarding();
   };
 
-  const renderSlide = ({ item, index }: { item: OnboardingSlide; index: number }) => {
+  const isReminderSlide = slides[currentIndex]?.kind === "reminder";
+
+  const renderSlide = ({ item }: { item: OnboardingSlide; index: number }) => {
     return (
       <View style={[styles.slide, { width: SCREEN_WIDTH }]}>
-        {/* Icon Container */}
         <Animated.View
           entering={FadeInUp.delay(200).springify()}
-          style={styles.iconWrapper}
+          style={[
+            styles.iconContainer,
+            { backgroundColor: colors.primary + "14" },
+          ]}
         >
-          <View
-            style={[
-              styles.iconCircleLarge,
-              { backgroundColor: colors.primary + "10" },
-            ]}
-          />
-          <View
-            style={[
-              styles.iconCircleMedium,
-              { backgroundColor: colors.primary + "20" },
-            ]}
-          />
-          <View
-            style={[styles.iconContainer, { backgroundColor: colors.primary + "30" }]}
-          >
-            <Ionicons name={item.icon} size={72} color={colors.primary} />
-          </View>
+          <Ionicons name={item.icon} size={40} color={colors.primary} />
         </Animated.View>
 
-        {/* Text Content */}
         <Animated.View
           entering={FadeInUp.delay(400).springify()}
           style={styles.textContainer}
@@ -187,15 +226,52 @@ export default function OnboardingScreen() {
           <Text style={[styles.subtitle, { color: colors.primary }]}>
             {item.subtitle}
           </Text>
-          <Text style={[styles.description, { color: colors.text }]}>
+          <Text style={[styles.description, { color: colors.textMuted }]}>
             {item.description}
           </Text>
+
+          {item.kind === "reminder" && (
+            <View style={styles.timeChips}>
+              {REMINDER_TIMES.map((t) => {
+                const selected = reminderTime === t;
+                return (
+                  <Pressable
+                    key={t}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setReminderTime(t);
+                    }}
+                    style={[
+                      styles.timeChip,
+                      selected
+                        ? { backgroundColor: colors.primary }
+                        : {
+                            backgroundColor: "transparent",
+                            borderColor: colors.outline + "55",
+                            borderWidth: 1,
+                          },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.timeChipText,
+                        {
+                          color: selected ? colors.onPrimary : colors.textMuted,
+                        },
+                      ]}
+                    >
+                      {formatChipLabel(t)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
         </Animated.View>
       </View>
     );
   };
 
-  // Pagination dots
   const renderPagination = () => (
     <View style={styles.paginationContainer}>
       {slides.map((_, index) => (
@@ -213,19 +289,15 @@ export default function OnboardingScreen() {
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
     >
-      {/* Skip Button */}
       <Animated.View
         entering={FadeIn.delay(600)}
-        style={styles.skipContainer}
+        style={[styles.skipContainer, { top: Math.max(insets.top, 12) + 8 }]}
       >
         <Pressable onPress={skipOnboarding} style={styles.skipButton}>
-          <Text style={[styles.skipText, { color: colors.textMuted }]}>
-            Skip
-          </Text>
+          <Text style={[styles.skipText, { color: colors.textMuted }]}>Skip</Text>
         </Pressable>
       </Animated.View>
 
-      {/* Slides */}
       <FlatList
         ref={flatListRef}
         data={slides}
@@ -239,53 +311,52 @@ export default function OnboardingScreen() {
         bounces={false}
       />
 
-      {/* Bottom Section */}
       <Animated.View
         entering={FadeInDown.delay(500).springify()}
         style={styles.bottomSection}
       >
         {renderPagination()}
 
-        {/* Action Button */}
-        <Pressable
-          onPress={
-            currentIndex === slides.length - 1 ? completeOnboarding : goToNextSlide
-          }
-          style={[styles.actionButton, { backgroundColor: colors.primary }]}
-        >
-          <Text style={[styles.actionButtonText, { color: colors.onPrimary }]}>
-            {currentIndex === slides.length - 1 ? "Get Started" : "Next"}
-          </Text>
-          <Ionicons
-            name={
-              currentIndex === slides.length - 1
-                ? "checkmark"
-                : "arrow-forward"
-            }
-            size={20}
-            color={colors.onPrimary}
-            style={{ marginLeft: 8 }}
-          />
-        </Pressable>
+        {isReminderSlide ? (
+          <View style={styles.reminderActions}>
+            <Pressable
+              onPress={enableReminderAndFinish}
+              disabled={enablingReminder}
+              style={[styles.actionButton, { backgroundColor: colors.primary }]}
+            >
+              <Text style={[styles.actionButtonText, { color: colors.onPrimary }]}>
+                {enablingReminder ? "Enabling…" : "Enable reminders"}
+              </Text>
+              <Ionicons
+                name="checkmark"
+                size={18}
+                color={colors.onPrimary}
+                style={{ marginLeft: 8 }}
+              />
+            </Pressable>
+            <Pressable onPress={skipReminderAndFinish} style={styles.secondaryAction}>
+              <Text style={[styles.secondaryActionText, { color: colors.textMuted }]}>
+                Not now
+              </Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            onPress={goToNextSlide}
+            style={[styles.actionButton, { backgroundColor: colors.primary }]}
+          >
+            <Text style={[styles.actionButtonText, { color: colors.onPrimary }]}>
+              Next
+            </Text>
+            <Ionicons
+              name="arrow-forward"
+              size={18}
+              color={colors.onPrimary}
+              style={{ marginLeft: 8 }}
+            />
+          </Pressable>
+        )}
       </Animated.View>
-
-      {/* Decorative elements */}
-      <View style={styles.decorations}>
-        <View
-          style={[
-            styles.decorCircle,
-            styles.decorCircle1,
-            { backgroundColor: colors.primary + "08" },
-          ]}
-        />
-        <View
-          style={[
-            styles.decorCircle,
-            styles.decorCircle2,
-            { backgroundColor: colors.primary + "05" },
-          ]}
-        />
-      </View>
     </SafeAreaView>
   );
 }
@@ -296,7 +367,6 @@ const styles = StyleSheet.create({
   },
   skipContainer: {
     position: "absolute",
-    top: 60,
     right: 20,
     zIndex: 10,
   },
@@ -304,61 +374,60 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   skipText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "500",
   },
   slide: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 32,
-  },
-  iconWrapper: {
-    width: 200,
-    height: 200,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 48,
-  },
-  iconCircleLarge: {
-    position: "absolute",
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-  },
-  iconCircleMedium: {
-    position: "absolute",
-    width: 160,
-    height: 160,
-    borderRadius: 80,
+    paddingHorizontal: 36,
   },
   iconContainer: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     justifyContent: "center",
     alignItems: "center",
+    marginBottom: 36,
   },
   textContainer: {
     alignItems: "center",
   },
   title: {
-    fontSize: 20,
+    fontSize: 14,
     fontWeight: "500",
-    marginBottom: 4,
+    letterSpacing: 0.8,
+    marginBottom: 6,
     textAlign: "center",
   },
   subtitle: {
-    fontSize: 32,
-    fontWeight: "bold",
-    marginBottom: 16,
+    fontFamily: "PlayfairDisplay_700Bold",
+    fontSize: 28,
+    marginBottom: 14,
     textAlign: "center",
   },
   description: {
-    fontSize: 16,
-    lineHeight: 26,
+    fontSize: 15,
+    lineHeight: 24,
     textAlign: "center",
-    maxWidth: 320,
+    maxWidth: 300,
+  },
+  timeChips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 10,
+    marginTop: 28,
+  },
+  timeChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 14,
+  },
+  timeChipText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
   bottomSection: {
     paddingHorizontal: 32,
@@ -368,42 +437,33 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 32,
+    marginBottom: 28,
   },
   paginationDot: {
-    height: 8,
-    borderRadius: 4,
-    marginHorizontal: 4,
+    height: 6,
+    borderRadius: 3,
+    marginHorizontal: 3,
+  },
+  reminderActions: {
+    gap: 12,
   },
   actionButton: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 16,
-    borderRadius: 16,
+    paddingVertical: 14,
+    borderRadius: 14,
   },
   actionButtonText: {
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: 15,
+    fontWeight: "700",
   },
-  decorations: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: -1,
+  secondaryAction: {
+    alignItems: "center",
+    paddingVertical: 8,
   },
-  decorCircle: {
-    position: "absolute",
-    borderRadius: 999,
-  },
-  decorCircle1: {
-    width: 300,
-    height: 300,
-    top: -100,
-    left: -100,
-  },
-  decorCircle2: {
-    width: 250,
-    height: 250,
-    bottom: 100,
-    right: -80,
+  secondaryActionText: {
+    fontSize: 15,
+    fontWeight: "500",
   },
 });
