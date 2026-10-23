@@ -2,7 +2,7 @@ import React from "react";
 import { View, StyleSheet, Pressable } from "react-native";
 import { Text } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
-import Animated, { FadeIn, BounceIn } from "react-native-reanimated";
+import Animated, { FadeIn } from "react-native-reanimated";
 import { useAppTheme } from "@/hooks/useAppTheme";
 
 interface EmptyStateProps {
@@ -27,7 +27,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
       {/* Decorative circles */}
       <View style={styles.illustrationContainer}>
         <Animated.View
-          entering={FadeIn.delay(100).duration(600)}
+          entering={FadeIn.duration(250)}
           style={[
             styles.circle,
             styles.circleLarge,
@@ -35,7 +35,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
           ]}
         />
         <Animated.View
-          entering={FadeIn.delay(200).duration(600)}
+          entering={FadeIn.duration(250)}
           style={[
             styles.circle,
             styles.circleMedium,
@@ -43,7 +43,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
           ]}
         />
         <Animated.View
-          entering={BounceIn.delay(300).duration(800)}
+          entering={FadeIn.duration(250)}
           style={[
             styles.iconContainer,
             { backgroundColor: colors.primary + "20" },
@@ -53,18 +53,18 @@ const EmptyState: React.FC<EmptyStateProps> = ({
         </Animated.View>
       </View>
 
-      <Animated.View entering={FadeIn.delay(400).duration(600)}>
+      <Animated.View entering={FadeIn.duration(250)}>
         <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
       </Animated.View>
 
-      <Animated.View entering={FadeIn.delay(500).duration(600)}>
+      <Animated.View entering={FadeIn.duration(250)}>
         <Text style={[styles.subtitle, { color: colors.textMuted }]}>
           {subtitle}
         </Text>
       </Animated.View>
 
       {actionLabel && onAction && (
-        <Animated.View entering={FadeIn.delay(600).duration(600)}>
+        <Animated.View entering={FadeIn.duration(250)}>
           <Pressable
             onPress={onAction}
             style={[styles.actionButton, { backgroundColor: colors.primary }]}
@@ -81,7 +81,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
         {[...Array(6)].map((_, i) => (
           <Animated.View
             key={i}
-            entering={FadeIn.delay(700 + i * 100).duration(600)}
+            entering={FadeIn.duration(250)}
             style={[
               styles.dot,
               {

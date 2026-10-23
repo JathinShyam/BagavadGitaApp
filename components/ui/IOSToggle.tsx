@@ -14,6 +14,8 @@ type Props = {
   /** Active track color (gold in this app) */
   activeColor: string;
   inactiveColor?: string;
+  /** Spoken name, e.g. the setting's row title — without it VoiceOver says only "switch". */
+  accessibilityLabel?: string;
 };
 
 const TRACK_W = 51;
@@ -28,6 +30,7 @@ export function IOSToggle({
   disabled,
   activeColor,
   inactiveColor = "#E5E5EA",
+  accessibilityLabel,
 }: Props) {
   const progress = useSharedValue(value ? 1 : 0);
 
@@ -50,7 +53,11 @@ export function IOSToggle({
   return (
     <Pressable
       accessibilityRole="switch"
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ checked: value, disabled: !!disabled }}
+      // react-native-web ignores accessibilityState; aria-* works everywhere.
+      aria-checked={value}
+      aria-disabled={!!disabled}
       disabled={disabled}
       hitSlop={6}
       onPress={() => {

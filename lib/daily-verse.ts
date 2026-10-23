@@ -50,10 +50,14 @@ export function getVerseForDate(
   return getVerseByDayOfYear(dayOfYear, language);
 }
 
-function truncate(text: string, maxLen: number): string {
+/** Shorten at a word boundary so no word (or Indic conjunct) is cut in half. */
+export function truncate(text: string, maxLen: number): string {
   const trimmed = text.replace(/\s+/g, " ").trim();
   if (trimmed.length <= maxLen) return trimmed;
-  return `${trimmed.slice(0, maxLen - 3).trim()}...`;
+  const cut = trimmed.slice(0, maxLen - 1);
+  const lastSpace = cut.lastIndexOf(" ");
+  const atWord = lastSpace > maxLen * 0.6 ? cut.slice(0, lastSpace) : cut;
+  return `${atWord.replace(/[\s,;:—–-]+$/, "")}…`;
 }
 
 /**

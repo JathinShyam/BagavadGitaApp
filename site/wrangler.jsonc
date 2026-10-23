@@ -1,0 +1,22 @@
+// https://gita.elevenpoint.ca — the Expo web app plus the store pages
+// (/privacy/, /terms/, /support/ from site/public).
+//   scripts/build-web.sh    → dist/site
+//   scripts/deploy-web.sh   → deploys, adding verse audio a chapter at a time
+{
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "gitajyoti-site",
+  "main": "worker.ts",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": {
+    "directory": "../dist/site",
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/_expo/*", "/verses/*", "/chapters/*", "/paths/*", "/explore/*"]
+  },
+  "routes": [
+    { "pattern": "gita.elevenpoint.ca", "custom_domain": true }
+  ]
+}

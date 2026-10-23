@@ -14,3 +14,7 @@ local.properties
 
 # Bundle artifacts
 *.jsbundle
+
+# Play upload key (scripts/build-android-release.sh)
+keystore.properties
+*.jks

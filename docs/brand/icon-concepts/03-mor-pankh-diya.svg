@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Concept 3 · Mor-pankh Diya: a clay lamp whose flame is drawn as the rings of a peacock-feather eye. -->
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="75%">
+      <stop offset="0" stop-color="#6B1A1C"/>
+      <stop offset="1" stop-color="#2B080B"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F6DC95"/>
+      <stop offset="0.5" stop-color="#E6B74A"/>
+      <stop offset="1" stop-color="#A9780A"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#F2B441" stop-opacity="0.45"/>
+      <stop offset="0.6" stop-color="#C9572A" stop-opacity="0.15"/>
+      <stop offset="1" stop-color="#6B1A1C" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <circle cx="512" cy="420" r="330" fill="url(#halo)"/>
+
+  <!-- flame = peacock eye: gold / green / teal / indigo nested flames -->
+  <path d="M536 136 C556 252 676 330 676 470 C676 566 604 632 512 632 C420 632 348 566 348 470 C348 330 472 262 536 136 Z" fill="#E6B74A"/>
+  <path d="M528 226 C548 312 630 370 630 476 C630 548 578 596 512 596 C446 596 394 548 394 476 C394 370 478 318 528 226 Z" fill="#2E8B57"/>
+  <path d="M520 312 C538 372 590 414 590 486 C590 536 556 568 512 568 C468 568 434 536 434 486 C434 414 488 376 520 312 Z" fill="#1B9AAA"/>
+  <path d="M512 396 C528 432 554 456 554 500 C554 530 536 548 512 548 C488 548 470 530 470 500 C470 456 496 432 512 396 Z" fill="#12235E"/>
+
+  <!-- diya bowl -->
+  <path d="M220 600 C330 640 694 640 804 600 C790 730 668 808 512 808 C356 808 234 730 220 600 Z" fill="url(#gold)"/>
+  <path d="M220 600 C330 640 694 640 804 600 C694 676 330 676 220 600 Z" fill="#8A5A06" opacity="0.55"/>
+  <path d="M440 806 L584 806 L612 858 L412 858 Z" fill="#B8860B"/>
+</svg>

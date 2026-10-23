@@ -9,13 +9,12 @@ import {
   Alert,
   Platform,
   Modal,
-  Image,
 } from "react-native";
 import { Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
-import Animated, { FadeInUp } from "react-native-reanimated";
+import Animated, { FadeIn, FadeInUp } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -41,7 +40,6 @@ import { GoldCard } from "@/components/ui/GoldCard";
 import { OrnamentalDivider, ORNAMENTS } from "@/components/ui/OrnamentalDivider";
 import { IOSToggle } from "@/components/ui/IOSToggle";
 
-const BRAND_ICON = require("../../assets/images/brand-lotus-book.png");
 
 interface SettingItemProps {
   title: string;
@@ -64,7 +62,7 @@ const SettingItem: React.FC<SettingItemProps> = ({
   isLast = false,
   colors,
 }) => (
-  <Animated.View entering={FadeInUp.delay(delay).springify()}>
+  <Animated.View>
     <Pressable
       style={[
         styles.settingItem,
@@ -295,13 +293,6 @@ export default function SettingsScreen() {
           entering={FadeInUp.delay(0).springify()}
           style={styles.brandHeader}
         >
-          <View style={styles.brandRow}>
-            <Image source={BRAND_ICON} style={styles.brandIcon} resizeMode="contain" />
-            <Text style={[styles.brandTitle, { color: colors.primary }]}>
-              Bhagavad Gita
-            </Text>
-          </View>
-          <OrnamentalDivider source={ORNAMENTS.settingsDivider} height={22} />
           <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
           <OrnamentalDivider source={ORNAMENTS.settingsDivider} height={28} />
         </Animated.View>
@@ -311,11 +302,12 @@ export default function SettingsScreen() {
         </Text>
         <GoldCard style={styles.sectionCard}>
           <SettingItem
-            title="Theme"
-            icon="color-palette-outline"
+            title="Dark mode"
+            icon="moon-outline"
             colors={colors}
             rightElement={
               <IOSToggle
+                accessibilityLabel="Dark mode"
                 value={theme === "dark"}
                 onValueChange={handleThemeToggle}
                 activeColor={colors.primary}
@@ -342,15 +334,20 @@ export default function SettingsScreen() {
         </GoldCard>
 
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>
-          Audio & Notifications
+          {Platform.OS === "web" ? "Audio" : "Audio & Notifications"}
         </Text>
         <GoldCard style={styles.sectionCard}>
+          {/* Daily reminders are device notifications — the web build can't
+              schedule them, so the controls would do nothing there. */}
+          {Platform.OS !== "web" && (
+            <>
           <SettingItem
             title="Notifications"
             icon="notifications-outline"
             colors={colors}
             rightElement={
               <IOSToggle
+                accessibilityLabel="Notifications"
                 value={notificationsEnabled}
                 onValueChange={handleNotificationsToggle}
                 disabled={notificationsLoading}
@@ -374,6 +371,8 @@ export default function SettingsScreen() {
             }
             delay={250}
           />
+            </>
+          )}
           <SettingItem
             title="Auto-play Audio"
             icon="volume-high-outline"
@@ -381,6 +380,7 @@ export default function SettingsScreen() {
             isLast
             rightElement={
               <IOSToggle
+                accessibilityLabel="Auto-play audio"
                 value={autoPlayAudio}
                 onValueChange={handleAutoPlayToggle}
                 activeColor={colors.primary}
@@ -458,7 +458,7 @@ export default function SettingsScreen() {
         </GoldCard>
 
         <Animated.View
-          entering={FadeInUp.delay(800).springify()}
+          entering={FadeIn.duration(200)}
           style={styles.aboutBlock}
         >
           <Text style={[styles.aboutTitle, { color: colors.primary }]}>
@@ -471,10 +471,10 @@ export default function SettingsScreen() {
             world.
           </Text>
           <Text style={[styles.aboutDescription, { color: colors.text }]}>
-            This app provides the Bhagavad Gita with localized scripture content
-            (sloka, meaning, word meanings, and commentary). Choose your preferred
-            content language in Appearance. Missing translations fall back to
-            Telugu until you add them.
+            Read every verse with its sloka, word meanings, meaning and
+            commentary in English, Telugu, Hindi or Tamil. Change the language
+            anytime in Appearance. Where a translation isn’t available yet, the
+            Telugu text is shown.
           </Text>
           <Text style={[styles.aboutFooter, { color: colors.textMuted }]}>
             Made for spiritual seekers
@@ -608,21 +608,6 @@ const styles = StyleSheet.create({
   brandHeader: {
     marginBottom: Spacing.lg,
     alignItems: "center",
-  },
-  brandRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 2,
-  },
-  brandIcon: {
-    width: 36,
-    height: 36,
-  },
-  brandTitle: {
-    fontFamily: "PlayfairDisplay_700Bold",
-    fontSize: 22,
-    letterSpacing: 0.3,
   },
   title: {
     fontFamily: "PlayfairDisplay_700Bold",

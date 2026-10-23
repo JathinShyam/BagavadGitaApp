@@ -25,7 +25,6 @@ import { PracticeCalendarModal } from "@/components/practice/PracticeCalendarMod
 import { WidgetNudgeModal } from "@/components/practice/WidgetNudgeModal";
 import { ROUTES } from "@/constants/routes";
 import { CHAPTER_SUMMARIES, getChapterName, type ChapterSummary } from "@/constants/chapter-summaries";
-import { DAILY_VERSE_GOAL } from "@/constants/milestones";
 import {
   getDailyVerseNotificationContent,
   getVerseForDate,
@@ -40,7 +39,6 @@ import {
   setActivePath,
   type ActiveReadingPath,
 } from "@/lib/reading-paths";
-import { getLocalDateKey } from "@/lib/date-keys";
 import { dismissWidgetNudge, shouldShowWidgetNudge } from "@/lib/widget-nudge";
 import {
   captureShareCardRef,
@@ -129,11 +127,9 @@ export default function HomeScreen() {
 
   const todaysVerse = useMemo(() => getVerseForDate(new Date(), language), [language]);
   const todayPreview = todaysVerse
-    ? getDailyVerseNotificationContent(todaysVerse).body.slice(0, 110)
+    ? getDailyVerseNotificationContent(todaysVerse).body
     : "";
   const goalDone = isDailyGoalComplete();
-  const todayKey = getLocalDateKey();
-  const versesToday = activity[todayKey] ?? 0;
   const streakAtRisk = isStreakAtRisk();
   const totalProgress = getTotalProgress();
 
@@ -212,14 +208,21 @@ export default function HomeScreen() {
     setWidgetNudgeVisible(false);
   }, []);
 
+  // Continue/Completed filters mean nothing before any reading — hide them.
+  const hasAnyProgress = useMemo(
+    () => CHAPTER_SUMMARIES.some((c) => getChapterProgress(c.id) > 0),
+    [getChapterProgress]
+  );
+
   const filteredChapters = useMemo(() => {
-    if (activeFilter === "all") return CHAPTER_SUMMARIES;
+    if (activeFilter === "all" || !hasAnyProgress) return CHAPTER_SUMMARIES;
     return CHAPTER_SUMMARIES.filter((c) => {
       const progress = getChapterProgress(c.id);
       if (activeFilter === "continue") return progress > 0 && progress < 100;
       return progress === 100;
     });
-  }, [activeFilter, getChapterProgress]);
+  }, [activeFilter, getChapterProgress, hasAnyProgress]);
+
 
   const renderChapterTile = useCallback(
     ({ item: chapter, index }: { item: ChapterSummary; index: number }) => {
@@ -268,27 +271,35 @@ export default function HomeScreen() {
                   >
                     {chapter.id}. {chapterName}
                   </Text>
-                  <View style={styles.chapterTileProgressRow}>
-                    <View
-                      style={[
-                        styles.chapterTileTrack,
-                        { backgroundColor: colors.outline + "28" },
-                      ]}
-                    >
+                  {/* An empty 0% bar on every chapter is day-one noise — show the
+                      verse count until the reader starts the chapter. */}
+                  {progress > 0 ? (
+                    <View style={styles.chapterTileProgressRow}>
                       <View
                         style={[
-                          styles.chapterTileFill,
-                          {
-                            width: `${Math.max(0, Math.min(100, progress))}%`,
-                            backgroundColor: colors.primary,
-                          },
+                          styles.chapterTileTrack,
+                          { backgroundColor: colors.outline + "28" },
                         ]}
-                      />
+                      >
+                        <View
+                          style={[
+                            styles.chapterTileFill,
+                            {
+                              width: `${Math.max(0, Math.min(100, progress))}%`,
+                              backgroundColor: colors.primary,
+                            },
+                          ]}
+                        />
+                      </View>
+                      <Text style={[styles.chapterTilePct, { color: colors.textMuted }]}>
+                        {progress}%
+                      </Text>
                     </View>
-                    <Text style={[styles.chapterTilePct, { color: colors.textMuted }]}>
-                      {progress}%
+                  ) : (
+                    <Text style={[styles.chapterTilePct, { color: colors.textMuted, textAlign: "left" }]}>
+                      {chapter.verses} verses
                     </Text>
-                  </View>
+                  )}
                 </View>
 
                 <Ionicons name="chevron-forward" size={18} color={colors.primary} />
@@ -331,8 +342,7 @@ export default function HomeScreen() {
                 color={goalDone ? colors.success : colors.textMuted}
               />
               <Text style={[styles.heroStatusText, { color: colors.textMuted }]}>
-                Practice · {Math.min(versesToday, DAILY_VERSE_GOAL)}/{DAILY_VERSE_GOAL}
-                {goalDone ? " complete" : ""}
+                {goalDone ? "Read today" : "Not read yet today"}
               </Text>
             </View>
 
@@ -359,21 +369,23 @@ export default function HomeScreen() {
             },
           ]}
         >
-          <Pressable
-            onPress={() => {
-              if (lastReadVerseId) router.push(ROUTES.verse(lastReadVerseId));
-            }}
-            disabled={!lastReadVerseId}
-            style={[styles.actionHalf, { opacity: lastReadVerseId ? 1 : 0.4 }]}
-            accessibilityRole="button"
-            accessibilityLabel="Continue reading"
-          >
-            <Ionicons name="book-outline" size={18} color={colors.primary} />
-            <Text style={[styles.actionLinkText, { color: colors.text }]}>
-              Continue reading
-            </Text>
-          </Pressable>
-          <View style={[styles.actionDivider, { backgroundColor: colors.outline + "55" }]} />
+          {/* Nothing to continue on day one — give Surprise the whole row. */}
+          {lastReadVerseId ? (
+            <>
+              <Pressable
+                onPress={() => router.push(ROUTES.verse(lastReadVerseId))}
+                style={styles.actionHalf}
+                accessibilityRole="button"
+                accessibilityLabel="Continue reading"
+              >
+                <Ionicons name="book-outline" size={18} color={colors.primary} />
+                <Text style={[styles.actionLinkText, { color: colors.text }]}>
+                  Continue reading
+                </Text>
+              </Pressable>
+              <View style={[styles.actionDivider, { backgroundColor: colors.outline + "55" }]} />
+            </>
+          ) : null}
           <Pressable
             onPress={openSurpriseVerseModal}
             style={styles.actionHalf}
@@ -417,6 +429,7 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
+        {hasAnyProgress && (
         <View style={styles.filterRow}>
           {[
             { id: "all", label: "All" },
@@ -453,6 +466,7 @@ export default function HomeScreen() {
             );
           })}
         </View>
+        )}
 
         {widgetNudgeVisible && (
           <View style={styles.widgetTip}>
@@ -474,11 +488,11 @@ export default function HomeScreen() {
       todaysVerse,
       todayPreview,
       goalDone,
-      versesToday,
       lastReadVerseId,
       pathMeta,
       totalProgress,
       activeFilter,
+      hasAnyProgress,
       widgetNudgeVisible,
       router,
       openSurpriseVerseModal,
@@ -493,6 +507,9 @@ export default function HomeScreen() {
     >
       <Animated.View
         entering={FadeIn.duration(400)}
+        // Keyed on the palette: an `entering`-animated view kept its first-render
+        // background after the saved theme loaded (BUG-011). Remount instead.
+        key={`brand-${colors.background}`}
         style={[styles.fixedBrandBar, { backgroundColor: colors.background }]}
       >
         <Text
@@ -517,7 +534,7 @@ export default function HomeScreen() {
           ]}
           accessibilityLabel="Open reading calendar. Long press to share streak."
         >
-          <Text style={styles.streakFlame}>🔥</Text>
+          <Ionicons name="flame" size={14} color={colors.primary} />
           <Text style={[styles.streakText, { color: colors.primary }]}>
             {getStreakLabel(streak.currentStreak)}
             {streak.longestStreak > 0 ? ` · Best ${streak.longestStreak}` : ""}
@@ -525,6 +542,9 @@ export default function HomeScreen() {
         </Pressable>
       </Animated.View>
       <FlatList
+        // Rows are `entering`-animated views that keep their first-render
+        // colours; remount the list when the palette changes (BUG-011).
+        key={`chapters-${colors.background}`}
         data={filteredChapters}
         renderItem={renderChapterTile}
         keyExtractor={(item) => String(item.id)}
@@ -611,10 +631,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 6,
-  },
-  streakFlame: {
-    fontSize: 13,
-    lineHeight: 16,
   },
   streakText: {
     fontSize: 12,

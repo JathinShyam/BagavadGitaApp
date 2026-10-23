@@ -12,6 +12,12 @@ export default function Root({ children }: PropsWithChildren) {
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <title>Gita Jyoti · Bhagavad Gita</title>
+        <meta
+          name="description"
+          content="Read the Bhagavad Gita daily in English, Telugu, Hindi and Tamil. Offline, free, no account."
+        />
+        <meta name="theme-color" content="#0B0A09" />
 
         {/*
           Disable body scrolling on web. This makes ScrollView components work closer to how they do on native.
@@ -19,21 +25,66 @@ export default function Root({ children }: PropsWithChildren) {
         */}
         <ScrollViewStyleReset />
 
-        {/* Using raw CSS styles as an escape-hatch to ensure the background color never flickers in dark-mode. */}
-        <style dangerouslySetInnerHTML={{ __html: responsiveBackground }} />
-        {/* Add any additional <head> elements that you want globally available on web... */}
+        {/* Phone-width app on every screen size; must run before the bundle. */}
+        <script dangerouslySetInnerHTML={{ __html: phoneViewportShim }} />
+        <style dangerouslySetInnerHTML={{ __html: phoneFrame }} />
       </head>
       <body>{children}</body>
     </html>
   );
 }
 
-const responsiveBackground = `
+/** Widest phone we lay out for (iPhone Pro Max). */
+const PHONE_MAX_WIDTH = 430;
+
+/**
+ * The app sizes many things from Dimensions.get("window") at import time, and
+ * react-native-web reads that from window.visualViewport. Report at most a
+ * phone's width so desktop browsers get the same layout as a phone.
+ */
+const phoneViewportShim = `
+(function () {
+  var MAX = ${PHONE_MAX_WIDTH};
+  var real = window.visualViewport;
+  if (!real) return;
+  var phone = {
+    get width() { return Math.min(real.width, MAX); },
+    get height() { return real.height; },
+    get scale() { return real.scale; },
+    get offsetLeft() { return real.offsetLeft; },
+    get offsetTop() { return real.offsetTop; },
+    get pageLeft() { return real.pageLeft; },
+    get pageTop() { return real.pageTop; },
+    addEventListener: real.addEventListener.bind(real),
+    removeEventListener: real.removeEventListener.bind(real)
+  };
+  try { Object.defineProperty(window, 'visualViewport', { value: phone, configurable: true }); } catch (e) {}
+})();
+`;
+
+/**
+ * Centre the app in a phone-width column. `contain: layout` on body makes it the
+ * containing block for position:fixed children, so modals and toasts stay
+ * inside the column too. The page outside the column is the dark backdrop.
+ */
+const phoneFrame = `
+html {
+  background-color: #0B0A09;
+}
 body {
-  background-color: #fff;
+  max-width: ${PHONE_MAX_WIDTH}px;
+  margin: 0 auto !important;
+  contain: layout;
+  background-color: #FFF8E7;
+  box-shadow: 0 0 0 1px rgba(184, 134, 11, 0.25), 0 24px 80px rgba(0, 0, 0, 0.5);
 }
 @media (prefers-color-scheme: dark) {
   body {
-    background-color: #000;
+    background-color: #0B0A09;
+  }
+}
+@media (min-width: ${PHONE_MAX_WIDTH + 1}px) {
+  html {
+    background: radial-gradient(ellipse at top, #2A2112 0%, #0B0A09 60%);
   }
 }`;
