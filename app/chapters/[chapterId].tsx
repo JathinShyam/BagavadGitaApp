@@ -23,7 +23,7 @@ import { useReadingProgress } from "@/hooks/useReadingProgress";
 import { ROUTES } from "@/constants/routes";
 import { chapterScreenStyles } from "@/theme/screen-styles";
 import { getRouteParam } from "@/lib/route-params";
-import { getVerseSloka } from "@/lib/verse-content";
+import { getVerseListPreview } from "@/lib/verse-content";
 import { getChapterDescription, getChapterTitle } from "@/lib/chapter-content";
 import { GoldCard } from "@/components/ui/GoldCard";
 import { OrnamentalDivider, ORNAMENTS } from "@/components/ui/OrnamentalDivider";
@@ -31,6 +31,8 @@ import { VerseListCard } from "@/components/verse/VerseListCard";
 import { Spacing } from "@/theme/design-tokens";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
+const HERO_ASPECT = 853 / 1280;
+const HERO_MAX_ASPECT = 0.5;
 const PATH_MARKER_WIDTH = 52;
 const PATH_MARKER_HEIGHT = 36;
 const JOURNEY_CHARIOT = require("../../assets/images/journey-chariot.png");
@@ -55,12 +57,10 @@ export default function ChapterDetailScreen() {
   const pathWidth = useSharedValue(SCREEN_WIDTH - 32);
   const [pathLayoutWidth, setPathLayoutWidth] = useState(SCREEN_WIDTH - 32);
 
-  const heroHeight = useMemo(() => {
-    if (!chapter) return 240;
-    const source = Image.resolveAssetSource(CHAPTER_IMAGES[chapter.id]);
-    if (!source?.width || !source?.height) return 240;
-    return Math.round(SCREEN_WIDTH * (source.height / source.width));
-  }, [chapter]);
+  // All chapter heroes are 1280×853. Image.resolveAssetSource doesn't exist on
+  // web (it crashed every chapter page there); a banner crop also brings the
+  // first verse up the screen.
+  const heroHeight = Math.round(SCREEN_WIDTH * Math.min(HERO_ASPECT, HERO_MAX_ASPECT));
 
   const jumpToVerses = useCallback(() => {
     listRef.current?.scrollToIndex({ index: 0, animated: true, viewPosition: 0 });
@@ -119,8 +119,7 @@ export default function ChapterDetailScreen() {
     return (
       <VerseListCard
         badge={item.verse_number}
-        title={`Verse ${item.verse_number}`}
-        preview={getVerseSloka(item, language)}
+        preview={getVerseListPreview(item, language)}
         read={read}
         onPress={() => router.push(ROUTES.verseFromChapter(chapter.id, item.verse_number))}
         accessibilityLabel={`Open verse ${item.verse_number}`}
@@ -224,7 +223,7 @@ export default function ChapterDetailScreen() {
               >
                 <Text
                   style={[chapterPageStyles.descText, { color: colors.text }]}
-                  numberOfLines={isContextExpanded ? undefined : 4}
+                  numberOfLines={isContextExpanded ? undefined : 3}
                 >
                   {chapterDescription}
                 </Text>
@@ -253,6 +252,9 @@ export default function ChapterDetailScreen() {
               )}
             </GoldCard>
 
+            {/* "0 of N read" over an empty track is noise on an unstarted
+                chapter — the journey card appears once the reader begins. */}
+            {coveredVerses > 0 && (
             <GoldCard compact style={chapterPageStyles.progressCard}>
               <View style={chapterPageStyles.progressTopRow}>
                 <View style={chapterPageStyles.progressMeta}>
@@ -312,6 +314,7 @@ export default function ChapterDetailScreen() {
                 </View>
               </View>
             </GoldCard>
+            )}
 
             <Text style={[chapterPageStyles.versesHeading, { color: colors.text }]}>
               Verses

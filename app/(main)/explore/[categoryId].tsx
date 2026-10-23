@@ -13,7 +13,7 @@ import { Spacing } from "@/theme/design-tokens";
 import { ROUTES } from "@/constants/routes";
 import { ALL_VERSES } from "@/lib/daily-verse";
 import { getRouteParam } from "@/lib/route-params";
-import { getVerseSloka } from "@/lib/verse-content";
+import { getVerseListPreview } from "@/lib/verse-content";
 
 // Built once at module load — ALL_VERSES is static data.
 const VERSE_MAP: Record<string, (typeof ALL_VERSES)[number]> = {};
@@ -45,7 +45,7 @@ export default function ExploreCategoryScreen() {
     const verseNumber = parts.slice(1).join("-");
     const read = isVerseRead(chapter, verseNumber);
     const verseData = VERSE_MAP[verseId];
-    const verseText = verseData ? getVerseSloka(verseData, language).trim() : "";
+    const verseText = verseData ? getVerseListPreview(verseData, language) : "";
 
     return (
       <VerseListCard

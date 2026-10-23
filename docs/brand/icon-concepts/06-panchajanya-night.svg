@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Concept 6 · Panchajanya at Night: Krishna's conch, whose call opens the battle in Gita 1.15, glowing on near-black. -->
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="48%" r="70%">
+      <stop offset="0" stop-color="#2A2112"/>
+      <stop offset="0.55" stop-color="#14110C"/>
+      <stop offset="1" stop-color="#0B0A09"/>
+    </radialGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#E6B74A" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#E6B74A" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="shell" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFF8E7"/>
+      <stop offset="0.6" stop-color="#F5E2B4"/>
+      <stop offset="1" stop-color="#D9B868"/>
+    </linearGradient>
+    <linearGradient id="lip" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F3B183"/>
+      <stop offset="1" stop-color="#C2522A"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F2D48A"/>
+      <stop offset="1" stop-color="#B8860B"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <circle cx="512" cy="512" r="420" fill="url(#halo)"/>
+  <g transform="translate(512 512) scale(1.16) rotate(-30) translate(-520 -520)">
+    <!-- spire: stacked whorls -->
+    <path d="M700 420 C740 404 770 410 786 430 C800 450 800 560 786 580 C770 600 740 604 700 590 Z" fill="url(#shell)"/>
+    <path d="M780 440 C806 434 826 446 832 462 C838 480 838 530 832 548 C826 564 806 576 780 570 Z" fill="url(#shell)"/>
+    <path d="M826 470 C850 470 862 486 872 505 C862 524 850 540 826 540 Z" fill="url(#shell)"/>
+    <!-- body -->
+    <path d="M168 512 C260 470 360 380 500 360 C610 346 690 370 726 420 C744 470 744 540 726 592
+             C660 650 520 666 410 632 C310 600 240 548 168 512 Z" fill="url(#shell)"/>
+    <!-- aperture: pink inner lip along the underside -->
+    <path d="M250 540 C360 586 520 616 712 590 C660 676 520 716 400 690 C320 672 276 612 250 540 Z" fill="url(#lip)"/>
+    <path d="M712 590 C660 676 520 716 400 690 C320 672 276 612 250 540" fill="none" stroke="#FFF1D6" stroke-width="20" stroke-linecap="round"/>
+    <!-- columellar folds across the aperture -->
+    <g fill="none" stroke="#FBE3C8" stroke-width="16" stroke-linecap="round">
+      <path d="M420 620 C450 640 480 652 510 658"/>
+      <path d="M540 630 C570 644 600 650 630 650"/>
+    </g>
+    <!-- spiral ridges -->
+    <g fill="none" stroke="#C9A24A" stroke-width="16" stroke-linecap="round">
+      <path d="M690 420 C560 420 400 470 262 540"/>
+    </g>
+    <!-- gold ornament bands -->
+    <path d="M232 470 C258 500 262 540 244 570 L212 552 C226 530 224 506 206 486 Z" fill="url(#gold)"/>
+    <path d="M690 404 L722 412 C742 470 742 540 722 600 L690 606 C708 540 708 470 690 404 Z" fill="url(#gold)"/>
+  </g>
+</svg>

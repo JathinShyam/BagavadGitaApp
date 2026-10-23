@@ -15,6 +15,8 @@ import Animated, {
 import * as Haptics from "expo-haptics";
 
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { getAppTitle } from "@/constants/languages";
+import { useContentLanguage } from "@/context/language-context";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -28,6 +30,7 @@ type Props = {
  */
 export function LaunchIntro({ onFinish }: Props) {
   const { colors, isDark } = useAppTheme();
+  const { language } = useContentLanguage();
 
   const overlayOpacity = useSharedValue(1);
   const ringScale = useSharedValue(0.55);
@@ -157,7 +160,7 @@ export function LaunchIntro({ onFinish }: Props) {
         </View>
 
         <Animated.View style={[styles.titleBlock, titleStyle]}>
-          <Text style={[styles.telugu, { color: colors.primary }]}>భగవద్గీత</Text>
+          <Text style={[styles.telugu, { color: colors.primary }]}>{getAppTitle(language)}</Text>
           <Animated.View
             style={[styles.rule, lineStyle, { backgroundColor: colors.primary }]}
           />

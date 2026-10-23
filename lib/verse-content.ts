@@ -39,6 +39,19 @@ export function getVerseMeaning(verse: Verse, language?: ContentLanguage): strin
   return getVerseLocaleContent(verse, language).meaning?.trim() ?? "";
 }
 
+/**
+ * One-line preview for verse lists. English "sloka" is a romanised
+ * transliteration that tells an English reader nothing, so English lists
+ * preview the meaning; Indic languages preview the sloka in their own script.
+ */
+export function getVerseListPreview(verse: Verse, language?: ContentLanguage): string {
+  if (language === "en") {
+    const meaning = getVerseMeaning(verse, language).trim();
+    if (meaning) return meaning;
+  }
+  return getVerseSloka(verse, language).trim();
+}
+
 export function getVerseCommentary(verse: Verse, language?: ContentLanguage): string {
   return getVerseLocaleContent(verse, language).commentary?.trim() ?? "";
 }

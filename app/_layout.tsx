@@ -6,7 +6,7 @@ import {
 import { Stack, router } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState, useRef, useCallback, type ReactNode } from "react";
-import { AppState, AppStateStatus } from "react-native";
+import { AppState, AppStateStatus, Platform, StatusBar } from "react-native";
 import "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -23,6 +23,7 @@ import { ToastProvider } from "@/components/ui/Toast";
 import { LaunchIntro } from "@/components/ui/LaunchIntro";
 import { ReadingProgressProvider } from "@/hooks/useReadingProgress";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { HomeBackButton } from "@/components/ui/HomeBackButton";
 import { getVerseForDate } from "@/lib/daily-verse";
 import { scheduleNextDailyVerseNotification } from "@/lib/daily-verse-notifications";
 import { shouldLoadExpoNotifications } from "@/lib/notification-availability";
@@ -38,6 +39,8 @@ function NavigationThemeProvider({ children }: { children: ReactNode }) {
   const { theme } = useAppThemeMode();
   return (
     <ThemeProvider value={theme === "dark" ? DarkTheme : DefaultTheme}>
+      {/* Android kept the splash's light icons, invisible on the cream theme (BUG-006). */}
+      <StatusBar barStyle={theme === "dark" ? "light-content" : "dark-content"} />
       {children}
     </ThemeProvider>
   );
@@ -50,7 +53,23 @@ export default function RootLayout() {
     PlayfairDisplay_700Bold,
   });
   const [isOnboardingComplete, setIsOnboardingComplete] = useState<boolean | null>(null);
-  const [showLaunchIntro, setShowLaunchIntro] = useState(true);
+  // Web starts without the splash so static HTML and the client agree; the
+  // effect below opts in on the first visit to "/" in a browser session.
+  const [showLaunchIntro, setShowLaunchIntro] = useState(Platform.OS !== "web");
+
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    try {
+      const SEEN = "gitajyoti.launchIntroSeen";
+      const isEntry = ["/", "/onboarding"].includes(window.location.pathname);
+      if (isEntry && !window.sessionStorage.getItem(SEEN)) {
+        window.sessionStorage.setItem(SEEN, "1");
+        setShowLaunchIntro(true);
+      }
+    } catch {
+      // Storage blocked (private mode): skip the splash rather than replay it.
+    }
+  }, []);
 
   const loaded = playfairLoaded;
   const pendingNavigationPathRef = useRef<string | null>(null);
@@ -244,12 +263,19 @@ export default function RootLayout() {
             <NavigationThemeProvider>
               <ToastProvider>
                 <Stack
-                  screenOptions={{
+                  screenOptions={({ navigation }) => ({
                     animation: "slide_from_right",
                     animationDuration: 250,
                     gestureEnabled: true,
                     gestureDirection: "horizontal",
-                  }}
+                    // iOS otherwise labels the back button with the previous
+                    // route's name — "(main)" for anything opened from a tab.
+                    headerBackButtonDisplayMode: "minimal",
+                    // A shared link or cold deep link has nothing to go back to.
+                    headerLeft: navigation.canGoBack()
+                      ? undefined
+                      : () => <HomeBackButton />,
+                  })}
                 >
                   <Stack.Screen name="(main)" options={{ headerShown: false }} />
                   <Stack.Screen

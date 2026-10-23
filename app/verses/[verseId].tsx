@@ -107,6 +107,8 @@ export default function VerseDetailScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [autoPlayAudio, setAutoPlayAudio] = useState(false);
   const [isCommentaryExpanded, setIsCommentaryExpanded] = useState(true);
+  // Meaning first; word-by-word grid on demand (it pushed the meaning below the fold).
+  const [isWordsExpanded, setIsWordsExpanded] = useState(false);
   const [noteText, setNoteText] = useState("");
   const [showNoteSheet, setShowNoteSheet] = useState(false);
   const [milestoneDays, setMilestoneDays] = useState<StreakMilestone | null>(null);
@@ -371,6 +373,9 @@ export default function VerseDetailScreen() {
     );
   }
 
+  const hasPrevVerse = !!getAdjacentVerse(verse.chapter, verse.verse_number, -1);
+  const hasNextVerse = !!getAdjacentVerse(verse.chapter, verse.verse_number, 1);
+
   if (isLoading) {
     return (
       <SafeAreaView
@@ -519,15 +524,49 @@ export default function VerseDetailScreen() {
               </Animated.View>
             </GestureDetector>
 
+            {meaningText ? (
+            <Animated.View entering={FadeIn.delay(200)}>
+              <GoldCard style={localStyles.sectionCard}>
+                <View style={localStyles.sectionHeader}>
+                  <Ionicons name="book" size={18} color={colors.primary} />
+                  <Text style={[localStyles.sectionTitle, { color: colors.primary }]}>
+                    Meaning
+                  </Text>
+                </View>
+                <Text style={[verseScreenStyles.meaningStyle, { color: colors.text }]}>
+                  {meaningText}
+                </Text>
+              </GoldCard>
+            </Animated.View>
+            ) : null}
+
             {wordMeanings.length > 0 && (
-              <Animated.View entering={FadeIn.delay(200)}>
+              <Animated.View entering={FadeIn.delay(300)}>
                 <GoldCard style={localStyles.sectionCard}>
-                  <View style={localStyles.sectionHeader}>
-                    <Ionicons name="book-outline" size={18} color={colors.primary} />
-                    <Text style={[localStyles.sectionTitle, { color: colors.primary }]}>
-                      Word meanings
-                    </Text>
-                  </View>
+                  <Pressable
+                    onPress={() => setIsWordsExpanded((v) => !v)}
+                    style={localStyles.commentaryHeader}
+                    accessibilityRole="button"
+                    accessibilityLabel={isWordsExpanded ? "Collapse word meanings" : "Expand word meanings"}
+                  >
+                    <View style={localStyles.sectionHeader}>
+                      <Ionicons name="book-outline" size={18} color={colors.primary} />
+                      <Text style={[localStyles.sectionTitle, { color: colors.primary }]}>
+                        Word meanings
+                      </Text>
+                    </View>
+                    <View style={localStyles.commentaryToggle}>
+                      <Text style={[localStyles.commentaryToggleText, { color: colors.textMuted }]}>
+                        {isWordsExpanded ? "Hide" : "Show"}
+                      </Text>
+                      <Ionicons
+                        name={isWordsExpanded ? "chevron-up" : "chevron-down"}
+                        size={16}
+                        color={colors.textMuted}
+                      />
+                    </View>
+                  </Pressable>
+                  {isWordsExpanded && (
                   <View style={localStyles.wordGrid}>
                     {wordMeanings.map((item, index) => {
                       const isLeft = index % 2 === 0;
@@ -555,25 +594,10 @@ export default function VerseDetailScreen() {
                       );
                     })}
                   </View>
+                  )}
                 </GoldCard>
               </Animated.View>
             )}
-
-            {meaningText ? (
-            <Animated.View entering={FadeIn.delay(300)}>
-              <GoldCard style={localStyles.sectionCard}>
-                <View style={localStyles.sectionHeader}>
-                  <Ionicons name="book" size={18} color={colors.primary} />
-                  <Text style={[localStyles.sectionTitle, { color: colors.primary }]}>
-                    Meaning
-                  </Text>
-                </View>
-                <Text style={[verseScreenStyles.meaningStyle, { color: colors.text }]}>
-                  {meaningText}
-                </Text>
-              </GoldCard>
-            </Animated.View>
-            ) : null}
 
             {commentaryText ? (
             <Animated.View entering={FadeIn.delay(400)}>
@@ -622,7 +646,8 @@ export default function VerseDetailScreen() {
         </Animated.View>
       </GestureDetector>
 
-      {verseAudioSource != null && (
+      {/* One bottom bar: ◀  audio  ▶. Without audio, the labelled buttons stay. */}
+      {verseAudioSource != null ? (
         <View
           style={[
             localStyles.audioDock,
@@ -632,59 +657,75 @@ export default function VerseDetailScreen() {
             },
           ]}
         >
-          <VerseAudioPlayer
-            audioSource={verseAudioSource}
-            primaryColor={colors.primary}
-            textMutedColor={colors.textMuted}
-            outlineColor={colors.outline}
-            autoPlay={autoPlayAudio}
-          />
+          <Pressable
+            onPress={() => navigateToVerse(-1)}
+            disabled={!hasPrevVerse}
+            hitSlop={8}
+            style={[localStyles.dockNavBtn, { opacity: hasPrevVerse ? 1 : 0.3 }]}
+            accessibilityRole="button"
+            accessibilityLabel="Previous verse"
+          >
+            <Ionicons name="chevron-back" size={24} color={colors.primary} />
+          </Pressable>
+          <View style={{ flex: 1 }}>
+            <VerseAudioPlayer
+              audioSource={verseAudioSource}
+              primaryColor={colors.primary}
+              textMutedColor={colors.textMuted}
+              outlineColor={colors.outline}
+              autoPlay={autoPlayAudio}
+            />
+          </View>
+          <Pressable
+            onPress={() => navigateToVerse(1)}
+            disabled={!hasNextVerse}
+            hitSlop={8}
+            style={[localStyles.dockNavBtn, { opacity: hasNextVerse ? 1 : 0.3 }]}
+            accessibilityRole="button"
+            accessibilityLabel="Next verse"
+          >
+            <Ionicons name="chevron-forward" size={24} color={colors.primary} />
+          </Pressable>
+        </View>
+      ) : (
+        <View
+          style={[
+            verseScreenStyles.navigationButtons,
+            {
+              backgroundColor: colors.background,
+              borderTopColor: colors.outline + "33",
+              borderTopWidth: StyleSheet.hairlineWidth,
+            },
+          ]}
+        >
+          <Pressable
+            onPress={() => navigateToVerse(-1)}
+            disabled={!hasPrevVerse}
+            style={[
+              verseScreenStyles.navButton,
+              { borderColor: colors.primary + "88", opacity: hasPrevVerse ? 1 : 0.3 },
+            ]}
+          >
+            <Text style={{ fontSize: 16, color: colors.primary }}>◀</Text>
+            <Text style={[verseScreenStyles.navButtonText, { color: colors.primary }]}>
+              Previous
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => navigateToVerse(1)}
+            disabled={!hasNextVerse}
+            style={[
+              verseScreenStyles.navButton,
+              { borderColor: colors.primary + "88", opacity: hasNextVerse ? 1 : 0.3 },
+            ]}
+          >
+            <Text style={[verseScreenStyles.navButtonText, { color: colors.primary }]}>
+              Next
+            </Text>
+            <Text style={{ fontSize: 16, color: colors.primary }}>▶</Text>
+          </Pressable>
         </View>
       )}
-
-      <View
-        style={[
-          verseScreenStyles.navigationButtons,
-          {
-            backgroundColor: colors.background,
-            borderTopColor: colors.outline + "33",
-            borderTopWidth: StyleSheet.hairlineWidth,
-          },
-        ]}
-      >
-        <Pressable
-          onPress={() => navigateToVerse(-1)}
-          disabled={!getAdjacentVerse(verse.chapter, verse.verse_number, -1)}
-          style={[
-            verseScreenStyles.navButton,
-            { borderColor: colors.primary + "88" },
-            {
-              opacity: !getAdjacentVerse(verse.chapter, verse.verse_number, -1) ? 0.3 : 1,
-            },
-          ]}
-        >
-          <Text style={{ fontSize: 16, color: colors.primary }}>◀</Text>
-          <Text style={[verseScreenStyles.navButtonText, { color: colors.primary }]}>
-            Previous
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={() => navigateToVerse(1)}
-          disabled={!getAdjacentVerse(verse.chapter, verse.verse_number, 1)}
-          style={[
-            verseScreenStyles.navButton,
-            { borderColor: colors.primary + "88" },
-            {
-              opacity: !getAdjacentVerse(verse.chapter, verse.verse_number, 1) ? 0.3 : 1,
-            },
-          ]}
-        >
-          <Text style={[verseScreenStyles.navButtonText, { color: colors.primary }]}>
-            Next
-          </Text>
-          <Text style={{ fontSize: 16, color: colors.primary }}>▶</Text>
-        </Pressable>
-      </View>
 
       <CelebrationModal
         visible={showCelebration}
@@ -844,10 +885,18 @@ const localStyles = StyleSheet.create({
     fontWeight: "600",
   },
   audioDock: {
-    paddingHorizontal: Spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.sm,
     paddingTop: 4,
-    paddingBottom: 2,
+    paddingBottom: 6,
     borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  dockNavBtn: {
+    width: 36,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
   },
   noteBackdrop: {
     flex: 1,

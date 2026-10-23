@@ -15,8 +15,8 @@ export type ContentLanguageOption = {
 };
 
 export const CONTENT_LANGUAGES: ContentLanguageOption[] = [
-  { code: "te", label: "Telugu", nativeLabel: "తెలుగు" },
   { code: "en", label: "English", nativeLabel: "English" },
+  { code: "te", label: "Telugu", nativeLabel: "తెలుగు" },
   { code: "hi", label: "Hindi", nativeLabel: "हिन्दी" },
   { code: "ta", label: "Tamil", nativeLabel: "தமிழ்" },
 ];
@@ -29,8 +29,8 @@ export const APP_TITLES: Record<ContentLanguage, string> = {
   ta: "பகவத் கீதை",
 };
 
-/** Default when nothing is stored (existing Telugu corpus). */
-export const DEFAULT_CONTENT_LANGUAGE: ContentLanguage = "te";
+/** Default when nothing is stored. Chosen in onboarding; changeable in Settings. */
+export const DEFAULT_CONTENT_LANGUAGE: ContentLanguage = "en";
 
 /** Fallback order when a locale is missing fields. */
 export const CONTENT_LANGUAGE_FALLBACKS: ContentLanguage[] = ["te", "en", "hi", "ta"];

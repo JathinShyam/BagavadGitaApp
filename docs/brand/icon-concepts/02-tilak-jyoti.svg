@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Concept 2 · Tilak Jyoti: Krishna's urdhva-pundra (U) in gold; the central line becomes a lamp flame. -->
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="45%" r="70%">
+      <stop offset="0" stop-color="#14365A"/>
+      <stop offset="1" stop-color="#081A2E"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F6DC95"/>
+      <stop offset="0.5" stop-color="#E6B74A"/>
+      <stop offset="1" stop-color="#B8860B"/>
+    </linearGradient>
+        <linearGradient id="flame" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF9A2E"/>
+      <stop offset="0.55" stop-color="#E2462A"/>
+      <stop offset="1" stop-color="#B3231A"/>
+    </linearGradient>
+    <linearGradient id="core" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFF3C4"/>
+      <stop offset="1" stop-color="#FFC24A"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+    <!-- urdhva-pundra: tapered U -->
+  <path d="M232 190 C244 430 262 600 326 714 C378 806 448 856 512 880 C576 856 646 806 698 714 C762 600 780 430 792 190
+           Q762 156 732 190 C714 420 688 580 642 664 C606 728 560 764 512 778 C464 764 418 728 382 664 C336 580 310 420 292 190
+           Q262 156 232 190 Z" fill="url(#gold)"/>
+  <!-- central line as a flame -->
+  <path d="M512 196 C540 310 612 404 612 562 C612 654 568 716 512 716 C456 716 412 654 412 562 C412 404 484 310 512 196 Z" fill="url(#flame)"/>
+  <path d="M512 424 C528 482 560 528 560 598 C560 646 538 672 512 672 C486 672 464 646 464 598 C464 528 496 482 512 424 Z" fill="url(#core)"/>
+</svg>

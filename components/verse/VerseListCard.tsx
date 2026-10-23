@@ -8,8 +8,8 @@ import { Radius, Spacing } from "@/theme/design-tokens";
 type VerseListCardProps = {
   /** Text inside the circular badge (e.g. "47" or "4-6"). */
   badge: string;
-  /** Primary title (e.g. "Verse 47" or "Ch. 2 · Verse 47"). */
-  title: string;
+  /** Primary title (e.g. "Ch. 2 · Verse 47"). Omit when the badge already says it all. */
+  title?: string;
   /** Sloka / preview line under the title. */
   preview?: string;
   read?: boolean;
@@ -68,11 +68,13 @@ export function VerseListCard({
       </View>
 
       <View style={styles.body}>
-        <RNText style={[styles.title, { color: colors.primary }]} numberOfLines={1}>
-          {title}
-        </RNText>
+        {!!title && (
+          <RNText style={[styles.title, { color: colors.primary }]} numberOfLines={1}>
+            {title}
+          </RNText>
+        )}
         {!!preview && (
-          <RNText style={[styles.preview, { color: colors.text }]} numberOfLines={2}>
+          <RNText style={[styles.preview, { color: colors.text }]} numberOfLines={title ? 2 : 3}>
             {preview}
           </RNText>
         )}

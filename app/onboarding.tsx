@@ -28,6 +28,8 @@ import * as Haptics from "expo-haptics";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { ROUTES } from "@/constants/routes";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
+import { CONTENT_LANGUAGES, getAppTitle } from "@/constants/languages";
+import { useContentLanguage } from "@/context/language-context";
 import {
   requestNotificationPermissions,
   scheduleNextDailyVerseNotification,
@@ -81,7 +83,7 @@ interface OnboardingSlide {
   title: string;
   subtitle: string;
   description: string;
-  kind?: "standard" | "reminder";
+  kind?: "standard" | "language" | "reminder";
 }
 
 const slides: OnboardingSlide[] = [
@@ -89,9 +91,10 @@ const slides: OnboardingSlide[] = [
     id: "1",
     icon: "book",
     title: "Welcome to",
-    subtitle: "భగవద్గీత",
+    subtitle: "Bhagavad Gita",
     description:
-      "Explore the timeless wisdom of the Bhagavad Gita, the sacred dialogue between Lord Krishna and Arjuna on the battlefield of Kurukshetra.",
+      "Explore the timeless wisdom of the Bhagavad Gita, the sacred dialogue between Lord Krishna and Arjuna on the battlefield of Kurukshetra. Read it in:",
+    kind: "language",
   },
   {
     id: "2",
@@ -99,7 +102,7 @@ const slides: OnboardingSlide[] = [
     title: "18 Chapters",
     subtitle: "700 Verses",
     description:
-      "Browse through all 18 chapters with Telugu translations, word-by-word meanings, and detailed commentaries to deepen your understanding.",
+      "Browse all 18 chapters in English, Telugu, Hindi or Tamil, with word-by-word meanings and detailed commentaries to deepen your understanding.",
   },
   {
     id: "3",
@@ -137,8 +140,12 @@ function formatChipLabel(time: string): string {
 
 export default function OnboardingScreen() {
   const { colors } = useAppTheme();
+  const { language, setLanguage } = useContentLanguage();
   const insets = useSafeAreaInsets();
   const [currentIndex, setCurrentIndex] = useState(0);
+  // Horizontal lists don't stretch items to full height on web; size slides
+  // from the list's measured height so content stays vertically centred.
+  const [listHeight, setListHeight] = useState<number | undefined>(undefined);
   const [reminderTime, setReminderTime] = useState<string>("08:00");
   const [enablingReminder, setEnablingReminder] = useState(false);
   const flatListRef = useRef<FlatList>(null);
@@ -205,7 +212,7 @@ export default function OnboardingScreen() {
 
   const renderSlide = ({ item }: { item: OnboardingSlide; index: number }) => {
     return (
-      <View style={[styles.slide, { width: SCREEN_WIDTH }]}>
+      <View style={[styles.slide, { width: SCREEN_WIDTH, height: listHeight }]}>
         <Animated.View
           entering={FadeInUp.delay(200).springify()}
           style={[
@@ -224,11 +231,50 @@ export default function OnboardingScreen() {
             {item.title}
           </Text>
           <Text style={[styles.subtitle, { color: colors.primary }]}>
-            {item.subtitle}
+            {item.kind === "language" ? getAppTitle(language) : item.subtitle}
           </Text>
           <Text style={[styles.description, { color: colors.textMuted }]}>
             {item.description}
           </Text>
+
+          {item.kind === "language" && (
+            <View style={styles.timeChips}>
+              {CONTENT_LANGUAGES.map((opt) => {
+                const selected = language === opt.code;
+                return (
+                  <Pressable
+                    key={opt.code}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setLanguage(opt.code);
+                    }}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                    accessibilityLabel={opt.label}
+                    style={[
+                      styles.timeChip,
+                      selected
+                        ? { backgroundColor: colors.primary }
+                        : {
+                            backgroundColor: "transparent",
+                            borderColor: colors.outline + "55",
+                            borderWidth: 1,
+                          },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.timeChipText,
+                        { color: selected ? colors.onPrimary : colors.textMuted },
+                      ]}
+                    >
+                      {opt.nativeLabel}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
 
           {item.kind === "reminder" && (
             <View style={styles.timeChips}>
@@ -309,6 +355,7 @@ export default function OnboardingScreen() {
         onScroll={handleScroll}
         scrollEventThrottle={16}
         bounces={false}
+        onLayout={(e) => setListHeight(e.nativeEvent.layout.height)}
       />
 
       <Animated.View

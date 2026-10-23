@@ -16,11 +16,10 @@ import { GoldCard } from "@/components/ui/GoldCard";
 import { ScreenCornerArt, CORNER_ART } from "@/components/ui/ScreenCornerArt";
 import { ROUTES } from "@/constants/routes";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
-import { useToast } from "@/components/ui/Toast";
-import { getLocalDateKey, addDaysToDateKey } from "@/lib/date-keys";
 import { Spacing } from "@/theme/design-tokens";
 import { getVerseById } from "@/data/verses/verse-catalog";
 import { getVerseMeaning, getVerseSloka } from "@/lib/verse-content";
+import { getVerseForDate } from "@/lib/daily-verse";
 
 interface SavedVerse {
   id: string;
@@ -55,7 +54,6 @@ export default function SavedVersesScreen() {
   const { colors, isDark } = useAppTheme();
   const { language } = useContentLanguage();
   const router = useRouter();
-  const { showToast } = useToast();
   const [savedVerses, setSavedVerses] = useState<SavedVerse[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -69,21 +67,13 @@ export default function SavedVersesScreen() {
         setSavedVerses([]);
       }
 
-      const cursor = await AsyncStorage.getItem(STORAGE_KEYS.SAVED_REVIEW_CURSOR);
-      const today = getLocalDateKey();
-      const due = !cursor || today >= addDaysToDateKey(cursor, 7);
-      const parsed: SavedVerse[] = saved ? JSON.parse(saved) : [];
-      if (due && parsed.length > 0) {
-        showToast("Revisit a verse you saved", "info", "bookmark");
-        await AsyncStorage.setItem(STORAGE_KEYS.SAVED_REVIEW_CURSOR, today);
-      }
     } catch (error) {
       console.error("Error loading saved verses:", error);
       setSavedVerses([]);
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -168,7 +158,7 @@ export default function SavedVersesScreen() {
               style={styles.footerAction}
               accessibilityLabel="Remove from saved"
             >
-              <Ionicons name="heart-outline" size={16} color={colors.primary} />
+              <Ionicons name="bookmark-outline" size={16} color={colors.primary} />
               <Text style={[styles.footerActionText, { color: colors.primary }]}>Unsave</Text>
             </Pressable>
             <View style={styles.footerAction}>
@@ -228,9 +218,12 @@ export default function SavedVersesScreen() {
         <EmptyState
           icon="bookmark-outline"
           title="No saved verses yet"
-          subtitle="Double-tap any verse or tap the bookmark icon to save verses for later"
-          actionLabel="Browse chapters"
-          onAction={() => router.push(ROUTES.mainTabs)}
+          subtitle="Tap the bookmark on any verse (or double-tap the verse) to keep it here"
+          actionLabel="Read today's verse"
+          onAction={() => {
+            const today = getVerseForDate(new Date(), language);
+            router.push(today ? ROUTES.verse(today.id) : ROUTES.mainTabs);
+          }}
         />
       )}
     </SafeAreaView>

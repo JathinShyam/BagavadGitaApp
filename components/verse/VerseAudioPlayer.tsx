@@ -7,7 +7,7 @@
  * audio playback in Android release builds.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, Pressable, ActivityIndicator, Platform, TextInput } from "react-native";
+import { View, Pressable, ActivityIndicator, Platform, Text, TextInput } from "react-native";
 import Slider from "@react-native-community/slider";
 import { Ionicons } from "@expo/vector-icons";
 import { Asset } from "expo-asset";
@@ -16,12 +16,16 @@ import type { AudioStatus } from "expo-audio";
 import Animated, {
   cancelAnimation,
   Easing,
+  runOnJS,
   useAnimatedProps,
+  useAnimatedReaction,
   useDerivedValue,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
 import { verseScreenStyles } from "@/theme/screen-styles";
+
+const IS_WEB = Platform.OS === "web";
 
 const formatTimeWorklet = (ms: number) => {
   "worklet";
@@ -99,6 +103,16 @@ function VerseAudioPlayerInner({
     return formatTimeWorklet(durationSharedMs.value);
   });
 
+  // Web: Reanimated can't drive animatedProps on the community Slider or a
+  // TextInput (it crashes the verse screen), so mirror progress into state.
+  const [webProgressMs, setWebProgressMs] = useState(0);
+  useAnimatedReaction(
+    () => Math.floor(progressMs.value / 250),
+    (tick, prev) => {
+      if (IS_WEB && tick !== prev) runOnJS(setWebProgressMs)(progressMs.value);
+    }
+  );
+
   const timeAnimatedProps = useAnimatedProps(() => {
     return { text: timeText.value } as any;
   });
@@ -107,16 +121,48 @@ function VerseAudioPlayerInner({
     return { text: durationText.value } as any;
   });
 
+  // Android may send no status update when a track ends, leaving ⏸ shown at
+  // 00:21/00:21. When the progress animation completes, confirm with the
+  // player (allowing for drift) and reset to ▶ at the start.
+  const handleProgressEnd = useCallback(() => {
+    let tries = 0;
+    const check = () => {
+      const p = playerRef.current;
+      if (!p || !isPlayingRef.current) return;
+      const dur = p.duration ?? 0;
+      const cur = p.currentTime ?? 0;
+      if (dur > 0 && cur >= dur - 0.3) {
+        try {
+          p.pause();
+          p.seekTo(0);
+        } catch {}
+        isPlayingRef.current = false;
+        setIsPlaying(false);
+        cancelAnimation(progressMs);
+        progressMs.value = 0;
+      } else if (++tries < 4) {
+        setTimeout(check, 300);
+      }
+    };
+    setTimeout(check, 300);
+  }, [progressMs]);
+
   const startProgressAnimation = useCallback(() => {
     const d = durationSharedMs.value;
     if (!d || d <= 0) return;
     cancelAnimation(progressMs);
     const remaining = Math.max(0, d - progressMs.value);
-    progressMs.value = withTiming(d, {
-      duration: Math.max(0, Math.round(remaining)),
-      easing: Easing.linear,
-    });
-  }, [durationSharedMs, progressMs]);
+    progressMs.value = withTiming(
+      d,
+      {
+        duration: Math.max(0, Math.round(remaining)),
+        easing: Easing.linear,
+      },
+      (finished) => {
+        if (finished) runOnJS(handleProgressEnd)();
+      }
+    );
+  }, [durationSharedMs, progressMs, handleProgressEnd]);
 
   const stopProgressAnimation = useCallback(() => {
     cancelAnimation(progressMs);
@@ -269,7 +315,17 @@ function VerseAudioPlayerInner({
         setIsBuffering(!!st.isBuffering);
       }
 
-      if (st.didJustFinish) {
+      // Android doesn't always emit didJustFinish: playback stops at the end
+      // with currentTime == duration and `playing` still true, leaving ⏸ shown.
+      const reachedEnd =
+        !!st.duration && st.duration > 0 && st.currentTime >= st.duration - 0.15 && !st.isBuffering;
+      if (st.didJustFinish || (reachedEnd && isPlayingRef.current)) {
+        if (!st.didJustFinish) {
+          try {
+            player.pause();
+            player.seekTo(0);
+          } catch {}
+        }
         isPlayingRef.current = false;
         setIsPlaying(false);
         stopProgressAnimation();
@@ -446,35 +502,65 @@ function VerseAudioPlayerInner({
         />
       </Pressable>
 
-      <AnimatedTime
-        editable={false}
-        underlineColorAndroid="transparent"
-        style={[verseScreenStyles.audioTime, { color: textMutedColor }]}
-        animatedProps={timeAnimatedProps}
-      />
+      {IS_WEB ? (
+        <Text style={[verseScreenStyles.audioTime, { color: textMutedColor }]}>
+          {formatTimeWorklet(webProgressMs)}
+        </Text>
+      ) : (
+        <AnimatedTime
+          editable={false}
+          underlineColorAndroid="transparent"
+          style={[verseScreenStyles.audioTime, { color: textMutedColor }]}
+          animatedProps={timeAnimatedProps}
+        />
+      )}
 
-      <AnimatedSlider
-        style={verseScreenStyles.slider}
-        minimumValue={0}
-        maximumValue={durationMs || 1}
-        animatedProps={sliderAnimatedProps as any}
-        onSlidingStart={handleSlidingStart}
-        onValueChange={handleSliderValueChange}
-        onSlidingComplete={handleSlidingComplete}
-        minimumTrackTintColor={primaryColor}
-        accessibilityLabel="Audio progress"
-        accessibilityRole="adjustable"
-        maximumTrackTintColor={outlineColor + "66"}
-        thumbTintColor={primaryColor}
-        disabled={!resolvedUri}
-      />
+      {IS_WEB ? (
+        <Slider
+          style={verseScreenStyles.slider}
+          minimumValue={0}
+          maximumValue={durationMs || 1}
+          value={webProgressMs}
+          onSlidingStart={handleSlidingStart}
+          onValueChange={handleSliderValueChange}
+          onSlidingComplete={handleSlidingComplete}
+          minimumTrackTintColor={primaryColor}
+          accessibilityLabel="Audio progress"
+          accessibilityRole="adjustable"
+          maximumTrackTintColor={outlineColor + "66"}
+          thumbTintColor={primaryColor}
+          disabled={!resolvedUri}
+        />
+      ) : (
+        <AnimatedSlider
+          style={verseScreenStyles.slider}
+          minimumValue={0}
+          maximumValue={durationMs || 1}
+          animatedProps={sliderAnimatedProps as any}
+          onSlidingStart={handleSlidingStart}
+          onValueChange={handleSliderValueChange}
+          onSlidingComplete={handleSlidingComplete}
+          minimumTrackTintColor={primaryColor}
+          accessibilityLabel="Audio progress"
+          accessibilityRole="adjustable"
+          maximumTrackTintColor={outlineColor + "66"}
+          thumbTintColor={primaryColor}
+          disabled={!resolvedUri}
+        />
+      )}
 
-      <AnimatedTime
-        editable={false}
-        underlineColorAndroid="transparent"
-        style={[verseScreenStyles.audioTime, { color: textMutedColor }]}
-        animatedProps={durationAnimatedProps}
-      />
+      {IS_WEB ? (
+        <Text style={[verseScreenStyles.audioTime, { color: textMutedColor }]}>
+          {formatTimeWorklet(durationMs)}
+        </Text>
+      ) : (
+        <AnimatedTime
+          editable={false}
+          underlineColorAndroid="transparent"
+          style={[verseScreenStyles.audioTime, { color: textMutedColor }]}
+          animatedProps={durationAnimatedProps}
+        />
+      )}
 
       <Pressable
         onPress={handleMuteToggle}

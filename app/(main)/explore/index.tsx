@@ -23,7 +23,6 @@ import { getVerseById } from "@/data/verses/verse-catalog";
 import { homeScreenStyles } from "@/theme/screen-styles";
 import { ROUTES } from "@/constants/routes";
 import { GoldCard } from "@/components/ui/GoldCard";
-import { DiamondDivider } from "@/components/ui/DiamondDivider";
 import { ScreenCornerArt, CORNER_ART } from "@/components/ui/ScreenCornerArt";
 import { Radius } from "@/theme/design-tokens";
 import {
@@ -166,15 +165,8 @@ export default function ExploreScreen() {
               <Text style={[styles.featuredRef, { color: colors.text }]}>
                 Chapter {featuredVerse.chapter} · Verse {featuredVerse.verse_number}
               </Text>
-              {getVerseSloka(featuredVerse, language) ? (
-                <Text
-                  style={[styles.featuredSloka, { color: colors.text }]}
-                  numberOfLines={2}
-                >
-                  {getVerseSloka(featuredVerse, language).replace(/\n/g, " ").trim()}
-                </Text>
-              ) : null}
-              <DiamondDivider style={styles.featuredDivider} />
+              {/* Meaning only: someone picking a feeling wants the words they can
+                  use now; the sloka is one tap away on the verse screen. */}
               <Text
                 style={[styles.featuredPreview, { color: colors.textMuted }]}
                 numberOfLines={3}
@@ -199,7 +191,7 @@ export default function ExploreScreen() {
               style={styles.featuredLink}
             >
               <Text style={[styles.featuredLinkText, { color: colors.primary }]}>
-                See more
+                All {selectedMood.verses.length} verses
               </Text>
               <Ionicons name="chevron-forward" size={14} color={colors.primary} />
             </Pressable>
@@ -207,7 +199,7 @@ export default function ExploreScreen() {
         </GoldCard>
       )}
 
-      <Text style={[styles.topicsHeading, { color: colors.text }]}>Topics</Text>
+      <Text style={[styles.topicsHeading, { color: colors.text }]}>Browse all topics</Text>
     </View>
   );
 
@@ -362,14 +354,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     marginBottom: 8,
-  },
-  featuredSloka: {
-    fontFamily: "PlayfairDisplay_700Bold",
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  featuredDivider: {
-    marginVertical: 8,
   },
   featuredPreview: {
     fontSize: 14,

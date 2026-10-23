@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Concept 5 · Lotus & Bansuri, monoline: the app's gold line-art ornament style. A lotus whose central petal is a flame (jyoti), resting on a flute. -->
+  <rect width="1024" height="1024" fill="#FFF8E7"/>
+  <g transform="translate(0 28)">
+  <g fill="none" stroke="#B8860B" stroke-width="30" stroke-linecap="round" stroke-linejoin="round">
+    <!-- outer petals -->
+    <path fill="#FFF8E7" d="M470 652 C340 664 220 640 160 548 C290 532 400 576 470 652 Z"/>
+    <path fill="#FFF8E7" d="M554 652 C684 664 804 640 864 548 C734 532 624 576 554 652 Z"/>
+    <!-- inner petals -->
+    <path fill="#FFF8E7" d="M494 646 C380 640 290 560 282 400 C410 428 478 520 494 646 Z"/>
+    <path fill="#FFF8E7" d="M530 646 C644 640 734 560 742 400 C614 428 546 520 530 646 Z"/>
+    <!-- central petal = flame -->
+    <path fill="#FFF8E7" d="M512 190 C550 296 618 370 618 500 C618 590 572 650 512 650 C452 650 406 590 406 500 C406 370 474 296 512 190 Z"/>
+    <!-- bansuri -->
+    <rect x="196" y="708" width="632" height="80" rx="40"/>
+  </g>
+  <!-- flame core + flute holes (solid) -->
+  <path d="M512 404 C530 454 562 490 562 548 C562 588 540 610 512 610 C484 610 462 588 462 548 C462 490 494 454 512 404 Z" fill="#B8860B"/>
+  <g fill="#B8860B">
+    <circle cx="296" cy="748" r="13"/>
+    <circle cx="520" cy="748" r="13"/>
+    <circle cx="578" cy="748" r="13"/>
+    <circle cx="636" cy="748" r="13"/>
+    <circle cx="694" cy="748" r="13"/>
+    <rect x="244" y="708" width="16" height="80"/>
+    <rect x="764" y="708" width="16" height="80"/>
+  </g>
+  </g>
+</svg>
