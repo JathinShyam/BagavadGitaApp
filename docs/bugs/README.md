@@ -42,7 +42,7 @@ on the iOS Simulator and Android emulator — see `BUILD_LOOP.md`.
 | [BUG-012](BUG-012-ios-toggle-not-accessible.md) | P2 | iOS/Android | Settings switches: no accessible name / web state | fixed [9] |
 | [BUG-013](BUG-013-web-chapter-page-crash.md) | P1 | Web | Every chapter page crashed (resolveAssetSource) | fixed [13] |
 | [BUG-014](BUG-014-audio-stays-paused-icon-at-end.md) | P3 | Android | Play button stays ⏸ after a verse finishes | fixed [25] |
-| [BUG-015](BUG-015-verse-share-button-missing.md) | P1 | Both | No way to share a verse — the store listing says there is | open |
+| [BUG-015](BUG-015-verse-share-button-missing.md) | P1 | Both | No way to share a verse — the store listing says there is | fixed [33] |
 | [BUG-016](BUG-016-long-press-to-copy-missing.md) | P1 | Both | Onboarding says "long-press to copy"; nothing is copyable | open |
 | [BUG-017](BUG-017-daily-verse-never-reaches-chapters-11-18.md) | P1 | Both | Daily verse can never come from Chapters 11–18 (40% unreachable) | fixed [28] |
 | [BUG-018](BUG-018-rereading-verse-does-not-advance-streak.md) | P1 | Both | Re-reading a verse never advances the streak or daily goal | fixed [29] |

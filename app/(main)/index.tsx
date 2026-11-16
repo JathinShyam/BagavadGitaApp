@@ -591,13 +591,12 @@ export default function HomeScreen() {
         visible={widgetHelpOpen}
         onClose={() => setWidgetHelpOpen(false)}
       />
-      <View ref={streakShareRef} collapsable={false}>
-        <StreakShareCardView
-          streakDays={streak.currentStreak}
-          longestStreak={streak.longestStreak}
-          insight={todayPreview}
-        />
-      </View>
+      <StreakShareCardView
+        ref={streakShareRef}
+        streakDays={streak.currentStreak}
+        longestStreak={streak.longestStreak}
+        insight={todayPreview}
+      />
     </SafeAreaView>
   );
 }

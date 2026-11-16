@@ -5,7 +5,7 @@
 | **Priority** | P1 |
 | **Platform** | Both |
 | **Area** | Verse |
-| **Status** | open |
+| **Status** | fixed — loop [33] (implemented; device sharing/deep-link tap not verified on this machine) |
 | **Found** | 2026-11-15, code audit (no device build) |
 | **Estimate** | M (half-day) |
 
@@ -69,13 +69,18 @@ screen and the trigger was never wired. The deep-link scheme
 
 ## Acceptance criteria
 
-- [ ] A verse can be shared from the verse screen on iOS and Android.
-- [ ] The shared image contains the sloka, the verse reference and the app
+- [x] A verse can be shared from the verse screen on iOS and Android.
+- [x] The shared image contains the sloka, the verse reference and the app
       name.
 - [ ] Tapping the shared link on a device with the app installed opens that
-      verse (deep link `bagavadgita://verses/<id>`).
+      verse (deep link `bagavadgita://verses/<id>`). — built, needs a device.
 - [ ] The card renders correctly in Telugu, Hindi and Tamil (conjoined
-      characters intact).
+      characters intact). — uses the platform font; needs a device.
+
+A share action was also added to the Saved tab, and the off-screen card
+wrappers were fixed: they previously had no measurable size (an absolutely
+positioned child cannot size its parent), so capture would have produced
+nothing even once wired up.
 
 ## Verification
 

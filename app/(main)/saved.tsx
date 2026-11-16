@@ -1,7 +1,7 @@
 import { View, FlatList, StyleSheet, Pressable } from "react-native";
 import { Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -14,12 +14,13 @@ import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonVerseCard } from "@/components/ui/SkeletonLoader";
 import { GoldCard } from "@/components/ui/GoldCard";
 import { ScreenCornerArt, CORNER_ART } from "@/components/ui/ScreenCornerArt";
-import { ROUTES } from "@/constants/routes";
+import { ROUTES, DEEP_LINKS } from "@/constants/routes";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
 import { Spacing } from "@/theme/design-tokens";
 import { getVerseById } from "@/data/verses/verse-catalog";
 import { getVerseMeaning, getVerseSloka } from "@/lib/verse-content";
 import { getVerseForDate } from "@/lib/daily-verse";
+import { ShareCardView, shareVerseCard } from "@/services/verse-share";
 
 interface SavedVerse {
   id: string;
@@ -56,6 +57,8 @@ export default function SavedVersesScreen() {
   const router = useRouter();
   const [savedVerses, setSavedVerses] = useState<SavedVerse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [shareTarget, setShareTarget] = useState<SavedVerse | null>(null);
+  const shareCardRef = useRef<View | null>(null);
 
   const loadSavedVerses = useCallback(async () => {
     setLoading(true);
@@ -110,6 +113,39 @@ export default function SavedVersesScreen() {
     [savedVerses, loadSavedVerses]
   );
 
+  const shareSavedVerse = useCallback((item: SavedVerse) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShareTarget(item);
+  }, []);
+
+  // The card only exists after the render that mounts the target verse, so wait
+  // one frame before capturing it.
+  useEffect(() => {
+    if (!shareTarget) return;
+    let cancelled = false;
+
+    const frame = requestAnimationFrame(() => {
+      void (async () => {
+        try {
+          await shareVerseCard(
+            shareCardRef,
+            shareTarget.id,
+            `Bhagavad Gita · Chapter ${shareTarget.chapter}, Verse ${shareTarget.verse_number}`
+          );
+        } catch (error) {
+          console.error("Verse share failed:", error);
+        } finally {
+          if (!cancelled) setShareTarget(null);
+        }
+      })();
+    });
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+    };
+  }, [shareTarget]);
+
   const renderVerse = useCallback(
     ({ item }: { item: SavedVerse }) => (
       <Pressable
@@ -161,6 +197,18 @@ export default function SavedVersesScreen() {
               <Ionicons name="bookmark-outline" size={16} color={colors.primary} />
               <Text style={[styles.footerActionText, { color: colors.primary }]}>Unsave</Text>
             </Pressable>
+            <Pressable
+              onPress={(e) => {
+                e?.stopPropagation?.();
+                shareSavedVerse(item);
+              }}
+              hitSlop={8}
+              style={styles.footerAction}
+              accessibilityLabel={`Share ${formatVerseRef(item)}`}
+            >
+              <Ionicons name="share-outline" size={16} color={colors.primary} />
+              <Text style={[styles.footerActionText, { color: colors.primary }]}>Share</Text>
+            </Pressable>
             <View style={styles.footerAction}>
               <Text style={[styles.footerActionText, { color: colors.primary }]}>View Verse</Text>
               <Ionicons name="chevron-forward" size={14} color={colors.primary} />
@@ -169,7 +217,7 @@ export default function SavedVersesScreen() {
         </GoldCard>
       </Pressable>
     ),
-    [colors, openSavedVerse, removeVerse, language]
+    [colors, openSavedVerse, removeVerse, shareSavedVerse, language]
   );
 
   if (loading) {
@@ -226,6 +274,17 @@ export default function SavedVersesScreen() {
           }}
         />
       )}
+
+      {shareTarget ? (
+        <ShareCardView
+          ref={shareCardRef}
+          title={`Chapter ${shareTarget.chapter}`}
+          subtitle={`Verse ${shareTarget.verse_number}`}
+          sloka={savedVerseSloka(shareTarget, language)}
+          meaning={savedVerseMeaning(shareTarget, language)}
+          link={DEEP_LINKS.verse(shareTarget.id)}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }

@@ -819,3 +819,38 @@ with a real verse each. Not verified on a device — no adb/emulator available.
 The 14-day and 30-day clocks cannot be observed without one.
 **Backlog**    BUG-020, BUG-021 (window) and BUG-023 fixed. Still open from
 BUG-021: the `BOOT_COMPLETED` re-sync and the honest fallback copy.
+
+## [33] 2026-11-16 — Verse share loop closes (BUG-015)
+**Move**       The store listing promises image-card sharing; the card was
+rendered off-screen and the capture helper was never called. Sharing is the
+only organic growth loop this app has, and an advertised-but-absent feature is
+a review rejection risk.
+R×I×C÷E = 3×4×3÷2 = 18.
+**Plan**       Add the header action on the verse screen, a share action on
+Saved, print the deep link on the card, and make the off-screen card measurable
+so capture returns a real image.
+**Decisions**  1. Reward loop: sharing is the "share your practice" step, not a
+streak mechanic, so it lives beside bookmark/note and on Saved rather than in a
+new tab.
+2. iOS gets `Share.share({ message, url })` so the recipient receives the image
+*and* a tappable `bagavadgita://verses/<id>`. Android's Share API drops the file
+when text is present, so Android shares the image through `expo-sharing` and the
+deep link is printed on the card. Both paths still carry the link.
+3. `ShareCard` gained an optional `link` line rather than using a QR code:
+no new dependency, and the URL survives a screenshot.
+4. **The wrapper was the real bug.** `ShareCardView` was nested inside a
+`ref`'d `View` with no dimensions; an absolutely positioned child does not size
+its parent, so the captured view was 0×0. The wrappers are now the positioned
+element via `forwardRef`, which also stops the 1080×1920 streak card from
+laying out in the Home flow.
+**Ship**       `services/verse-share.tsx`, `components/verse/ShareCard.tsx`,
+`app/verses/[verseId].tsx`, `app/(main)/saved.tsx`, `app/(main)/index.tsx`,
+`__tests__/verse-share.test.ts`; BUG-015 doc + index.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 10 suites / 40 tests ✅
+**Verify**     Tests cover: no card mounted → no share, iOS payload contains
+`bagavadgita://verses/2-47` plus the PNG url, Android goes through
+`Sharing.shareAsync` with `image/png` and not `Share.share`.
+**Blocked**    No adb, emulator or iOS simulator on this machine, so the share
+sheet, the received image and the deep-link tap were not observed. Telugu,
+Hindi and Tamil conjunct rendering uses the platform font and is likewise
+unverified on device.

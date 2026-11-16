@@ -53,6 +53,7 @@ import {
   StreakShareCardView,
   captureShareCardRef,
   shareImage,
+  shareVerseCard,
 } from "@/services/verse-share";
 import { getVerseNote, setVerseNote } from "@/lib/verse-notes";
 import {
@@ -62,7 +63,7 @@ import {
 import { markPathProgressForVerse } from "@/lib/reading-paths";
 import { getDailyVerseNotificationContent, getVerseForDate } from "@/lib/daily-verse";
 
-import { ROUTES } from "@/constants/routes";
+import { ROUTES, DEEP_LINKS } from "@/constants/routes";
 import { VERSE_SEQUENCES } from "@/constants/verse-sequences";
 import { getRouteParam } from "@/lib/route-params";
 import { Spacing } from "@/theme/design-tokens";
@@ -111,6 +112,7 @@ export default function VerseDetailScreen() {
   const [isWordsExpanded, setIsWordsExpanded] = useState(false);
   const [noteText, setNoteText] = useState("");
   const [showNoteSheet, setShowNoteSheet] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const [milestoneDays, setMilestoneDays] = useState<StreakMilestone | null>(null);
   const [showMilestone, setShowMilestone] = useState(false);
   const router = useRouter();
@@ -294,6 +296,23 @@ export default function VerseDetailScreen() {
     }
   }, [verse, isSaved, showToast, bookmarkScale, language]);
 
+  const handleShareVerse = useCallback(async () => {
+    if (!verse || isSharing) return;
+    setIsSharing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await shareVerseCard(
+        shareCardRef,
+        verse.id,
+        `Bhagavad Gita · Chapter ${verse.chapter}, Verse ${verse.verse_number}`
+      );
+    } catch (error) {
+      console.error("Verse share failed:", error);
+    } finally {
+      setIsSharing(false);
+    }
+  }, [verse, isSharing]);
+
   const handleShareStreak = useCallback(async () => {
     if (!streakShareRef.current) return;
     try {
@@ -419,6 +438,15 @@ export default function VerseDetailScreen() {
           headerRight: () => (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
               <Pressable
+                onPress={handleShareVerse}
+                disabled={isSharing}
+                style={[verseScreenStyles.saveButton, isSharing && { opacity: 0.4 }]}
+                accessibilityLabel="Share verse"
+                accessibilityRole="button"
+              >
+                <Ionicons name="share-outline" size={22} color={colors.primary} />
+              </Pressable>
+              <Pressable
                 onPress={toggleSave}
                 style={verseScreenStyles.saveButton}
                 accessibilityLabel={isSaved ? "Remove from saved" : "Save verse"}
@@ -463,29 +491,20 @@ export default function VerseDetailScreen() {
         }}
       />
 
-      <View
+      <ShareCardView
         ref={shareCardRef}
-        style={{ position: "absolute", left: -9999, top: -9999, opacity: 0 }}
-        collapsable={false}
-      >
-        <ShareCardView
-          title={`Chapter ${verse.chapter}`}
-          subtitle={`Verse ${verse.verse_number}`}
-          sloka={slokaText}
-          meaning={meaningText}
-        />
-      </View>
-      <View
+        title={`Chapter ${verse.chapter}`}
+        subtitle={`Verse ${verse.verse_number}`}
+        sloka={slokaText}
+        meaning={meaningText}
+        link={DEEP_LINKS.verse(verse.id)}
+      />
+      <StreakShareCardView
         ref={streakShareRef}
-        style={{ position: "absolute", left: -9999, top: -9999, opacity: 0 }}
-        collapsable={false}
-      >
-        <StreakShareCardView
-          streakDays={streak.currentStreak}
-          longestStreak={streak.longestStreak}
-          insight={todayInsight}
-        />
-      </View>
+        streakDays={streak.currentStreak}
+        longestStreak={streak.longestStreak}
+        insight={todayInsight}
+      />
 
       <GestureDetector gesture={swipeGesture}>
         <Animated.View style={[{ flex: 1 }, animatedContentStyle]}>
