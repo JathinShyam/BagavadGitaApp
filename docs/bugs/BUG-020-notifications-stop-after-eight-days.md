@@ -5,7 +5,7 @@
 | **Priority** | P1 |
 | **Platform** | Both |
 | **Area** | Notifications / Settings |
-| **Status** | open |
+| **Status** | fixed — loop [32] (30-day identified window; DAILY floor intentionally not added, see log) |
 | **Found** | 2026-11-15, code audit |
 | **Estimate** | S (<1h) |
 

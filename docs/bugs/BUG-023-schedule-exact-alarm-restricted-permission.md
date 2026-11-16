@@ -5,7 +5,7 @@
 | **Priority** | P1 |
 | **Platform** | Android |
 | **Area** | Build / Release / Notifications |
-| **Status** | open |
+| **Status** | fixed — loop [32] (permission removed, inexact alarms) |
 | **Found** | 2026-11-15, manifest audit |
 | **Estimate** | S (<1h) |
 

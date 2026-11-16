@@ -5,7 +5,7 @@
 | **Priority** | P2 |
 | **Platform** | Android |
 | **Area** | Widget |
-| **Status** | open |
+| **Status** | fixed — loop [32] (30-day payload; boot re-sync still open) |
 | **Found** | 2026-11-15, code audit |
 | **Estimate** | S (<1h) |
 

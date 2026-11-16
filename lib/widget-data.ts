@@ -23,7 +23,7 @@ const { WidgetDataModule } = NativeModules as {
   WidgetDataModule?: { setWidgetData: (json: string) => Promise<boolean> };
 };
 
-const ROLLING_DAYS = 7;
+const ROLLING_DAYS = 30;
 const MAX_SLOKA = 72;
 const MAX_MEANING = 140;
 
@@ -33,7 +33,7 @@ function truncate(text: string, maxLen: number): string {
   return `${trimmed.slice(0, maxLen - 1).trim()}…`;
 }
 
-/** Build a 7-day feed of daily verses so the native widget can pick today's entry. */
+/** Build a 30-day feed of daily verses so the native widget can pick today's entry. */
 export function buildWidgetSyncPayload(
   now: Date = new Date(),
   language: ContentLanguage = DEFAULT_CONTENT_LANGUAGE

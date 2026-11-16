@@ -782,3 +782,40 @@ libraries add ~15 MB on top of the 68 MB export. Reaching 60 MB needs audio
 delivered on demand (explicitly out of scope in BUG-022) or Play Asset
 Delivery. Current size is under Play's 150 MB limit, which was the shipping
 blocker; the 60 MB figure was an estimate that did not survive measurement.
+
+## [32] 2026-11-16 — Reminders survive 30 days; restricted permission gone (BUG-020/021/023)
+**Move**       The reminder window was 7 days and rebuilt only when the app
+opened, so a user who skipped a week lost the app's only re-engagement channel
+silently. The widget had the same 7-day payload and fell back to "refresh the
+app" on day 8. And the manifest declared `SCHEDULE_EXACT_ALARM`, a
+Play-restricted permission the app never requests and does not need.
+R×I×C÷E = 4×4×4÷1 = 64.
+**Plan**       Widen the rich notification window and the widget payload to 30
+days; identify every notification so cancels are scoped; move the preference
+keys into `STORAGE_KEYS`; drop the permission.
+**Decisions**  **Deviated from BUG-020 task 1 on purpose.** It asked for a
+repeating `DAILY` trigger as a floor beside the 7-day rich window. A DAILY
+trigger cannot be given a start date, so it would fire at the same minute as
+the rich notification every day — two pings for a week, which is a regression,
+not a fix. Thirty days of verse-specific one-shots meets the bug's own
+acceptance criteria (14+ days offline, verse preview intact), produces exactly
+one notification per day, and stays under iOS's 64-pending limit. The cost is
+that after 30 silent days the reminder stops; a user gone that long is past
+retention. If the operator wants an infinite floor, the honest version is a
+single generic DAILY trigger *instead of* the rich window, not both.
+Also: cancels are scoped to the `daily-verse-` identifier prefix so a future
+streak-at-risk or milestone notification cannot be silently killed; a one-time
+version marker clears the pre-update notifications, whose generated ids the
+scoped cancel cannot recognise.
+**Ship**       `constants/storage-keys.ts`, `lib/daily-verse-notifications.ts`,
+`lib/widget-data.ts`, `android/app/src/main/AndroidManifest.xml`,
+`__tests__/daily-verse-notifications.test.ts`, `__tests__/widget-data.test.ts`;
+BUG-020/021/023 docs + index.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 9 suites / 37 tests ✅
+**Verify**     Unit tests cover: 30 identified notifications scheduled, 30
+unique ids, cancel touches only `daily-verse-*` and spares another feature's
+id, nothing scheduled when disabled, widget payload spans 30 consecutive days
+with a real verse each. Not verified on a device — no adb/emulator available.
+The 14-day and 30-day clocks cannot be observed without one.
+**Backlog**    BUG-020, BUG-021 (window) and BUG-023 fixed. Still open from
+BUG-021: the `BOOT_COMPLETED` re-sync and the honest fallback copy.

@@ -1,9 +1,15 @@
 /**
  * Daily verse local notifications: permissions, scheduling, and persistence.
  *
- * Schedules a rolling window of one-shot DATE notifications (next 7 days) so each
- * day's tray text can include that day's verse preview. Re-call on foreground /
- * preference changes to refresh the window.
+ * Schedules a rolling window of one-shot DATE notifications (next 30 days) so
+ * each day's tray text can include that day's verse preview. Re-call on
+ * foreground / preference changes to refresh the window.
+ *
+ * Why 30 one-shots instead of a repeating trigger: a DAILY trigger cannot start
+ * on a future date, so pairing it with the rich window would fire two
+ * notifications at the same minute every day. Thirty days of specific verses
+ * covers the "user does not open the app" case without duplicates and stays
+ * well under iOS's 64-pending-notification limit.
  *
  * Uses lazy require() only when {@link shouldLoadExpoNotifications} is true.
  */
@@ -11,12 +17,15 @@
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+import { STORAGE_KEYS } from "@/constants/storage-keys";
+
 import {
   getDailyVerseNotificationContent,
   getVerseForDate,
 } from "./daily-verse";
 import { shouldLoadExpoNotifications } from "./notification-availability";
 import { getStoredContentLanguage } from "./chapter-content";
+import { getLocalDateKey } from "./date-keys";
 
 function getNotifications(): typeof import("expo-notifications") | null {
   if (!shouldLoadExpoNotifications()) return null;
@@ -30,11 +39,13 @@ function getNotifications(): typeof import("expo-notifications") | null {
   }
 }
 
-const STORAGE_KEY_ENABLED = "dailyVerseNotificationsEnabled";
-const STORAGE_KEY_TIME = "dailyVerseNotificationTime";
 const DEFAULT_TIME = "08:00";
 const ANDROID_CHANNEL_ID = "daily-verse";
-const ROLLING_DAYS = 7;
+const ROLLING_DAYS = 30;
+/** Every notification we own shares this prefix, so cancel can target only ours. */
+const IDENTIFIER_PREFIX = "daily-verse-";
+/** Bump when the identifier scheme changes; forces a one-time cleanup. */
+const SCHEDULE_VERSION = "2";
 
 let scheduleInFlight: Promise<void> | null = null;
 
@@ -48,8 +59,8 @@ export async function getStoredPreferences(): Promise<{
 }> {
   try {
     const [enabledRaw, time] = await AsyncStorage.multiGet([
-      STORAGE_KEY_ENABLED,
-      STORAGE_KEY_TIME,
+      STORAGE_KEYS.DAILY_VERSE_NOTIFICATIONS_ENABLED,
+      STORAGE_KEYS.DAILY_VERSE_NOTIFICATION_TIME,
     ]);
     return {
       enabled: enabledRaw[1] === "true",
@@ -66,8 +77,8 @@ export async function setStoredPreferences(
 ): Promise<void> {
   try {
     await AsyncStorage.multiSet([
-      [STORAGE_KEY_ENABLED, enabled ? "true" : "false"],
-      [STORAGE_KEY_TIME, time],
+      [STORAGE_KEYS.DAILY_VERSE_NOTIFICATIONS_ENABLED, enabled ? "true" : "false"],
+      [STORAGE_KEYS.DAILY_VERSE_NOTIFICATION_TIME, time],
     ]);
   } catch (error) {
     console.error("Failed to save notification preferences:", error);
@@ -106,11 +117,36 @@ function parseTime(timeStr: string): { hour: number; minute: number } {
   };
 }
 
+/**
+ * Cancel only this feature's notifications. The app may schedule other types in
+ * future (streak-at-risk, milestones) and `cancelAllScheduled…` would silently
+ * kill them too.
+ */
 export async function cancelDailyVerseNotifications(): Promise<void> {
   if (Platform.OS === "web") return;
   const Notifications = getNotifications();
   if (!Notifications) return;
+
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  await Promise.all(
+    scheduled
+      .filter((request) => request.identifier.startsWith(IDENTIFIER_PREFIX))
+      .map((request) => Notifications.cancelScheduledNotificationAsync(request.identifier))
+  );
+}
+
+/**
+ * Builds before this version scheduled notifications with generated ids, which
+ * the scoped cancel above cannot recognise. Clear them once so the upgrade does
+ * not leave a second reminder firing alongside the new one.
+ */
+async function clearLegacySchedule(
+  Notifications: typeof import("expo-notifications")
+): Promise<void> {
+  const stored = await AsyncStorage.getItem(STORAGE_KEYS.NOTIFICATION_SCHEDULE_VERSION);
+  if (stored === SCHEDULE_VERSION) return;
   await Notifications.cancelAllScheduledNotificationsAsync();
+  await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATION_SCHEDULE_VERSION, SCHEDULE_VERSION);
 }
 
 function slotDate(base: Date, hour: number, minute: number, dayOffset: number): Date {
@@ -121,7 +157,7 @@ function slotDate(base: Date, hour: number, minute: number, dayOffset: number): 
 }
 
 /**
- * Schedule the next 7 days of one-shot notifications, each with that day's verse text.
+ * Schedule the next 30 days of one-shot notifications, each with that day's verse text.
  */
 export async function scheduleNextDailyVerseNotification(): Promise<void> {
   if (Platform.OS === "web") return;
@@ -145,10 +181,11 @@ export async function scheduleNextDailyVerseNotification(): Promise<void> {
       return;
     }
 
-    await cancelDailyVerseNotifications();
-
     const Notifications = getNotifications();
     if (!Notifications) return;
+
+    await clearLegacySchedule(Notifications);
+    await cancelDailyVerseNotifications();
 
     const language = await getStoredContentLanguage();
     const { hour, minute } = parseTime(time);
@@ -164,6 +201,7 @@ export async function scheduleNextDailyVerseNotification(): Promise<void> {
       const { title, body, verseId } = getDailyVerseNotificationContent(verse);
 
       await Notifications.scheduleNotificationAsync({
+        identifier: `${IDENTIFIER_PREFIX}${getLocalDateKey(triggerAt)}`,
         content: {
           title,
           body,
