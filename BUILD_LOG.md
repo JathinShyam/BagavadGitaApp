@@ -619,3 +619,51 @@ Connect by the 1.0.1 upload; Android matched to 3). Android APK
 uploaded to App Store Connect ("Uploaded package is processing").
 **Note**     TestFlight still lists 1.0.1 (2); it can be expired in App Store
 Connect — it can't be submitted as 1.0 anyway.
+
+## [27] 2026-11-16 — Full audit: product, competitors, motion, typography
+**Move**       Nothing shipped. A code-and-assets audit of the whole app
+against what the store listing, the onboarding and the README *claim* it
+does, plus live App Store competitor data (24 apps, ratings + review counts
+via the iTunes Search API).
+**Findings**   25 bugs in the retention engine; 12 more in motion, type and
+colour; 8 ship-blockers.
+- **The daily verse can never come from Chapters 11–18.** `getDayOfYear`
+  (max 366) indexes a 640-entry catalogue, so the modulo never wraps.
+  257 of 640 verses (40%) are unreachable, including 18.66 and 12.13-14.
+- **Re-reading a verse never advances the streak.** The `alreadyRead`
+  early-return in `reading-progress-context.tsx` fires before the activity
+  and streak updates — so Home's "Continue reading" button can never count.
+- **Every modal's exit animation is dead code** — `if (!visible) return
+  null` unmounts before the exit `withTiming` gets a frame.
+- **Reanimated 4 changed `withSpring` defaults** to `mass: 4,
+  stiffness: 900`; 10 of 13 existing calls inherit it and land at damping
+  ratios of 0.067–0.13 (visibly wobbly).
+- **The bundle is 175 MB** (701 MP3s = 143 MB; the icon alone is 11 MB at
+  3660×3660) — over Play's 150 MB limit.
+- **Gold text fails WCAG AA** on the cream theme (3.07:1; `success` at
+  2.63:1).
+- **Letter-spacing breaks Indic conjuncts** in the sloka, the meaning and
+  the app title.
+**Shipped**   Documentation only — no app code changed.
+- `docs/reviews/app-critique.md` — product, competitor and store-readiness
+  critique with the feature-gap matrix, monetization/ASO analysis and a
+  two-week launch plan.
+- `docs/reviews/motion-and-typography-spec.md` — every animation inventoried
+  with exact durations, easings, spring configs, an 8-step type scale and a
+  contrast-verified palette.
+- `docs/reviews/README.md` — index and how it all connects.
+- `docs/bugs/BUG-015` … `BUG-027` — 13 sprint tasks in the repo's own
+  format (impact / repro / evidence / cause / task / acceptance /
+  verification), ready to hand to a sub-agent.
+- `docs/bugs/README.md` — index updated with the 13 new rows.
+- `CLAUDE.md` §"Read these, in order" — reviews added as step 4.
+- `AGENTS.md` — reviews and bugs added to the agent-docs table, with a
+  pointer to read them before touching streak / daily verse / notifications
+  / widget / bundle / motion / typography.
+- `BUILD_LOOP.md` §10 — reviews added as research inputs; a "Ship blockers"
+  table added to the Bug Backlog in fix order; 15 Feature Backlog items
+  added from the audit's gaps.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 4 suites / 11 tests ✅
+**State**      No app code changed; every finding is filed as a task. The
+gate was green before and after. Nothing was verified on device — the
+audit was static, and each bug file carries its own verification steps.

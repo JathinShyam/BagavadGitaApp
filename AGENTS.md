@@ -109,5 +109,10 @@ After Reanimated/worklets upgrades: clear cache / rebuild native (`README` troub
 | [AGENTS.md](AGENTS.md) | This file — always-on project orientation |
 | [.cursor/rules/](.cursor/rules/) | Persistent Cursor rules (core / UI / verse data) |
 | [.cursor/skills/](.cursor/skills/) | Task skills (UI polish, verse content, practice systems) |
+| [docs/reviews/](docs/reviews/) | Deep audits (product + competitors; motion + typography) — reference |
+| [docs/bugs/](docs/bugs/) | Sprint tasks, one per bug, sub-agent ready |
+| [docs/store/listing.md](docs/store/listing.md) | Store listing copy — the single source for both stores |
 
 Read the matching skill when the user asks for UI polish, verse/category content changes, or practice/notification/widget work.
+
+**Before touching the streak, daily verse, notifications, widget, bundle size, motion, or typography — read [`docs/reviews/`](docs/reviews/README.md).** The findings there are already written up as sprint tasks in [`docs/bugs/`](docs/bugs/README.md) (BUG-015 … BUG-027); pick those up rather than re-deriving them.
