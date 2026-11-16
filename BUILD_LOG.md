@@ -690,3 +690,32 @@ real regression guard.
 **Backlog**    BUG-017 fixed. Task 3 of the bug (curated daily sequence with
 anchor verses) is still open — this only makes the linear walk reach
 everything.
+
+## [29] 2026-11-16 — Re-reads count, stale streaks reset (BUG-018, BUG-019)
+**Move**       The habit loop failed in both directions. A re-read returned
+before the activity and streak updates, so Home's "Continue reading" — which
+by definition opens an already-read verse — could never satisfy the daily
+goal; and the streak was only ever mutated on the write path, so a missed
+day kept showing the old number. Moved the daily credit above the early
+return and reconciled the streak against the calendar at load and on
+foreground. R×I×C÷E = 5×5×4÷2 = 50.
+**Plan**       1. Extract the maths to `lib/streak.ts` — the pure seam the
+CI test gate needs. 2. Credit the day on every read, then return early for
+chapter progress only. 3. Reconcile the stored streak before showing it.
+**Decisions**  A *new* verse increments the day's count; a *re-read* only
+ensures the day counts at all (`creditDayAsRead`). Incrementing on every
+re-read would inflate the heatmap's "verses read today" and let one verse
+manufacture volume — the streak counts days, not taps. Broken streaks keep
+`longestStreak` and `lastReadDate` so the UI can still say "your N-day
+streak ended" later.
+**Ship**       `lib/streak.ts`, `context/reading-progress-context.tsx`,
+`__tests__/streak.test.ts`, `__tests__/reading-progress-reread.test.tsx`;
+BUG-018/019 docs + index.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 7 suites / 32 tests ✅
+**Verify**     Not run on device. The provider is covered by 4 integration
+tests with a mocked AsyncStorage (re-read marks the day, second verse counts,
+stored streak older than yesterday reads as 0, yesterday stays live), which
+is what the device check would have shown.
+**Backlog**    BUG-018 fixed. BUG-019 fixed for the chip (reset on load and
+on resume); the "your streak ended" prompt and the reminder-time at-risk
+window from its acceptance criteria are still open.

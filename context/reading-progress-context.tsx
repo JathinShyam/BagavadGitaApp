@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef, createContext, useContext } from "react";
+import { AppState } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { CHAPTER_VERSE_COUNTS } from "@/constants/chapter-verse-counts";
 import { DAILY_VERSE_GOAL } from "@/constants/milestones";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
-import {
-  addDaysToDateKey,
-  daysBetweenDateKeys,
-  getLocalDateKey,
-} from "@/lib/date-keys";
+import { addDaysToDateKey, getLocalDateKey } from "@/lib/date-keys";
+import { computeNextStreak, creditDayAsRead, reconcileStreak } from "@/lib/streak";
 import type {
   LastReadVerse,
   ReadingActivity,
@@ -122,11 +120,19 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
       if (storedStreak) {
         try {
           const parsed = JSON.parse(storedStreak);
-          setStreak({
+          const loaded: ReadingStreak = {
             currentStreak: parsed.currentStreak ?? 0,
             longestStreak: parsed.longestStreak ?? 0,
             lastReadDate: parsed.lastReadDate ?? null,
-          });
+          };
+          // A streak cannot survive a missed day, but the stored value can —
+          // reconcile before showing it (BUG-019).
+          const reconciled = reconcileStreak(loaded, getLocalDateKey());
+          streakRef.current = reconciled;
+          setStreak(reconciled);
+          if (reconciled !== loaded) {
+            await AsyncStorage.setItem(STORAGE_KEYS.READING_STREAK, JSON.stringify(reconciled));
+          }
         } catch {}
       }
       if (storedLastRead) {
@@ -170,6 +176,27 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
     }
   }, []);
 
+  /**
+   * Decay the streak against the calendar. Runs at load and whenever the app
+   * returns to the foreground, so a missed day is reflected in the chip without
+   * waiting for the next read (BUG-019).
+   */
+  const reconcileStreakForToday = useCallback(() => {
+    const current = streakRef.current;
+    const next = reconcileStreak(current, getLocalDateKey());
+    if (next === current) return;
+    streakRef.current = next;
+    setStreak(next);
+    saveStreak(next);
+  }, [saveStreak]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") reconcileStreakForToday();
+    });
+    return () => subscription.remove();
+  }, [reconcileStreakForToday]);
+
   const saveActivity = useCallback(async (data: ReadingActivity) => {
     try {
       await AsyncStorage.setItem(STORAGE_KEYS.READING_ACTIVITY, JSON.stringify(data));
@@ -194,23 +221,43 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
       const todayKey = getLocalDateKey();
 
       const currentProgress = progressRef.current;
-      const currentActivity = activityRef.current;
-      const currentStreak = streakRef.current;
-
       const chapterProgress = currentProgress[chapterKey] || {
         versesRead: [] as string[],
         totalVerses,
         isComplete: false,
       };
-
       const alreadyRead = chapterProgress.versesRead.includes(verseKey);
+
+      // Daily credit is independent of whether the verse is new to the user:
+      // re-reading still marks the day as read and keeps the streak alive
+      // (BUG-018). Without this, Home's "Continue reading" — which by
+      // definition reopens an already-read verse — could never count.
+      const currentActivity = activityRef.current;
+      const nextActivity = creditDayAsRead(currentActivity, todayKey, !alreadyRead);
+      if (nextActivity !== currentActivity) {
+        activityRef.current = nextActivity;
+        setActivity(nextActivity);
+        await saveActivity(nextActivity);
+      }
+      const dailyGoalJustCompleted =
+        (currentActivity[todayKey] ?? 0) < DAILY_VERSE_GOAL &&
+        (nextActivity[todayKey] ?? 0) >= DAILY_VERSE_GOAL;
+
+      const currentStreak = streakRef.current;
+      const nextStreak = computeNextStreak(currentStreak, todayKey);
+      if (nextStreak !== currentStreak) {
+        streakRef.current = nextStreak;
+        setStreak(nextStreak);
+        await saveStreak(nextStreak);
+      }
+
       if (alreadyRead) {
         return {
           isNewCompletion: false,
           totalVerses,
           wasNewlyRead: false,
-          currentStreak: currentStreak.currentStreak,
-          dailyGoalJustCompleted: false,
+          currentStreak: nextStreak.currentStreak,
+          dailyGoalJustCompleted,
         };
       }
 
@@ -232,42 +279,6 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
       progressRef.current = newProgress;
       setProgress(newProgress);
       await saveProgress(newProgress);
-
-      const prevCount = currentActivity[todayKey] ?? 0;
-      const nextActivity: ReadingActivity = {
-        ...currentActivity,
-        [todayKey]: prevCount + 1,
-      };
-      activityRef.current = nextActivity;
-      setActivity(nextActivity);
-      await saveActivity(nextActivity);
-      const dailyGoalJustCompleted =
-        prevCount < DAILY_VERSE_GOAL && nextActivity[todayKey] >= DAILY_VERSE_GOAL;
-
-      let nextStreak = currentStreak;
-      if (currentStreak.lastReadDate !== todayKey) {
-        let streakCount: number;
-        if (!currentStreak.lastReadDate) {
-          streakCount = 1;
-        } else {
-          const diffDays = daysBetweenDateKeys(currentStreak.lastReadDate, todayKey);
-          if (diffDays === 1) {
-            streakCount = currentStreak.currentStreak + 1;
-          } else if (diffDays > 1) {
-            streakCount = 1;
-          } else {
-            streakCount = currentStreak.currentStreak || 1;
-          }
-        }
-        nextStreak = {
-          currentStreak: streakCount,
-          longestStreak: Math.max(currentStreak.longestStreak, streakCount),
-          lastReadDate: todayKey,
-        };
-        streakRef.current = nextStreak;
-        setStreak(nextStreak);
-        await saveStreak(nextStreak);
-      }
 
       return {
         isNewCompletion,

@@ -5,7 +5,7 @@
 | **Priority** | P1 |
 | **Platform** | Both |
 | **Area** | Home / Verse |
-| **Status** | open |
+| **Status** | fixed — loop [29] (daily credit runs before the early return; provider test) |
 | **Found** | 2026-11-15, code audit |
 | **Estimate** | S (<1h) |
 

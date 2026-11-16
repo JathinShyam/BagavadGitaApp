@@ -45,8 +45,8 @@ on the iOS Simulator and Android emulator — see `BUILD_LOOP.md`.
 | [BUG-015](BUG-015-verse-share-button-missing.md) | P1 | Both | No way to share a verse — the store listing says there is | open |
 | [BUG-016](BUG-016-long-press-to-copy-missing.md) | P1 | Both | Onboarding says "long-press to copy"; nothing is copyable | open |
 | [BUG-017](BUG-017-daily-verse-never-reaches-chapters-11-18.md) | P1 | Both | Daily verse can never come from Chapters 11–18 (40% unreachable) | fixed [28] |
-| [BUG-018](BUG-018-rereading-verse-does-not-advance-streak.md) | P1 | Both | Re-reading a verse never advances the streak or daily goal | open |
-| [BUG-019](BUG-019-stale-streak-chip-after-missed-day.md) | P1 | Both | Streak chip shows a stale streak after a missed day | open |
+| [BUG-018](BUG-018-rereading-verse-does-not-advance-streak.md) | P1 | Both | Re-reading a verse never advances the streak or daily goal | fixed [29] |
+| [BUG-019](BUG-019-stale-streak-chip-after-missed-day.md) | P1 | Both | Streak chip shows a stale streak after a missed day | fixed [29] |
 | [BUG-020](BUG-020-notifications-stop-after-eight-days.md) | P1 | Both | Daily notifications stop permanently after 8 days | open |
 | [BUG-021](BUG-021-widget-goes-stale-after-eight-days.md) | P2 | Android | Widget shows a placeholder after 8 days without opening the app | open |
 | [BUG-022](BUG-022-bundle-is-175mb.md) | P1 | Both | Bundle is 175 MB; the icon alone is 11 MB | open |

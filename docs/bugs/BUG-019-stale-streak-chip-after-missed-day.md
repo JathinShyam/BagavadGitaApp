@@ -5,7 +5,7 @@
 | **Priority** | P1 |
 | **Platform** | Both |
 | **Area** | Home |
-| **Status** | open |
+| **Status** | fixed — loop [29] (chip resets on load/resume; broken-streak prompt still open) |
 | **Found** | 2026-11-15, code audit |
 | **Estimate** | S (<1h) |
 
