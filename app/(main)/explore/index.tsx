@@ -110,7 +110,7 @@ export default function ExploreScreen() {
 
   const ListHeader = (
     <View>
-      <Text style={[styles.moodHeading, { color: colors.primary }]}>How do you feel?</Text>
+      <Text style={[styles.moodHeading, { color: colors.brandText }]}>How do you feel?</Text>
       <Text style={[styles.moodSub, { color: colors.textMuted }]}>
         One verse for this moment
       </Text>
@@ -138,7 +138,7 @@ export default function ExploreScreen() {
             >
               <Text
                 style={{
-                  color: selected ? colors.primary : colors.text,
+                  color: selected ? colors.brandText : colors.text,
                   fontWeight: "600",
                   fontSize: 13,
                 }}
@@ -159,7 +159,7 @@ export default function ExploreScreen() {
               resizeMode="contain"
             />
             <View style={styles.featuredBody}>
-              <Text style={[styles.featuredLabel, { color: colors.primary }]}>
+              <Text style={[styles.featuredLabel, { color: colors.brandText }]}>
                 For {selectedMood.name}
               </Text>
               <Text style={[styles.featuredRef, { color: colors.text }]}>
@@ -179,7 +179,7 @@ export default function ExploreScreen() {
           <View style={styles.featuredActions}>
             <Pressable
               onPress={() => router.push(ROUTES.verse(featuredVerse.id))}
-              style={[styles.featuredBtn, { backgroundColor: colors.primary }]}
+              style={[styles.featuredBtn, { backgroundColor: colors.brandText }]}
             >
               <Ionicons name="book-outline" size={16} color={colors.onPrimary} />
               <Text style={{ color: colors.onPrimary, fontWeight: "700", fontSize: 15 }}>
@@ -190,10 +190,10 @@ export default function ExploreScreen() {
               onPress={() => router.push(ROUTES.exploreCategory(selectedMood.id))}
               style={styles.featuredLink}
             >
-              <Text style={[styles.featuredLinkText, { color: colors.primary }]}>
+              <Text style={[styles.featuredLinkText, { color: colors.brandText }]}>
                 All {selectedMood.verses.length} verses
               </Text>
-              <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+              <Ionicons name="chevron-forward" size={14} color={colors.brandText} />
             </Pressable>
           </View>
         </GoldCard>
@@ -215,7 +215,7 @@ export default function ExploreScreen() {
           opacity={isDark ? 0.6 : 0.82}
           tint={false}
         />
-        <Text style={[styles.title, { color: colors.primary }]}>Explore</Text>
+        <Text style={[styles.title, { color: colors.brandText }]}>Explore</Text>
         <Text style={[styles.subtitle, { color: colors.textMuted }]}>
           Find wisdom for where you are
         </Text>

@@ -165,12 +165,12 @@ export default function SavedVersesScreen() {
                 },
               ]}
             >
-              <Ionicons name="book-outline" size={14} color={colors.primary} />
+              <Ionicons name="book-outline" size={14} color={colors.brandText} />
             </View>
             <Text style={[styles.verseRef, { color: colors.text }]} numberOfLines={1}>
               {formatVerseRef(item)}
             </Text>
-            <Ionicons name="bookmark" size={18} color={colors.primary} />
+            <Ionicons name="bookmark" size={18} color={colors.brandText} />
           </View>
 
           <Text style={[styles.sloka, { color: colors.text }]} numberOfLines={2}>
@@ -179,7 +179,7 @@ export default function SavedVersesScreen() {
 
           {savedVerseMeaning(item, language) ? (
             <Text style={[styles.meaning, { color: colors.textMuted }]} numberOfLines={2}>
-              <Text style={{ color: colors.primary, fontWeight: "700" }}>Meaning: </Text>
+              <Text style={{ color: colors.brandText, fontWeight: "700" }}>Meaning: </Text>
               {savedVerseMeaning(item, language)}
             </Text>
           ) : null}
@@ -194,8 +194,8 @@ export default function SavedVersesScreen() {
               style={styles.footerAction}
               accessibilityLabel="Remove from saved"
             >
-              <Ionicons name="bookmark-outline" size={16} color={colors.primary} />
-              <Text style={[styles.footerActionText, { color: colors.primary }]}>Unsave</Text>
+              <Ionicons name="bookmark-outline" size={16} color={colors.brandText} />
+              <Text style={[styles.footerActionText, { color: colors.brandText }]}>Unsave</Text>
             </Pressable>
             <Pressable
               onPress={(e) => {
@@ -206,12 +206,12 @@ export default function SavedVersesScreen() {
               style={styles.footerAction}
               accessibilityLabel={`Share ${formatVerseRef(item)}`}
             >
-              <Ionicons name="share-outline" size={16} color={colors.primary} />
-              <Text style={[styles.footerActionText, { color: colors.primary }]}>Share</Text>
+              <Ionicons name="share-outline" size={16} color={colors.brandText} />
+              <Text style={[styles.footerActionText, { color: colors.brandText }]}>Share</Text>
             </Pressable>
             <View style={styles.footerAction}>
-              <Text style={[styles.footerActionText, { color: colors.primary }]}>View Verse</Text>
-              <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+              <Text style={[styles.footerActionText, { color: colors.brandText }]}>View Verse</Text>
+              <Ionicons name="chevron-forward" size={14} color={colors.brandText} />
             </View>
           </View>
         </GoldCard>
@@ -227,7 +227,7 @@ export default function SavedVersesScreen() {
         edges={["top"]}
       >
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.primary }]}>Saved</Text>
+          <Text style={[styles.title, { color: colors.brandText }]}>Saved</Text>
         </View>
         <View style={savedScreenStyles.listContainer}>
           {[1, 2, 3].map((i) => (
@@ -249,7 +249,7 @@ export default function SavedVersesScreen() {
           style={styles.headerArt}
           opacity={isDark ? 0.5 : 0.62}
         />
-        <Text style={[styles.title, { color: colors.primary }]}>Saved</Text>
+        <Text style={[styles.title, { color: colors.brandText }]}>Saved</Text>
         <Text style={[styles.subtitle, { color: colors.textMuted }]}>
           Verses you want to return to
         </Text>

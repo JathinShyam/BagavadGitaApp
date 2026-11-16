@@ -220,7 +220,7 @@ export default function OnboardingScreen() {
             { backgroundColor: colors.primary + "14" },
           ]}
         >
-          <Ionicons name={item.icon} size={40} color={colors.primary} />
+          <Ionicons name={item.icon} size={40} color={colors.brandText} />
         </Animated.View>
 
         <Animated.View
@@ -230,7 +230,7 @@ export default function OnboardingScreen() {
           <Text style={[styles.title, { color: colors.textMuted }]}>
             {item.title}
           </Text>
-          <Text style={[styles.subtitle, { color: colors.primary }]}>
+          <Text style={[styles.subtitle, { color: colors.brandText }]}>
             {item.kind === "language" ? getAppTitle(language) : item.subtitle}
           </Text>
           <Text style={[styles.description, { color: colors.textMuted }]}>
@@ -254,7 +254,7 @@ export default function OnboardingScreen() {
                     style={[
                       styles.timeChip,
                       selected
-                        ? { backgroundColor: colors.primary }
+                        ? { backgroundColor: colors.brandText }
                         : {
                             backgroundColor: "transparent",
                             borderColor: colors.outline + "55",
@@ -290,7 +290,7 @@ export default function OnboardingScreen() {
                     style={[
                       styles.timeChip,
                       selected
-                        ? { backgroundColor: colors.primary }
+                        ? { backgroundColor: colors.brandText }
                         : {
                             backgroundColor: "transparent",
                             borderColor: colors.outline + "55",
@@ -325,7 +325,7 @@ export default function OnboardingScreen() {
           key={index}
           index={index}
           scrollX={scrollX}
-          color={colors.primary}
+          color={colors.brandText}
         />
       ))}
     </View>
@@ -369,7 +369,7 @@ export default function OnboardingScreen() {
             <Pressable
               onPress={enableReminderAndFinish}
               disabled={enablingReminder}
-              style={[styles.actionButton, { backgroundColor: colors.primary }]}
+              style={[styles.actionButton, { backgroundColor: colors.brandText }]}
             >
               <Text style={[styles.actionButtonText, { color: colors.onPrimary }]}>
                 {enablingReminder ? "Enabling…" : "Enable reminders"}
@@ -390,7 +390,7 @@ export default function OnboardingScreen() {
         ) : (
           <Pressable
             onPress={goToNextSlide}
-            style={[styles.actionButton, { backgroundColor: colors.primary }]}
+            style={[styles.actionButton, { backgroundColor: colors.brandText }]}
           >
             <Text style={[styles.actionButtonText, { color: colors.onPrimary }]}>
               Next

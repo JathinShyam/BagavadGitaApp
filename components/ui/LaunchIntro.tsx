@@ -155,12 +155,12 @@ export function LaunchIntro({ onFinish }: Props) {
               { backgroundColor: colors.primary + (isDark ? "18" : "1a") },
             ]}
           >
-            <Ionicons name="book" size={42} color={colors.primary} />
+            <Ionicons name="book" size={42} color={colors.brandText} />
           </Animated.View>
         </View>
 
         <Animated.View style={[styles.titleBlock, titleStyle]}>
-          <Text style={[styles.telugu, { color: colors.primary }]}>{getAppTitle(language)}</Text>
+          <Text style={[styles.telugu, { color: colors.brandText }]}>{getAppTitle(language)}</Text>
           <Animated.View
             style={[styles.rule, lineStyle, { backgroundColor: colors.primary }]}
           />

@@ -426,9 +426,9 @@ export default function VerseDetailScreen() {
           options={{
             headerTitle: `Chapter ${verse.chapter} · Verse ${verse.verse_number}`,
             headerStyle: { backgroundColor: colors.background },
-            headerTintColor: colors.primary,
+            headerTintColor: colors.brandText,
             headerTitleStyle: {
-              color: colors.primary,
+              color: colors.brandText,
               fontSize: 15,
               fontFamily: "PlayfairDisplay_700Bold",
             },
@@ -465,7 +465,7 @@ export default function VerseDetailScreen() {
                 accessibilityLabel="Share verse"
                 accessibilityRole="button"
               >
-                <Ionicons name="share-outline" size={22} color={colors.primary} />
+                <Ionicons name="share-outline" size={22} color={colors.brandText} />
               </Pressable>
               <Pressable
                 onPress={toggleSave}
@@ -477,7 +477,7 @@ export default function VerseDetailScreen() {
                   <Ionicons
                     name={isSaved ? "bookmark" : "bookmark-outline"}
                     size={24}
-                    color={colors.primary}
+                    color={colors.brandText}
                   />
                 </Animated.View>
               </Pressable>
@@ -493,7 +493,7 @@ export default function VerseDetailScreen() {
                 <Ionicons
                   name={noteText.trim() ? "create" : "create-outline"}
                   size={22}
-                  color={colors.primary}
+                  color={colors.brandText}
                 />
               </Pressable>
             </View>
@@ -501,9 +501,9 @@ export default function VerseDetailScreen() {
           headerStyle: {
             backgroundColor: colors.background,
           },
-          headerTintColor: colors.primary,
+          headerTintColor: colors.brandText,
           headerTitleStyle: {
-            color: colors.primary,
+            color: colors.brandText,
             fontSize: 15,
             fontFamily: "PlayfairDisplay_700Bold",
           },
@@ -558,7 +558,7 @@ export default function VerseDetailScreen() {
                 >
                   {slokaText}
                 </Text>
-                <Text style={[localStyles.verseRef, { color: colors.primary }]}>
+                <Text style={[localStyles.verseRef, { color: colors.brandText }]}>
                   || {verseRef} ||
                 </Text>
                 <OrnamentalDivider
@@ -573,8 +573,8 @@ export default function VerseDetailScreen() {
             <Animated.View entering={FadeIn.delay(200)}>
               <GoldCard style={localStyles.sectionCard}>
                 <View style={localStyles.sectionHeader}>
-                  <Ionicons name="book" size={18} color={colors.primary} />
-                  <Text style={[localStyles.sectionTitle, { color: colors.primary }]}>
+                  <Ionicons name="book" size={18} color={colors.brandText} />
+                  <Text style={[localStyles.sectionTitle, { color: colors.brandText }]}>
                     Meaning
                   </Text>
                 </View>
@@ -598,8 +598,8 @@ export default function VerseDetailScreen() {
                     accessibilityLabel={isWordsExpanded ? "Collapse word meanings" : "Expand word meanings"}
                   >
                     <View style={localStyles.sectionHeader}>
-                      <Ionicons name="book-outline" size={18} color={colors.primary} />
-                      <Text style={[localStyles.sectionTitle, { color: colors.primary }]}>
+                      <Ionicons name="book-outline" size={18} color={colors.brandText} />
+                      <Text style={[localStyles.sectionTitle, { color: colors.brandText }]}>
                         Word meanings
                       </Text>
                     </View>
@@ -662,8 +662,8 @@ export default function VerseDetailScreen() {
                   }
                 >
                   <View style={localStyles.sectionHeader}>
-                    <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.primary} />
-                    <Text style={[localStyles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>
+                    <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.brandText} />
+                    <Text style={[localStyles.sectionTitle, { color: colors.brandText, marginBottom: 0 }]}>
                       Commentary
                     </Text>
                   </View>
@@ -716,12 +716,12 @@ export default function VerseDetailScreen() {
             accessibilityRole="button"
             accessibilityLabel="Previous verse"
           >
-            <Ionicons name="chevron-back" size={24} color={colors.primary} />
+            <Ionicons name="chevron-back" size={24} color={colors.brandText} />
           </Pressable>
           <View style={{ flex: 1 }}>
             <VerseAudioPlayer
               audioSource={verseAudioSource}
-              primaryColor={colors.primary}
+              primaryColor={colors.brandText}
               textMutedColor={colors.textMuted}
               outlineColor={colors.outline}
               autoPlay={autoPlayAudio}
@@ -735,7 +735,7 @@ export default function VerseDetailScreen() {
             accessibilityRole="button"
             accessibilityLabel="Next verse"
           >
-            <Ionicons name="chevron-forward" size={24} color={colors.primary} />
+            <Ionicons name="chevron-forward" size={24} color={colors.brandText} />
           </Pressable>
         </View>
       ) : (
@@ -757,8 +757,8 @@ export default function VerseDetailScreen() {
               { borderColor: colors.primary + "88", opacity: hasPrevVerse ? 1 : 0.3 },
             ]}
           >
-            <Text style={{ fontSize: 16, color: colors.primary }}>◀</Text>
-            <Text style={[verseScreenStyles.navButtonText, { color: colors.primary }]}>
+            <Text style={{ fontSize: 16, color: colors.brandText }}>◀</Text>
+            <Text style={[verseScreenStyles.navButtonText, { color: colors.brandText }]}>
               Previous
             </Text>
           </Pressable>
@@ -770,10 +770,10 @@ export default function VerseDetailScreen() {
               { borderColor: colors.primary + "88", opacity: hasNextVerse ? 1 : 0.3 },
             ]}
           >
-            <Text style={[verseScreenStyles.navButtonText, { color: colors.primary }]}>
+            <Text style={[verseScreenStyles.navButtonText, { color: colors.brandText }]}>
               Next
             </Text>
-            <Text style={{ fontSize: 16, color: colors.primary }}>▶</Text>
+            <Text style={{ fontSize: 16, color: colors.brandText }}>▶</Text>
           </Pressable>
         </View>
       )}
@@ -813,7 +813,7 @@ export default function VerseDetailScreen() {
               { backgroundColor: colors.surface, borderTopColor: colors.primary + "33" },
             ]}
           >
-            <Text style={[localStyles.actionTitle, { color: colors.primary }]}>
+            <Text style={[localStyles.actionTitle, { color: colors.brandText }]}>
               Verse {verseRef}
             </Text>
             <Pressable
@@ -825,7 +825,7 @@ export default function VerseDetailScreen() {
               accessibilityRole="button"
               accessibilityLabel="Copy verse"
             >
-              <Ionicons name="copy-outline" size={20} color={colors.primary} />
+              <Ionicons name="copy-outline" size={20} color={colors.brandText} />
               <Text style={[localStyles.actionLabel, { color: colors.text }]}>
                 Copy verse
               </Text>
@@ -839,7 +839,7 @@ export default function VerseDetailScreen() {
               accessibilityRole="button"
               accessibilityLabel="Share verse"
             >
-              <Ionicons name="share-outline" size={20} color={colors.primary} />
+              <Ionicons name="share-outline" size={20} color={colors.brandText} />
               <Text style={[localStyles.actionLabel, { color: colors.text }]}>
                 Share verse
               </Text>
@@ -866,7 +866,7 @@ export default function VerseDetailScreen() {
           >
             <View style={[localStyles.noteSheet, { backgroundColor: colors.surface }]}>
               <View style={localStyles.noteHeader}>
-                <Text style={[localStyles.noteTitle, { color: colors.primary }]}>
+                <Text style={[localStyles.noteTitle, { color: colors.brandText }]}>
                   Your reflection
                 </Text>
                 <Pressable

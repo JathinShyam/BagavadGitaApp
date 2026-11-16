@@ -187,11 +187,11 @@ export const SkeletonVerseDetail: React.FC = () => {
               orbStyle,
             ]}
           >
-            <Text style={[styles.om, { color: colors.primary }]}>ॐ</Text>
+            <Text style={[styles.om, { color: colors.brandText }]}>ॐ</Text>
           </Animated.View>
         </View>
 
-        <Text style={[styles.openingTitle, { color: colors.primary }]}>
+        <Text style={[styles.openingTitle, { color: colors.brandText }]}>
           Opening the verse
         </Text>
         <Text style={[styles.openingHint, { color: colors.textMuted }]}>

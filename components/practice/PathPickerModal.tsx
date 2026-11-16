@@ -56,7 +56,7 @@ export function PathPickerModal({ visible, onClose, onSelect }: Props) {
                   { backgroundColor: colors.surface, borderColor: colors.outline },
                 ]}
               >
-                <Text style={[styles.cardTitle, { color: colors.primary }]}>
+                <Text style={[styles.cardTitle, { color: colors.brandText }]}>
                   {getPathTitle(path, language)}
                 </Text>
                 <Text style={[styles.cardBody, { color: colors.textMuted }]}>

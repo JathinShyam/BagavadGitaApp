@@ -15,7 +15,7 @@ export default function NotFoundScreen() {
           This screen doesn&apos;t exist.
         </Text>
         <Link href="/" style={styles.link}>
-          <Text variant="bodyLarge" style={{ color: colors.primary }}>
+          <Text variant="bodyLarge" style={{ color: colors.brandText }}>
             Go to home screen!
           </Text>
         </Link>

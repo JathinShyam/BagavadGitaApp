@@ -109,7 +109,7 @@ export function PracticeCalendarModal({ visible, activity, onClose }: Props) {
           </View>
           <Pressable
             onPress={onClose}
-            style={[styles.closeBtn, { backgroundColor: colors.primary }]}
+            style={[styles.closeBtn, { backgroundColor: colors.brandText }]}
           >
             <Text style={{ color: colors.onPrimary, fontWeight: "700" }}>Close</Text>
           </Pressable>

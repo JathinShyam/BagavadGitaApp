@@ -889,3 +889,37 @@ payload.
 must be rebuilt; the copy sheet, clipboard paste and toast were not observed on
 a device. `npm install` had to be rerun with `--legacy-peer-deps` (matching CI)
 to refresh the lockfile.
+
+## [35] 2026-11-16 — Decorative gold and text gold split (BUG-025)
+**Move**       `primary` was doing six jobs; as text it was 3.07:1 on cream and
+white on it was 3.25:1, so the app's main CTA failed WCAG AA in the theme every
+store screenshot uses.
+R×I×C÷E = 4×4×3÷2 = 24.
+**Plan**       Split decorative gold from text gold, darken the status colours,
+move every text/icon use to `brandText`, and lock the ratios with a test.
+**Decisions**  1. `brand` is the decorative gold (#B8860B / #E6B74A) and
+`brandText` is the readable gold (#8A6410 light, #E6B74A dark). `primary`
+remains as a deprecated alias of `brand` so the ~150 border/tint/ornament call
+sites did not need a risky rename; only text and meaning-bearing icons moved.
+2. Filled CTAs (Read Today, Start this path, onboarding Next, modal Save, toast
+actions) now use `brandText` as the fill: white on it is 5.37:1. Progress
+fills, ornaments, dividers, rings and confetti stay `brand`.
+3. `success` #2E7D32, `danger` #C62828 and `warning` #B26A00 follow the
+typography/colour spec. Warning is 4.0:1 — it is only used as the toast
+warning glyph, which clears the 3:1 graphic threshold; do not use it for small
+text.
+**Ship**       `theme/design-tokens.ts`, 21 app/component files (text/icon
+colours and CTA fills), `__tests__/contrast.test.ts`; BUG-025 doc + index.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 12 suites / 58 tests ✅
+**Verify**     The new test computes WCAG ratios from the real tokens: five
+light text tokens on both background and surface, the CTA label, the warning
+glyph at 3:1, and the same set in dark. It also asserts decorative `brand`
+stays *below* AA on cream, so a future "just darken primary" change cannot
+quietly merge the two jobs again.
+**Observe**    1. Gold text now reads as ink rather than glitter; the ornaments
+and rules still carry the brand, so the identity survives. 2. The CTA is
+visibly deeper, which pulls the eye to the action instead of blending into the
+cream. 3. The header icons and tab labels were the quietest failures — they
+were never checked because they are not body copy.
+**Blocked**    No emulator or simulator here, so the contrast test is the
+verification. Screenshots in both themes on device are still owed.

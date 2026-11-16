@@ -5,6 +5,11 @@ export const Palette = {
     background: "#FFF8E7",
     surface: "#F5F2EA",
     surfaceElevated: "#EFEEE8",
+    /** Decorative gold: borders, ornaments, fills, rings. Never text. */
+    brand: "#B8860B",
+    /** Gold for text and meaning-bearing icons (5.07:1 on background). */
+    brandText: "#8A6410",
+    /** @deprecated Use `brand` for decoration and `brandText` for text. */
     primary: "#B8860B",
     primarySoft: "#DAA520",
     onPrimary: "#FFFFFF",
@@ -12,15 +17,20 @@ export const Palette = {
     textMuted: "#6B6B6B",
     outline: "#B8860B",
     cardBorder: "#B8860B",
-    success: "#4CAF50",
-    warning: "#FF9800",
-    danger: "#F44336",
+    success: "#2E7D32",
+    warning: "#B26A00",
+    danger: "#C62828",
   },
   dark: {
     // Dark theme - current dark gold theme
     background: "#0B0A09",
     surface: "#11100E",
     surfaceElevated: "#161512",
+    /** Decorative gold: borders, ornaments, fills, rings. Never text. */
+    brand: "#E6B74A",
+    /** Gold for text and meaning-bearing icons (10.58:1 on background). */
+    brandText: "#E6B74A",
+    /** @deprecated Use `brand` for decoration and `brandText` for text. */
     primary: "#E6B74A",
     primarySoft: "#F2D48A",
     onPrimary: "#1B1302",

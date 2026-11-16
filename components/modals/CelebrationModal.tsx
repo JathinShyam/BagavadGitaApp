@@ -213,11 +213,11 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
           <View
             style={[styles.starBg, { backgroundColor: colors.primary + "20" }]}
           >
-            <Ionicons name="trophy" size={64} color={colors.primary} />
+            <Ionicons name="trophy" size={64} color={colors.brandText} />
           </View>
         </Animated.View>
 
-        <Text style={[styles.title, { color: colors.primary }]}>
+        <Text style={[styles.title, { color: colors.brandText }]}>
           Congratulations!
         </Text>
 
@@ -236,7 +236,7 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
 
         <Pressable
           onPress={onClose}
-          style={[styles.button, { backgroundColor: colors.primary }]}
+          style={[styles.button, { backgroundColor: colors.brandText }]}
         >
           <Text style={[styles.buttonText, { color: colors.onPrimary }]}>
             Continue Learning

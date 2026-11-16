@@ -147,9 +147,9 @@ export default function ChapterDetailScreen() {
           headerStyle: {
             backgroundColor: colors.background,
           },
-          headerTintColor: colors.primary,
+          headerTintColor: colors.brandText,
           headerTitleStyle: {
-            color: colors.primary,
+            color: colors.brandText,
             fontSize: 18,
             fontFamily: "PlayfairDisplay_700Bold",
           },
@@ -228,13 +228,13 @@ export default function ChapterDetailScreen() {
                   {chapterDescription}
                 </Text>
                 <View style={chapterPageStyles.contextActions}>
-                  <Text style={[chapterPageStyles.contextActionText, { color: colors.primary }]}>
+                  <Text style={[chapterPageStyles.contextActionText, { color: colors.brandText }]}>
                     {isContextExpanded ? "Show less" : "Read full context"}
                   </Text>
                   <Ionicons
                     name={isContextExpanded ? "chevron-up" : "chevron-down"}
                     size={14}
-                    color={colors.primary}
+                    color={colors.brandText}
                   />
                 </View>
               </Pressable>
@@ -258,11 +258,11 @@ export default function ChapterDetailScreen() {
             <GoldCard compact style={chapterPageStyles.progressCard}>
               <View style={chapterPageStyles.progressTopRow}>
                 <View style={chapterPageStyles.progressMeta}>
-                  <Ionicons name="book-outline" size={16} color={colors.primary} />
+                  <Ionicons name="book-outline" size={16} color={colors.brandText} />
                   <Text
                     style={[
                       chapterPageStyles.progressValue,
-                      { color: chapterDone ? colors.primary : colors.text },
+                      { color: chapterDone ? colors.brandText : colors.text },
                     ]}
                   >
                     {chapterDone
@@ -271,7 +271,7 @@ export default function ChapterDetailScreen() {
                   </Text>
                 </View>
                 {chapterDone && (
-                  <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
+                  <Ionicons name="checkmark-circle" size={16} color={colors.brandText} />
                 )}
               </View>
 

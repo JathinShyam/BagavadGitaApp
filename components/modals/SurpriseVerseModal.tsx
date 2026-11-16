@@ -258,7 +258,7 @@ const Sparkle: React.FC<{ delay: number; startX: number; startY: number }> = ({
 
   return (
     <Animated.View style={[styles.sparkle, animatedStyle]}>
-      <Ionicons name="sparkles" size={16} color={colors.primary} />
+      <Ionicons name="sparkles" size={16} color={colors.brandText} />
     </Animated.View>
   );
 };
@@ -411,7 +411,7 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
         <View style={styles.header}>
           <Animated.View style={[styles.iconWrapper, iconStyle]}>
             <View style={[styles.iconCircle, { backgroundColor: colors.primary + "20" }]}>
-              <Ionicons name="sparkles" size={32} color={colors.primary} />
+              <Ionicons name="sparkles" size={32} color={colors.brandText} />
             </View>
           </Animated.View>
           <Text style={[styles.title, { color: colors.text }]}>
@@ -450,7 +450,7 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
             <Animated.View entering={SlideInUp.delay(400).springify()}>
               <Pressable
                 onPress={() => onComplete(finalSelection.chapter, finalSelection.verse)}
-                style={[styles.goButton, { backgroundColor: colors.primary }]}
+                style={[styles.goButton, { backgroundColor: colors.brandText }]}
                 accessibilityLabel="Open verse"
                 accessibilityRole="button"
               >
@@ -488,7 +488,7 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
               accessibilityLabel="Try another random verse"
               accessibilityRole="button"
             >
-              <Ionicons name="shuffle" size={18} color={colors.primary} />
+              <Ionicons name="shuffle" size={18} color={colors.brandText} />
               <Text style={[styles.shuffleAgainText, { color: colors.text }]}>
                 Try Another
               </Text>

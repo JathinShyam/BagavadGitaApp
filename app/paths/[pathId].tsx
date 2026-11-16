@@ -106,7 +106,7 @@ export default function PathDetailScreen() {
         options={{
           title: pathTitle,
           headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.primary,
+          headerTintColor: colors.brandText,
           headerTitleStyle: {
             color: colors.text,
             fontFamily: "PlayfairDisplay_700Bold",
@@ -134,7 +134,7 @@ export default function PathDetailScreen() {
         {!isThisActive && (
           <Pressable
             onPress={startPath}
-            style={[styles.primaryCta, { backgroundColor: colors.primary }]}
+            style={[styles.primaryCta, { backgroundColor: colors.brandText }]}
           >
             <Text style={[styles.primaryCtaText, { color: colors.onPrimary }]}>
               Start this path
@@ -148,7 +148,7 @@ export default function PathDetailScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               openDayVerse(nextDay.verseIds[0]);
             }}
-            style={[styles.primaryCta, { backgroundColor: colors.primary }]}
+            style={[styles.primaryCta, { backgroundColor: colors.brandText }]}
           >
             <Text style={[styles.nextEyebrow, { color: colors.onPrimary + "CC" }]}>
               Up next
@@ -177,11 +177,11 @@ export default function PathDetailScreen() {
                     styles.timelineDot,
                     {
                       backgroundColor: done
-                        ? colors.primary
+                        ? colors.brandText
                         : isNext
-                          ? colors.primary
+                          ? colors.brandText
                           : colors.outline + "66",
-                      borderColor: done || isNext ? colors.primary : colors.outline + "66",
+                      borderColor: done || isNext ? colors.brandText : colors.outline + "66",
                     },
                   ]}
                 >
@@ -214,7 +214,7 @@ export default function PathDetailScreen() {
                   <Text
                     style={[
                       styles.dayNum,
-                      { color: isNext || done ? colors.primary : colors.textMuted },
+                      { color: isNext || done ? colors.brandText : colors.textMuted },
                     ]}
                   >
                     Day {day.day}
@@ -223,7 +223,7 @@ export default function PathDetailScreen() {
                     <Text style={[styles.doneLabel, { color: colors.success }]}>Done</Text>
                   )}
                   {isNext && (
-                    <Text style={[styles.doneLabel, { color: colors.primary }]}>Now</Text>
+                    <Text style={[styles.doneLabel, { color: colors.brandText }]}>Now</Text>
                   )}
                 </View>
                 <Text style={[styles.dayTitle, { color: colors.text }]}>

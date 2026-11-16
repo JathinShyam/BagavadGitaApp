@@ -57,7 +57,7 @@ export function VerseListCard({
         <RNText
           style={[
             styles.badgeText,
-            { color: colors.primary, fontSize: badge.length > 4 ? 11 : 14 },
+            { color: colors.brandText, fontSize: badge.length > 4 ? 11 : 14 },
           ]}
           numberOfLines={1}
           adjustsFontSizeToFit
@@ -69,7 +69,7 @@ export function VerseListCard({
 
       <View style={styles.body}>
         {!!title && (
-          <RNText style={[styles.title, { color: colors.primary }]} numberOfLines={1}>
+          <RNText style={[styles.title, { color: colors.brandText }]} numberOfLines={1}>
             {title}
           </RNText>
         )}
@@ -91,7 +91,7 @@ export function VerseListCard({
         ]}
       >
         {read && <Ionicons name="checkmark" size={15} color={colors.success} />}
-        <RNText style={[styles.actionText, { color: colors.primary }]}>
+        <RNText style={[styles.actionText, { color: colors.brandText }]}>
           {read ? "Read" : "Open"}
         </RNText>
       </View>

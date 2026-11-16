@@ -302,7 +302,7 @@ export default function HomeScreen() {
                   )}
                 </View>
 
-                <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+                <Ionicons name="chevron-forward" size={18} color={colors.brandText} />
               </View>
             </Animated.View>
           </Pressable>
@@ -327,7 +327,7 @@ export default function HomeScreen() {
             entering={FadeInUp.delay(80).duration(500)}
             style={[styles.hero, { backgroundColor: colors.surface }]}
           >
-            <Text style={[styles.heroEyebrow, { color: colors.primary }]}>Today</Text>
+            <Text style={[styles.heroEyebrow, { color: colors.brandText }]}>Today</Text>
             <Text style={[styles.heroRef, { color: colors.text }]}>
               Chapter {todaysVerse.chapter} · Verse {todaysVerse.verse_number}
             </Text>
@@ -351,7 +351,7 @@ export default function HomeScreen() {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 router.push(ROUTES.verse(todaysVerse.id));
               }}
-              style={[styles.heroCta, { backgroundColor: colors.primary }]}
+              style={[styles.heroCta, { backgroundColor: colors.brandText }]}
             >
               <Text style={[styles.heroCtaText, { color: colors.onPrimary }]}>
                 Read Today’s Verse
@@ -378,7 +378,7 @@ export default function HomeScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Continue reading"
               >
-                <Ionicons name="book-outline" size={18} color={colors.primary} />
+                <Ionicons name="book-outline" size={18} color={colors.brandText} />
                 <Text style={[styles.actionLinkText, { color: colors.text }]}>
                   Continue reading
                 </Text>
@@ -392,7 +392,7 @@ export default function HomeScreen() {
             accessibilityRole="button"
             accessibilityLabel="Surprise verse"
           >
-            <Ionicons name="gift-outline" size={18} color={colors.primary} />
+            <Ionicons name="gift-outline" size={18} color={colors.brandText} />
             <Text style={[styles.actionLinkText, { color: colors.text }]}>Surprise</Text>
           </Pressable>
         </View>
@@ -420,10 +420,10 @@ export default function HomeScreen() {
             hitSlop={8}
             style={styles.pathsLinkRow}
           >
-            <Text style={[styles.sectionMeta, { color: colors.primary }]}>
+            <Text style={[styles.sectionMeta, { color: colors.brandText }]}>
               {totalProgress}%
             </Text>
-            <Text style={[styles.pathsLink, { color: colors.primary }]}>
+            <Text style={[styles.pathsLink, { color: colors.brandText }]}>
               Guided paths ›
             </Text>
           </Pressable>
@@ -445,7 +445,7 @@ export default function HomeScreen() {
                   styles.filterChip,
                   selected
                     ? {
-                        backgroundColor: colors.primary,
+                        backgroundColor: colors.brandText,
                         borderColor: colors.primary,
                       }
                     : {
@@ -457,7 +457,7 @@ export default function HomeScreen() {
                 <Text
                   style={[
                     styles.filterChipText,
-                    { color: selected ? colors.onPrimary : colors.primary },
+                    { color: selected ? colors.onPrimary : colors.brandText },
                   ]}
                 >
                   {f.label}
@@ -513,7 +513,7 @@ export default function HomeScreen() {
         style={[styles.fixedBrandBar, { backgroundColor: colors.background }]}
       >
         <Text
-          style={[styles.brand, { color: colors.primary }]}
+          style={[styles.brand, { color: colors.brandText }]}
           numberOfLines={1}
           adjustsFontSizeToFit
         >
@@ -534,8 +534,8 @@ export default function HomeScreen() {
           ]}
           accessibilityLabel="Open reading calendar. Long press to share streak."
         >
-          <Ionicons name="flame" size={14} color={colors.primary} />
-          <Text style={[styles.streakText, { color: colors.primary }]}>
+          <Ionicons name="flame" size={14} color={colors.brandText} />
+          <Text style={[styles.streakText, { color: colors.brandText }]}>
             {getStreakLabel(streak.currentStreak)}
             {streak.longestStreak > 0 ? ` · Best ${streak.longestStreak}` : ""}
           </Text>

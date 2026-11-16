@@ -87,9 +87,9 @@ export default function MilestoneModal({ visible, days, onClose, onShare }: Prop
           ]}
         >
           <View style={[styles.badge, { backgroundColor: colors.primary + "22" }]}>
-            <Ionicons name="flame" size={36} color={colors.primary} />
+            <Ionicons name="flame" size={36} color={colors.brandText} />
           </View>
-          <Text style={[styles.days, { color: colors.primary }]}>{days}</Text>
+          <Text style={[styles.days, { color: colors.brandText }]}>{days}</Text>
           <Text style={[styles.title, { color: colors.text }]}>{copy.title}</Text>
           <Text style={[styles.body, { color: colors.textMuted }]}>{copy.body}</Text>
           <View style={styles.actions}>
@@ -103,7 +103,7 @@ export default function MilestoneModal({ visible, days, onClose, onShare }: Prop
             )}
             <Pressable
               onPress={onClose}
-              style={[styles.primary, { backgroundColor: colors.primary }]}
+              style={[styles.primary, { backgroundColor: colors.brandText }]}
             >
               <Text style={{ color: colors.onPrimary, fontWeight: "700" }}>Continue</Text>
             </Pressable>

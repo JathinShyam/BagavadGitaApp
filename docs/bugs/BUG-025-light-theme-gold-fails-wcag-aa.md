@@ -5,7 +5,7 @@
 | **Priority** | P1 |
 | **Platform** | Both |
 | **Area** | All screens |
-| **Status** | open |
+| **Status** | fixed — loop [35] (palette split + contrast test) |
 | **Found** | 2026-11-15, contrast computation |
 | **Estimate** | M (half-day) |
 
@@ -68,12 +68,12 @@ use need different values.
 
 ## Acceptance criteria
 
-- [ ] Every text/meaning-bearing icon combination in the light theme is at
+- [x] Every text/meaning-bearing icon combination in the light theme is at
       least 4.5:1 (3:1 for large text).
-- [ ] The primary CTA button's label passes AA.
-- [ ] The "Read today" checkmark and "Day complete" label are legible.
-- [ ] The dark theme is unchanged and still passes.
-- [ ] A test asserts the palette ratios.
+- [x] The primary CTA button's label passes AA.
+- [x] The "Read today" checkmark and "Day complete" label are legible.
+- [x] The dark theme is unchanged and still passes.
+- [x] A test asserts the palette ratios.
 
 ## Verification
 
