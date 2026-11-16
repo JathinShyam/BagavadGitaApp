@@ -5,7 +5,7 @@
 | **Priority** | P1 |
 | **Platform** | Both |
 | **Area** | Home / Notifications / Widget |
-| **Status** | open |
+| **Status** | fixed — loop [28] (linear walk now reaches the whole catalogue; curated sequence still open) |
 | **Found** | 2026-11-15, code audit + instrumented test |
 | **Estimate** | S (<1h) |
 

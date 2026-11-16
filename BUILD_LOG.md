@@ -667,3 +667,26 @@ colour; 8 ship-blockers.
 **State**      No app code changed; every finding is filed as a task. The
 gate was green before and after. Nothing was verified on device — the
 audit was static, and each bug file carries its own verification steps.
+
+## [28] 2026-11-16 — Daily verse reaches all 18 chapters (BUG-017)
+**Move**       The daily verse is the product's heartbeat — Home, the widget
+and the notification — but it was indexed by day-of-year (1–366) into a
+640-entry catalogue, so 257 verses (40%, every one in Chapters 11–18) could
+never be shown. Replaced the index with a day-since-epoch counter.
+R×I×C÷E = 5×4×3÷1 = 60.
+**Plan**       Counter in `lib/daily-verse.ts`; a regression test that walks a
+real 640-day cycle through the public API, not the raw index.
+**Decisions**  `getVerseForDate` stays the single entry point — Home, the
+widget and the notification all call it, so one change keeps them in sync
+(asserted by a test). Dropped `getDayOfYear` instead of leaving it unused.
+Wrapped the modulo so dates before the 2020 epoch resolve instead of
+returning `undefined`.
+**Ship**       `lib/daily-verse.ts`, `__tests__/daily-verse.test.ts`;
+BUG-017 doc + index.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 5 suites / 16 tests ✅
+**Verify**     Not run on device — pure selection logic. The test was run
+against the old implementation first: 4 of 5 cases fail there, so it is a
+real regression guard.
+**Backlog**    BUG-017 fixed. Task 3 of the bug (curated daily sequence with
+anchor verses) is still open — this only makes the linear walk reach
+everything.
