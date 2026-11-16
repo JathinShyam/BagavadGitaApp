@@ -49,7 +49,7 @@ on the iOS Simulator and Android emulator — see `BUILD_LOOP.md`.
 | [BUG-019](BUG-019-stale-streak-chip-after-missed-day.md) | P1 | Both | Streak chip shows a stale streak after a missed day | fixed [29] |
 | [BUG-020](BUG-020-notifications-stop-after-eight-days.md) | P1 | Both | Daily notifications stop permanently after 8 days | open |
 | [BUG-021](BUG-021-widget-goes-stale-after-eight-days.md) | P2 | Android | Widget shows a placeholder after 8 days without opening the app | open |
-| [BUG-022](BUG-022-bundle-is-175mb.md) | P1 | Both | Bundle is 175 MB; the icon alone is 11 MB | open |
+| [BUG-022](BUG-022-bundle-is-175mb.md) | P1 | Both | Bundle is 175 MB; the icon alone is 11 MB | partial [31] |
 | [BUG-023](BUG-023-schedule-exact-alarm-restricted-permission.md) | P1 | Android | `SCHEDULE_EXACT_ALARM` is a Play-restricted permission | open |
 | [BUG-024](BUG-024-ci-uses-wrong-jdk-and-node.md) | P1 | Both | CI builds on JDK 11 / Node 18 with no test or lint gate | fixed [30] |
 | [BUG-025](BUG-025-light-theme-gold-fails-wcag-aa.md) | P1 | Both | Gold text fails WCAG AA on the cream theme | open |

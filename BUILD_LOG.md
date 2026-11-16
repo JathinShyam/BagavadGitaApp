@@ -750,3 +750,35 @@ by policy, so this only proves the commands the workflow calls.
 Expo packages, add the `expo-asset` peer, and decide whether to keep the
 native folders (the app.json/prebuild warning) — that is a dependency +
 native-rebuild pass, not a CI edit.
+
+## [31] 2026-11-16 — Bundle 175 MB → 68 MB (BUG-022, partial)
+**Move**       `data/verses/audio-mapper.ts` statically requires 701 MP3s, so
+Metro embedded 143 MB of audio in every build — past Play's 150 MB base-module
+limit once images and the Hermes bundle are added. Re-encoded the audio to
+mono AAC and shrank the artwork. R×I×C÷E = 4×5×3÷2 = 30.
+**Plan**       One reproducible audio script; icon at 1024²; topic art to WebP;
+drop the unused font; measure the exported payload.
+**Decisions**  1. 20 kbps mono AAC at 24 kHz. The sources were already 64 kbps
+stereo, so the win comes from bitrate, not channels; 20 k is telephone-grade,
+which suits recited verse. `scripts/reencode-audio.sh` is now the opposite of
+what it was — it used to *raise* the bitrate to 128 k.
+2. Chapter JPGs re-compressed at q80 (only −0.7 MB) but not resized or moved to
+WebP — the art is full-bleed and this commit already rewrites 1400 files.
+3. Icon quantised to 192 colours to clear the <512 KB bar. 24-bit PNG at 1024²
+was 1.38 MB; 256 colours was 530 KB; 192 gives 439 KB with no visible banding.
+**Ship**       `scripts/reencode-audio.sh`, `data/verses/audio-mapper.ts`,
+701 MP3 → M4A, `assets/images/{icon,adaptive-icon}.png`,
+20 topic backgrounds → WebP + `constants/topic-icons.ts`, chapter JPGs,
+`assets/fonts/SpaceMono-Regular.ttf` deleted; BUG-022 doc + index.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 9 suites / 37 tests ✅
+**Verify**     All 701 M4A probe as AAC mono with a positive duration; the
+mapper references exactly those 701 files and no orphans remain; zero MP3s.
+`npx expo export --platform android` = **68 MB** (52 MB assets + 16.5 MB Hermes
+bytecode). Not installed on a device — no emulator or adb on this machine.
+**Blocked**    The "< 60 MB AAB" target is **not met** and cannot be met by
+re-encoding. Two thirds of what remains is not audio: the Hermes bundle is
+16.5 MB because `data/` is 14 MB of four-language scripture, and native
+libraries add ~15 MB on top of the 68 MB export. Reaching 60 MB needs audio
+delivered on demand (explicitly out of scope in BUG-022) or Play Asset
+Delivery. Current size is under Play's 150 MB limit, which was the shipping
+blocker; the 60 MB figure was an estimate that did not survive measurement.

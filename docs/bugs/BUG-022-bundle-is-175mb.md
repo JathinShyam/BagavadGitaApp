@@ -5,7 +5,7 @@
 | **Priority** | P1 |
 | **Platform** | Both |
 | **Area** | Build / Release |
-| **Status** | open |
+| **Status** | partially fixed — loop [31] (assets 175 MB → 55 MB; export 68 MB. <60 MB AAB needs on-demand audio, see log) |
 | **Found** | 2026-11-15, asset audit |
 | **Estimate** | M (half-day) |
 
