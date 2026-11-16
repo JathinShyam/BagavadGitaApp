@@ -21,6 +21,9 @@ import { getStoredContentLanguage } from "./chapter-content";
 function getNotifications(): typeof import("expo-notifications") | null {
   if (!shouldLoadExpoNotifications()) return null;
   try {
+    // Loaded lazily so Expo Go (which has no expo-notifications native module)
+    // does not crash at import time.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require("expo-notifications");
   } catch {
     return null;

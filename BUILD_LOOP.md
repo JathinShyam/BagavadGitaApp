@@ -171,11 +171,13 @@ with `git log master..build-loop` and decides what goes where.
 ```bash
 npm run lint                  # expo lint — must exit 0
 npx tsc --noEmit              # must print nothing
-npx jest --watchAll=false     # all suites green
+npm test                      # jest, single run — all suites green
 ```
 
 Read each command's own exit status — never pipe it into `tail` and trust
-the pipe. `npm run test` uses `--watchAll` and hangs; don't use it.
+the pipe. `npm run test:watch` is the watch-mode variant; never use it in CI.
+`.github/workflows/android-release.yml` runs this same gate before any build,
+so a red gate fails the PR instead of the release.
 
 ## 7. Devices — verified commands
 

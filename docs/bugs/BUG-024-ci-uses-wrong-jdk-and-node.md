@@ -5,7 +5,7 @@
 | **Priority** | P1 |
 | **Platform** | Both |
 | **Area** | Build / CI |
-| **Status** | open |
+| **Status** | fixed — loop [30] (gate blocks the build; expo-doctor advisory, see log) |
 | **Found** | 2026-11-15, workflow audit |
 | **Estimate** | S (<1h) |
 

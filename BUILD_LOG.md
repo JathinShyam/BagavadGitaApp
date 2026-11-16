@@ -719,3 +719,34 @@ is what the device check would have shown.
 **Backlog**    BUG-018 fixed. BUG-019 fixed for the chip (reset on load and
 on resume); the "your streak ended" prompt and the reminder-time at-risk
 window from its acceptance criteria are still open.
+
+## [30] 2026-11-16 — CI runs the gate before every build (BUG-024)
+**Move**       CI built with JDK 11 / Node 18 and verified only that image
+extensions matched their contents — no lint, no types, no tests. A red suite
+could reach a release unnoticed. Added a blocking `quality` job that the build
+job now depends on. R×I×C÷E = 4×4×3÷1 = 48.
+**Plan**       Gate job first, build second; one-shot test script; document the
+changed gate in BUILD_LOOP §6.
+**Decisions**  1. `npm test` is now `jest` (single run) and watch moved to
+`test:watch`. 2. `expo lint` only covered `/src`, `/app` and `/components` —
+the gate was blind to `lib/` and `context/`, exactly where Phase A's fixes
+live. The script is now `expo lint . --max-warnings=0`, with `.expo/` and
+`.history/` ignored (both git-ignored, both full of generated/history files)
+and the one real warning — a deliberate lazy `require("expo-notifications")`
+that keeps Expo Go from crashing — silenced with a reason. 3. `expo-doctor`
+is advisory (`continue-on-error`): it already reports pre-existing debt (9
+patch-level packages behind, a missing `expo-asset` peer, a prebuild/app.json
+warning), and a gate that is red on day one gets switched off.
+**Ship**       `.github/workflows/android-release.yml`, `package.json`,
+`eslint.config.js`, `lib/daily-verse-notifications.ts`, `BUILD_LOOP.md` §6;
+BUG-024 doc + index.
+**Gate**       lint ✅ (whole repo, 0 warnings) · tsc ✅ (0) · jest 7 suites /
+32 tests ✅
+**Verify**     Proved the gate bites: a deliberate type error exits tsc `2`, a
+deliberate unused local exits lint `1`, and `npm test` now exits `0` instead
+of hanging. The pipeline itself was not run on GitHub — `build-loop` is local
+by policy, so this only proves the commands the workflow calls.
+**Backlog**    BUG-024 fixed. New debt to schedule: refresh the 9 patch-level
+Expo packages, add the `expo-asset` peer, and decide whether to keep the
+native folders (the app.json/prebuild warning) — that is a dependency +
+native-rebuild pass, not a CI edit.
