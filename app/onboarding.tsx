@@ -110,7 +110,7 @@ const slides: OnboardingSlide[] = [
     title: "Save & Bookmark",
     subtitle: "Your Favorites",
     description:
-      "Double-tap any verse to bookmark it. Long-press to copy text. Swipe left or right to navigate between verses effortlessly.",
+      "Double-tap any verse to bookmark it. Long-press to copy or share it. Swipe left or right to navigate between verses effortlessly.",
   },
   {
     id: "4",

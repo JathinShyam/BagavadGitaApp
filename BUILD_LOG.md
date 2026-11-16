@@ -854,3 +854,38 @@ laying out in the Home flow.
 sheet, the received image and the deep-link tap were not observed. Telugu,
 Hindi and Tamil conjunct rendering uses the platform font and is likewise
 unverified on device.
+
+## [34] 2026-11-16 — Long-press copies the verse (BUG-016)
+**Move**       Onboarding has always told users to long-press to copy, but no
+text was selectable and there was no clipboard code. For a book app that is a
+product defect, and the instruction is a trust defect.
+R×I×C÷E = 3×3×2÷1 = 18.
+**Plan**       Long-press the sloka for a Copy/Share sheet, make the meaning
+and commentary selectable, add `expo-clipboard`, and correct the onboarding
+sentence.
+**Decisions**  1. Long-press opens a small bottom sheet with **Copy verse** and
+**Share verse** instead of copying silently: the same gesture can then serve
+both actions, and the copy includes the reference (`2.47`) rather than only
+whatever the user selected.
+2. **Deliberate deviation:** the sloka is *not* `selectable`. A selectable
+`Text` consumes the long press for native selection on both platforms, so the
+sheet and free selection cannot share the gesture. The phase asked for both;
+the long-press copy with a reference was the behaviour users are told to
+expect, so it wins. Meaning and commentary remain `selectable` for free-form
+selection.
+3. The copy payload lives in `lib/verse-copy.ts` so the reference format is
+testable without mounting the screen.
+4. Onboarding slide 3 now reads "Long-press to copy or share it", which is
+what the gesture actually does.
+**Ship**       `lib/verse-copy.ts`, `app/verses/[verseId].tsx`,
+`app/onboarding.tsx`, `package.json` + lock (`expo-clipboard`),
+`__tests__/verse-copy.test.ts`; BUG-016 doc + index.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 11 suites / 43 tests ✅
+**Verify**     Tests cover: English payload contains the sloka and
+`Bhagavad Gita 2.47`, Telugu payload is byte-identical to the source sloka plus
+reference and still contains Telugu code points, empty verse yields an empty
+payload.
+**Blocked**    `expo-clipboard` is a native module, so an existing dev build
+must be rebuilt; the copy sheet, clipboard paste and toast were not observed on
+a device. `npm install` had to be rerun with `--legacy-peer-deps` (matching CI)
+to refresh the lockfile.

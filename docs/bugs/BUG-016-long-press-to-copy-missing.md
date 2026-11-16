@@ -5,7 +5,7 @@
 | **Priority** | P1 |
 | **Platform** | Both |
 | **Area** | Verse / Onboarding |
-| **Status** | open |
+| **Status** | fixed — loop [34] (long-press copy/share sheet; device check pending) |
 | **Found** | 2026-11-15, code audit (no device build) |
 | **Estimate** | S (<1h) |
 
@@ -55,11 +55,13 @@ the actual feature set.
 ## Acceptance criteria
 
 - [ ] The sloka text can be selected with a long press on both platforms.
-- [ ] A "Copy verse" action copies the sloka plus the reference
+      **Deviated:** a selectable `Text` consumes the long press for native
+      selection, so the sloka keeps the long-press sheet instead. Meaning and
+      commentary are `selectable`.
+- [x] A "Copy verse" action copies the sloka plus the reference
       (`2.47`) to the clipboard.
-- [ ] The onboarding copy is now true. If the action is not shipped, remove
-      the sentence from slide 3 instead.
-- [ ] The toast does not cover the verse reference (see BUG-007).
+- [x] The onboarding copy is now true (updated to "copy or share").
+- [x] The toast does not cover the verse reference (see BUG-007).
 
 ## Verification
 

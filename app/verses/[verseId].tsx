@@ -24,6 +24,7 @@ import Animated, {
   FadeIn,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import * as Clipboard from "expo-clipboard";
 
 import { getVerseById } from "@/data/verses/verse-catalog";
 import { getAudioFile } from "@/data/verses/verse-audio";
@@ -62,6 +63,7 @@ import {
 } from "@/lib/milestones";
 import { markPathProgressForVerse } from "@/lib/reading-paths";
 import { getDailyVerseNotificationContent, getVerseForDate } from "@/lib/daily-verse";
+import { buildVerseCopyText } from "@/lib/verse-copy";
 
 import { ROUTES, DEEP_LINKS } from "@/constants/routes";
 import { VERSE_SEQUENCES } from "@/constants/verse-sequences";
@@ -112,6 +114,7 @@ export default function VerseDetailScreen() {
   const [isWordsExpanded, setIsWordsExpanded] = useState(false);
   const [noteText, setNoteText] = useState("");
   const [showNoteSheet, setShowNoteSheet] = useState(false);
+  const [showVerseActions, setShowVerseActions] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [milestoneDays, setMilestoneDays] = useState<StreakMilestone | null>(null);
   const [showMilestone, setShowMilestone] = useState(false);
@@ -295,6 +298,24 @@ export default function VerseDetailScreen() {
       console.error("Error toggling verse save:", error);
     }
   }, [verse, isSaved, showToast, bookmarkScale, language]);
+
+  const handleCopyVerse = useCallback(async () => {
+    if (!verse) return;
+    const text = buildVerseCopyText(verse, language);
+    if (!text) return;
+    try {
+      await Clipboard.setStringAsync(text);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      showToast(
+        `Verse copied · ${verse.chapter}.${verse.verse_number}`,
+        "success",
+        "copy-outline"
+      );
+    } catch (error) {
+      console.error("Copy verse failed:", error);
+      showToast("Could not copy the verse", "error", "alert-circle-outline");
+    }
+  }, [verse, language, showToast]);
 
   const handleShareVerse = useCallback(async () => {
     if (!verse || isSharing) return;
@@ -529,6 +550,11 @@ export default function VerseDetailScreen() {
                     localStyles.slokaText,
                     { color: colors.text },
                   ]}
+                  onLongPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    setShowVerseActions(true);
+                  }}
+                  accessibilityHint="Long-press to copy or share this verse"
                 >
                   {slokaText}
                 </Text>
@@ -552,7 +578,10 @@ export default function VerseDetailScreen() {
                     Meaning
                   </Text>
                 </View>
-                <Text style={[verseScreenStyles.meaningStyle, { color: colors.text }]}>
+                <Text
+                  selectable
+                  style={[verseScreenStyles.meaningStyle, { color: colors.text }]}
+                >
                   {meaningText}
                 </Text>
               </GoldCard>
@@ -651,7 +680,10 @@ export default function VerseDetailScreen() {
                 </Pressable>
                 {isCommentaryExpanded && (
                   <View style={{ marginTop: 12 }}>
-                    <Text style={[verseScreenStyles.commentaryText, { color: colors.text }]}>
+                    <Text
+                      selectable
+                      style={[verseScreenStyles.commentaryText, { color: colors.text }]}
+                    >
                       {commentaryText}
                     </Text>
                   </View>
@@ -762,6 +794,59 @@ export default function VerseDetailScreen() {
         }}
         onShare={handleShareStreak}
       />
+
+      <Modal
+        visible={showVerseActions}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowVerseActions(false)}
+      >
+        <View style={localStyles.noteBackdrop}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setShowVerseActions(false)}
+            accessibilityLabel="Dismiss verse actions"
+          />
+          <View
+            style={[
+              localStyles.actionSheet,
+              { backgroundColor: colors.surface, borderTopColor: colors.primary + "33" },
+            ]}
+          >
+            <Text style={[localStyles.actionTitle, { color: colors.primary }]}>
+              Verse {verseRef}
+            </Text>
+            <Pressable
+              onPress={() => {
+                setShowVerseActions(false);
+                void handleCopyVerse();
+              }}
+              style={({ pressed }) => [localStyles.actionRow, pressed && { opacity: 0.6 }]}
+              accessibilityRole="button"
+              accessibilityLabel="Copy verse"
+            >
+              <Ionicons name="copy-outline" size={20} color={colors.primary} />
+              <Text style={[localStyles.actionLabel, { color: colors.text }]}>
+                Copy verse
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                setShowVerseActions(false);
+                void handleShareVerse();
+              }}
+              style={({ pressed }) => [localStyles.actionRow, pressed && { opacity: 0.6 }]}
+              accessibilityRole="button"
+              accessibilityLabel="Share verse"
+            >
+              <Ionicons name="share-outline" size={20} color={colors.primary} />
+              <Text style={[localStyles.actionLabel, { color: colors.text }]}>
+                Share verse
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         visible={showNoteSheet}
@@ -921,6 +1006,30 @@ const localStyles = StyleSheet.create({
     flex: 1,
     justifyContent: "flex-end",
     backgroundColor: "rgba(0,0,0,0.35)",
+  },
+  actionSheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 26,
+  },
+  actionTitle: {
+    fontFamily: "PlayfairDisplay_700Bold",
+    fontSize: 20,
+    letterSpacing: 0.2,
+    marginBottom: 6,
+  },
+  actionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 14,
+  },
+  actionLabel: {
+    fontSize: 16,
+    fontWeight: "500",
   },
   noteKeyboard: {
     width: "100%",
