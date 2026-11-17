@@ -14,6 +14,7 @@ import Animated, {
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { Type } from "@/theme/design-tokens";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -276,23 +277,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
+    ...Type.title,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 18,
+    ...Type.body,
     marginBottom: 4,
   },
   chapterText: {
-    fontSize: 24,
-    fontWeight: "bold",
+    ...Type.heading,
+    fontWeight: "700",
     marginBottom: 16,
   },
   message: {
-    fontSize: 15,
+    ...Type.bodySm,
     textAlign: "center",
-    lineHeight: 22,
     marginBottom: 24,
   },
   button: {
@@ -301,7 +300,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   buttonText: {
-    fontSize: 16,
+    ...Type.body,
     fontWeight: "600",
   },
   confetti: {

@@ -5,7 +5,7 @@
 | **Priority** | P1 |
 | **Platform** | Both |
 | **Area** | Verse / Home (all scripture and localised text) |
-| **Status** | open |
+| **Status** | fixed — loop [36] (tracking removed, type scale adopted) |
 | **Found** | 2026-11-15, typography audit |
 | **Estimate** | S (<1h) |
 
@@ -76,12 +76,12 @@ styles that can render localised content.
 
 ## Acceptance criteria
 
-- [ ] No conjunct is broken in Telugu, Hindi or Tamil, in the sloka, the
+- [x] No conjunct is broken in Telugu, Hindi or Tamil, in the sloka, the
       meaning, the commentary, or the app title.
-- [ ] The English sloka renders in Playfair Display Italic (currently it is
+- [x] The English sloka renders in Playfair Display Italic (previously it was
       set in the system font at 22px).
-- [ ] The app title renders correctly in all four languages.
-- [ ] Latin tracking on captions and eyebrows is unchanged.
+- [x] The app title renders correctly in all four languages.
+- [x] Latin tracking on captions and eyebrows is unchanged.
 
 ## Verification
 

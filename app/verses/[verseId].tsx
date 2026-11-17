@@ -68,6 +68,7 @@ import { buildVerseCopyText } from "@/lib/verse-copy";
 import { ROUTES, DEEP_LINKS } from "@/constants/routes";
 import { VERSE_SEQUENCES } from "@/constants/verse-sequences";
 import { getRouteParam } from "@/lib/route-params";
+import { getScriptureFont } from "@/lib/scripture-font";
 import { Spacing } from "@/theme/design-tokens";
 
 const getAdjacentVerse = (
@@ -548,7 +549,7 @@ export default function VerseDetailScreen() {
                   style={[
                     verseScreenStyles.teluguSlokaText,
                     localStyles.slokaText,
-                    { color: colors.text },
+                    { color: colors.text, fontFamily: getScriptureFont(language) },
                   ]}
                   onLongPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);

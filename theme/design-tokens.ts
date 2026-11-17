@@ -78,31 +78,56 @@ export const Shadows = {
   },
 };
 
-export const Typography = {
-  // These will map to loaded fonts in _layout
+/**
+ * The eight named type tokens (motion-and-typography spec §5.3).
+ *
+ * Tracking is a Latin-only tool: it is baked into `caption` and `display`,
+ * which are only ever used on fixed English strings. Scripture and localized
+ * content must stay untracked (BUG-026).
+ */
+export const Type = {
+  display: {
+    fontFamily: "PlayfairDisplay_700Bold",
+    fontSize: 40,
+    lineHeight: 46,
+    letterSpacing: 0.3,
+  },
+  title: {
+    fontFamily: "PlayfairDisplay_600SemiBold",
+    fontSize: 26,
+    lineHeight: 32,
+  },
   heading: {
-    fontFamily: "PlayfairDisplay_700Bold",
-    fontSize: 28,
-    letterSpacing: 0.5,
+    fontFamily: "PlayfairDisplay_600SemiBold",
+    fontSize: 20,
+    lineHeight: 26,
   },
-  headingXL: {
-    fontFamily: "PlayfairDisplay_700Bold",
-    fontSize: 36,
-    letterSpacing: 0.5,
-  },
-  subtitle: {
-    fontSize: 16,
-    letterSpacing: 0.2,
+  /** Latin sloka. Non-Latin content overrides `fontFamily` via `getScriptureFont`. */
+  sloka: {
+    fontFamily: "PlayfairDisplay_400Regular_Italic",
+    fontSize: 24,
+    lineHeight: 38,
   },
   body: {
     fontSize: 16,
-    lineHeight: 24,
+    lineHeight: 26,
+  },
+  bodySm: {
+    fontSize: 14,
+    lineHeight: 21,
   },
   label: {
     fontSize: 13,
-    letterSpacing: 0.4,
+    lineHeight: 16,
+    fontWeight: "600",
   },
-};
+  caption: {
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: "600",
+    letterSpacing: 0.6,
+  },
+} as const;
 
 // Default export to fix the warning
 export default {
@@ -110,5 +135,5 @@ export default {
   Spacing,
   Radius,
   Shadows,
-  Typography,
+  Type,
 };

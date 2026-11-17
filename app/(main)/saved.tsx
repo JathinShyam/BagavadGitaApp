@@ -16,10 +16,11 @@ import { GoldCard } from "@/components/ui/GoldCard";
 import { ScreenCornerArt, CORNER_ART } from "@/components/ui/ScreenCornerArt";
 import { ROUTES, DEEP_LINKS } from "@/constants/routes";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
-import { Spacing } from "@/theme/design-tokens";
+import { Spacing, Type } from "@/theme/design-tokens";
 import { getVerseById } from "@/data/verses/verse-catalog";
 import { getVerseMeaning, getVerseSloka } from "@/lib/verse-content";
 import { getVerseForDate } from "@/lib/daily-verse";
+import { getScriptureFont } from "@/lib/scripture-font";
 import { ShareCardView, shareVerseCard } from "@/services/verse-share";
 
 interface SavedVerse {
@@ -173,7 +174,18 @@ export default function SavedVersesScreen() {
             <Ionicons name="bookmark" size={18} color={colors.brandText} />
           </View>
 
-          <Text style={[styles.sloka, { color: colors.text }]} numberOfLines={2}>
+          <Text
+            style={[
+              styles.sloka,
+              {
+                color: colors.text,
+                fontFamily: getScriptureFont(language),
+                // Indic serifs have no true italic; synthetic slant looks wrong.
+                fontStyle: language === "en" ? "italic" : "normal",
+              },
+            ]}
+            numberOfLines={2}
+          >
             {savedVerseSloka(item, language)}
           </Text>
 
@@ -305,9 +317,7 @@ const styles = StyleSheet.create({
     transform: [{ scaleX: -1 }],
   },
   title: {
-    fontFamily: "PlayfairDisplay_700Bold",
-    fontSize: 40,
-    lineHeight: 48,
+    ...Type.display,
     zIndex: 1,
   },
   subtitle: {

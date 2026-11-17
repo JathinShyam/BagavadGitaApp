@@ -160,7 +160,18 @@ export function LaunchIntro({ onFinish }: Props) {
         </View>
 
         <Animated.View style={[styles.titleBlock, titleStyle]}>
-          <Text style={[styles.telugu, { color: colors.brandText }]}>{getAppTitle(language)}</Text>
+          <Text
+            style={[
+              styles.telugu,
+              {
+                color: colors.brandText,
+                // Latin-only tracking; Indic scripts need their conjuncts intact.
+                letterSpacing: language === "en" ? 0.5 : 0,
+              },
+            ]}
+          >
+            {getAppTitle(language)}
+          </Text>
           <Animated.View
             style={[styles.rule, lineStyle, { backgroundColor: colors.primary }]}
           />
@@ -215,7 +226,6 @@ const styles = StyleSheet.create({
   telugu: {
     fontFamily: "PlayfairDisplay_700Bold",
     fontSize: 36,
-    letterSpacing: 1,
   },
   rule: {
     height: 1,

@@ -13,6 +13,7 @@ import Animated, {
 import * as Haptics from "expo-haptics";
 
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { Type } from "@/theme/design-tokens";
 import type { StreakMilestone } from "@/constants/milestones";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -140,19 +141,20 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   days: {
-    fontSize: 48,
-    fontWeight: "800",
+    fontFamily: "PlayfairDisplay_700Bold",
+    fontSize: 56,
+    lineHeight: 60,
     marginBottom: 4,
   },
   title: {
-    fontSize: 20,
-    fontWeight: "700",
+    fontFamily: "PlayfairDisplay_600SemiBold",
+    fontSize: 22,
+    lineHeight: 28,
     textAlign: "center",
     marginBottom: 8,
   },
   body: {
-    fontSize: 14,
-    lineHeight: 21,
+    ...Type.bodySm,
     textAlign: "center",
     marginBottom: 20,
   },

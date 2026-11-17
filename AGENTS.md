@@ -52,7 +52,7 @@ android/ ios/        # Native projects (widget on Android)
 
 1. **Navigation** — Use `ROUTES` / `DEEP_LINKS` from `constants/routes.ts`. No hardcoded `/verses/...` strings in UI.
 2. **Theme** — Use `useAppTheme()` colors. Tokens live in `theme/design-tokens.ts` (`Palette.light` / `Palette.dark`). Primary gold: light `#B8860B`, dark `#E6B74A`. Cream light background `#FFF8E7`.
-3. **Typography** — Headings: Playfair Display (`PlayfairDisplay_400Regular` / `_600SemiBold` / `_700Bold`). Body/UI: system default (do not reintroduce Inter/Roboto stacks).
+3. **Typography** — Use the eight `Type` tokens in `theme/design-tokens.ts` (`display`, `title`, `heading`, `sloka`, `body`, `bodySm`, `label`, `caption`). Headings: Playfair Display (`PlayfairDisplay_400Regular` / `_600SemiBold` / `_700Bold`). Sloka: Playfair Italic for English, platform serif for Indic via `getScriptureFont()` (`lib/scripture-font.ts`). Body/UI: system default (do not reintroduce Inter/Roboto stacks). **Tracking is Latin-only** — never set `letterSpacing` on scripture or localized content; it breaks Indic conjuncts (BUG-026).
 4. **Storage keys** — Add new AsyncStorage keys only via `constants/storage-keys.ts`.
 5. **Verse IDs** — Format `"{chapter}-{verse_number}"` (e.g. `2-47`, `16-1-3`). Explore category verse lists must exist in catalog; covered by `__tests__/category-verse-ids.test.ts`.
 6. **Content language** — Scripture body is under `verse.content[lang]` (`te` | `en` | `hi` | `ta`). Resolve via `lib/verse-content.ts` and `useContentLanguage()`. Preference key: `STORAGE_KEYS.CONTENT_LANGUAGE`. Do not read `teluguSloka` (removed). Chapter intros: `descriptions[lang]` via `getChapterDescription()`.

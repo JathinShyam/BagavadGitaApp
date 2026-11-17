@@ -923,3 +923,47 @@ cream. 3. The header icons and tab labels were the quietest failures — they
 were never checked because they are not body copy.
 **Blocked**    No emulator or simulator here, so the contrast test is the
 verification. Screenshots in both themes on device are still owed.
+
+## [36] 2026-11-17 — Indic-safe typography and the named type scale (BUG-026)
+**Move**       Positive letter-spacing was applied to the sloka, the meaning,
+the commentary and the localized app title. In Telugu/Hindi/Tamil that inserts
+gaps inside conjuncts (క్ష, क्ष, ஷ்), so the core text of a scripture app was
+rendering broken glyph groups.
+R×I×C÷E = 4×3×5÷2 = 30.
+**Plan**       Remove tracking from every style that can render localized text,
+give the sloka a script-aware font, and replace the ad-hoc sizes with the eight
+named tokens from the typography spec.
+**Decisions**  1. Tracking is now Latin-only. The Home brand bar and the launch
+title keep `letterSpacing: 0.5` when the language is English and drop to 0 for
+te/hi/ta. Captions and eyebrows stay tracked because they render fixed English.
+2. `Type` replaces the unused `Typography` export with exactly eight tokens —
+`display`, `title`, `heading`, `sloka`, `body`, `bodySm`, `label`, `caption`.
+Shared screen styles, the Saved title and the two reward modals now use them.
+3. `getScriptureFont(language)` returns Playfair Italic for English and the
+platform serif (`Georgia` on iOS, `serif` on Android) for Indic. It is applied
+to the verse sloka and the Saved sloka preview; the stylesheet keeps
+`Type.sloka`'s Latin family as the default.
+4. `PlayfairDisplay_400Regular_Italic` is loaded in `app/_layout.tsx`.
+`PlayfairDisplay_500Medium`, which the spec also mentions, stays unloaded
+because no token uses it — shipping an unused weight just adds startup work.
+5. Milestone days/title and the celebration title now use Playfair, so the
+highest-emotion screens speak in the same voice as the rest of the app.
+**Ship**       `theme/design-tokens.ts`, `theme/screen-styles.ts`,
+`lib/scripture-font.ts` (new), `app/_layout.tsx`, `app/verses/[verseId].tsx`,
+`app/(main)/index.tsx`, `app/(main)/saved.tsx`, `components/ui/LaunchIntro.tsx`,
+`components/modals/{Milestone,Celebration}Modal.tsx`,
+`__tests__/type-scale.test.ts` (new), `AGENTS.md`, `.cursor/rules/ui-theme.mdc`;
+BUG-026 doc + index.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 13 suites / 68 tests ✅
+**Verify**     The test asserts the eight tokens, the 24/38 sloka, zero
+`letterSpacing` on `teluguSlokaText`/`meaningStyle`/`commentaryText`, Playfair
+Italic for `en`, and a non-Playfair platform serif for te/hi/ta.
+**Observe**    1. The English sloka finally looks like verse rather than UI
+copy — 24px italic Playfair with 38px leading. 2. Removing tracking changes the
+Indic line lengths slightly, so the sloka now wraps a little sooner but every
+conjunct is intact. 3. The reward modals were the last place still speaking in
+Roboto; the 56px Playfair milestone number is the biggest visible win.
+**Blocked**    No emulator or simulator here, so conjunct shaping was verified
+by style inspection and unit tests, not by zooming into a rendered శ్లోకం.
+Device screenshots in te/hi/ta are still owed. The new italic font also needs a
+native rebuild before it appears in an existing dev client.

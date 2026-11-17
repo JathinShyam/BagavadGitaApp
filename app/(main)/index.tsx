@@ -513,7 +513,14 @@ export default function HomeScreen() {
         style={[styles.fixedBrandBar, { backgroundColor: colors.background }]}
       >
         <Text
-          style={[styles.brand, { color: colors.brandText }]}
+          style={[
+            styles.brand,
+            {
+              color: colors.brandText,
+              // Tracking is a Latin-only tool; it breaks Indic conjuncts.
+              letterSpacing: language === "en" ? 0.5 : 0,
+            },
+          ]}
           numberOfLines={1}
           adjustsFontSizeToFit
         >
@@ -620,7 +627,6 @@ const styles = StyleSheet.create({
     marginRight: 8,
     fontFamily: "PlayfairDisplay_700Bold",
     fontSize: 32,
-    letterSpacing: 0.5,
   },
   streakChip: {
     flexDirection: "row",

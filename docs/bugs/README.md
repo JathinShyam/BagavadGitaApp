@@ -53,7 +53,7 @@ on the iOS Simulator and Android emulator — see `BUILD_LOOP.md`.
 | [BUG-023](BUG-023-schedule-exact-alarm-restricted-permission.md) | P1 | Android | `SCHEDULE_EXACT_ALARM` is a Play-restricted permission | fixed [32] |
 | [BUG-024](BUG-024-ci-uses-wrong-jdk-and-node.md) | P1 | Both | CI builds on JDK 11 / Node 18 with no test or lint gate | fixed [30] |
 | [BUG-025](BUG-025-light-theme-gold-fails-wcag-aa.md) | P1 | Both | Gold text fails WCAG AA on the cream theme | fixed [35] |
-| [BUG-026](BUG-026-letter-spacing-breaks-indic-conjuncts.md) | P1 | Both | Letter-spacing breaks Devanagari/Telugu/Tamil conjuncts | open |
+| [BUG-026](BUG-026-letter-spacing-breaks-indic-conjuncts.md) | P1 | Both | Letter-spacing breaks Devanagari/Telugu/Tamil conjuncts | fixed [36] |
 | [BUG-027](BUG-027-motion-and-type-punch-list.md) | P3 | Both | Motion and typography punch list | open |
 
 ## Template
