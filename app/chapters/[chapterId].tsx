@@ -10,7 +10,6 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  Easing,
 } from "react-native-reanimated";
 
 import { getChapterById } from "@/data/chapters/chapter-details";
@@ -29,6 +28,7 @@ import { GoldCard } from "@/components/ui/GoldCard";
 import { OrnamentalDivider, ORNAMENTS } from "@/components/ui/OrnamentalDivider";
 import { VerseListCard } from "@/components/verse/VerseListCard";
 import { Spacing } from "@/theme/design-tokens";
+import { Duration, Ease } from "@/theme/motion";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const HERO_ASPECT = 853 / 1280;
@@ -93,13 +93,13 @@ export default function ChapterDetailScreen() {
   useEffect(() => {
     const next = Math.max(0, Math.min(100, chapterProgress)) / 100;
     journeyProgress.value = withTiming(next, {
-      duration: 550,
-      easing: Easing.out(Easing.cubic),
+      duration: Duration.ritual,
+      easing: Ease.decelerate,
     });
   }, [chapterProgress, journeyProgress]);
 
   const journeyFillStyle = useAnimatedStyle(() => ({
-    width: Math.max(0, pathWidth.value * journeyProgress.value),
+    transform: [{ scaleX: journeyProgress.value }],
   }));
 
   /** Chariot sits at the leading tip of the fill (50% → middle of the bar). */
@@ -439,8 +439,10 @@ const chapterPageStyles = StyleSheet.create({
     zIndex: 1,
   },
   journeyFill: {
+    width: "100%",
     height: "100%",
     borderRadius: 999,
+    transformOrigin: "left",
   },
   journeyMarkerWrap: {
     position: "absolute",

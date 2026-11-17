@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View, StyleSheet, Dimensions, Pressable } from "react-native";
 import { Text } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
@@ -129,6 +129,7 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
 }) => {
   const { colors } = useAppTheme();
   const reducedMotion = useReducedMotion();
+  const [rendered, setRendered] = useState(visible);
   const backdropOpacity = useSharedValue(0);
   const contentScale = useSharedValue(0.5);
   const contentOpacity = useSharedValue(0);
@@ -152,6 +153,7 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
 
   useEffect(() => {
     if (visible) {
+      setRendered(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
       backdropOpacity.value = withTiming(1, { duration: Duration.slow });
@@ -171,6 +173,10 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
       starScale.value = withTiming(reducedMotion ? 1 : 0, {
         duration: Duration.base,
       });
+
+      // Keep the tree mounted until the exit has actually played (BUG-027).
+      const timer = setTimeout(() => setRendered(false), Duration.base);
+      return () => clearTimeout(timer);
     }
   }, [visible, reducedMotion, backdropOpacity, contentScale, contentOpacity, starScale]);
 
@@ -187,7 +193,7 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
     transform: [{ scale: starScale.value }],
   }));
 
-  if (!visible) return null;
+  if (!visible && !rendered) return null;
 
   return (
     <View style={styles.overlay}>

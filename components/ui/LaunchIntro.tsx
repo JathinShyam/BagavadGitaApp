@@ -43,7 +43,7 @@ export function LaunchIntro({ onFinish }: Props) {
   const titleY = useSharedValue(18);
   const titleOpacity = useSharedValue(0);
   const subtitleOpacity = useSharedValue(0);
-  const lineWidth = useSharedValue(0);
+  const lineScale = useSharedValue(0);
 
   useEffect(() => {
     if (reducedMotion) {
@@ -54,7 +54,7 @@ export function LaunchIntro({ onFinish }: Props) {
       markScale.value = 1;
       titleOpacity.value = 1;
       titleY.value = 0;
-      lineWidth.value = SCREEN_WIDTH * 0.28;
+      lineScale.value = 1;
       subtitleOpacity.value = 1;
 
       overlayOpacity.value = withDelay(
@@ -86,9 +86,9 @@ export function LaunchIntro({ onFinish }: Props) {
       withSpring(0, Spring.gentle)
     );
 
-    lineWidth.value = withDelay(
+    lineScale.value = withDelay(
       560,
-      withTiming(SCREEN_WIDTH * 0.28, {
+      withTiming(1, {
         duration: 520,
         easing: Easing.out(Easing.cubic),
       })
@@ -128,7 +128,7 @@ export function LaunchIntro({ onFinish }: Props) {
   }));
 
   const lineStyle = useAnimatedStyle(() => ({
-    width: lineWidth.value,
+    transform: [{ scaleX: lineScale.value }],
     opacity: titleOpacity.value,
   }));
 
@@ -251,9 +251,11 @@ const styles = StyleSheet.create({
     fontSize: 36,
   },
   rule: {
+    width: SCREEN_WIDTH * 0.28,
     height: 1,
     marginTop: 14,
     borderRadius: 1,
+    transformOrigin: "left",
   },
   english: {
     fontSize: 14,

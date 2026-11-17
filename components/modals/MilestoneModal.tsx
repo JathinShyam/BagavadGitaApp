@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { View, StyleSheet, Dimensions, Pressable } from "react-native";
 import { Text } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
@@ -48,11 +48,13 @@ type Props = {
 export default function MilestoneModal({ visible, days, onClose, onShare }: Props) {
   const { colors } = useAppTheme();
   const reducedMotion = useReducedMotion();
+  const [rendered, setRendered] = useState(visible);
   const scale = useSharedValue(0.8);
   const opacity = useSharedValue(0);
 
   useEffect(() => {
     if (visible && days) {
+      setRendered(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       opacity.value = withTiming(1, { duration: Duration.base });
       scale.value = reducedMotion
@@ -67,6 +69,9 @@ export default function MilestoneModal({ visible, days, onClose, onShare }: Prop
         duration: Duration.fast,
         easing: Easing.out(Easing.quad),
       });
+
+      const timer = setTimeout(() => setRendered(false), Duration.fast);
+      return () => clearTimeout(timer);
     }
   }, [visible, days, reducedMotion, opacity, scale]);
 
@@ -76,7 +81,7 @@ export default function MilestoneModal({ visible, days, onClose, onShare }: Prop
     transform: [{ scale: scale.value }],
   }));
 
-  if (!visible || !days) return null;
+  if (!days || (!visible && !rendered)) return null;
 
   const copy = MILESTONE_COPY[days];
 

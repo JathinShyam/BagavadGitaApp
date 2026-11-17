@@ -12,9 +12,9 @@ import Animated, {
   withDelay,
   withSpring,
   Easing,
-  interpolate,
+  interpolateColor,
   FadeIn,
-  SlideInUp,
+  FadeInDown,
   ZoomIn,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
@@ -130,8 +130,12 @@ const ShuffleCard: React.FC<{
   }));
 
   const glowStyle = useAnimatedStyle(() => ({
-    shadowOpacity: interpolate(borderGlow.value, [0, 1], [0.3, 0.8]),
-    borderWidth: interpolate(borderGlow.value, [0, 1], [2, 3]),
+    borderColor: interpolateColor(
+      borderGlow.value,
+      [0, 1],
+      [colors.outline, colors.primary]
+    ),
+    shadowOpacity: isFinal ? 0.6 : 0.4,
   }));
 
   return (
@@ -198,19 +202,19 @@ const ShuffleCard: React.FC<{
       {isFinal && (
         <>
           <Animated.View 
-            entering={ZoomIn.delay(300)} 
+            entering={ZoomIn.delay(300).withInitialValues({ transform: [{ scale: 0.92 }] })} 
             style={[styles.cornerAccent, styles.cornerTopLeft, { borderColor: colors.primary }]} 
           />
           <Animated.View 
-            entering={ZoomIn.delay(350)} 
+            entering={ZoomIn.delay(350).withInitialValues({ transform: [{ scale: 0.92 }] })} 
             style={[styles.cornerAccent, styles.cornerTopRight, { borderColor: colors.primary }]} 
           />
           <Animated.View 
-            entering={ZoomIn.delay(400)} 
+            entering={ZoomIn.delay(400).withInitialValues({ transform: [{ scale: 0.92 }] })} 
             style={[styles.cornerAccent, styles.cornerBottomLeft, { borderColor: colors.primary }]} 
           />
           <Animated.View 
-            entering={ZoomIn.delay(450)} 
+            entering={ZoomIn.delay(450).withInitialValues({ transform: [{ scale: 0.92 }] })} 
             style={[styles.cornerAccent, styles.cornerBottomRight, { borderColor: colors.primary }]} 
           />
         </>
@@ -294,6 +298,7 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
 }) => {
   const { colors, isDark } = useAppTheme();
   const reducedMotion = useReducedMotion();
+  const [rendered, setRendered] = useState(visible);
   const [isShuffling, setIsShuffling] = useState(false);
   const [currentDisplay, setCurrentDisplay] = useState({ chapter: 1, verse: "1" });
   const [finalSelection, setFinalSelection] = useState<{
@@ -376,6 +381,7 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
 
   useEffect(() => {
     if (visible) {
+      setRendered(true);
       backdropOpacity.value = withTiming(1, { duration: 300 });
       containerScale.value = withSpring(1, Spring.gentle);
       const startTimer = setTimeout(startShuffle, 300);
@@ -390,6 +396,9 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
       setFinalSelection(null);
       setShowSparkles(false);
       iconRotation.value = 0;
+
+      const timer = setTimeout(() => setRendered(false), 220);
+      return () => clearTimeout(timer);
     }
     // Shared values are stable references.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -407,7 +416,7 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
     transform: [{ rotate: `${iconRotation.value}deg` }],
   }));
 
-  if (!visible) return null;
+  if (!visible && !rendered) return null;
 
   return (
     <View style={styles.overlay}>
@@ -462,7 +471,7 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
         {/* Action buttons */}
         <View style={styles.actions}>
           {finalSelection ? (
-            <Animated.View entering={SlideInUp.delay(400).springify()}>
+            <Animated.View entering={FadeInDown.delay(400).springify()}>
               <Pressable
                 onPress={() => onComplete(finalSelection.chapter, finalSelection.verse)}
                 style={[styles.goButton, { backgroundColor: colors.brandText }]}

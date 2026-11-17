@@ -55,10 +55,10 @@ function PaginationDot({
       index * SCREEN_WIDTH,
       (index + 1) * SCREEN_WIDTH,
     ];
-    const width = interpolate(
+    const scaleX = interpolate(
       scrollX.value,
       inputRange,
-      [6, 18, 6],
+      [1, 3, 1],
       Extrapolation.CLAMP
     );
     const opacity = interpolate(
@@ -67,7 +67,7 @@ function PaginationDot({
       [0.35, 1, 0.35],
       Extrapolation.CLAMP
     );
-    return { width, opacity };
+    return { transform: [{ scaleX }], opacity };
   });
 
   return (
@@ -487,6 +487,7 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
   paginationDot: {
+    width: 6,
     height: 6,
     borderRadius: 3,
     marginHorizontal: 3,
