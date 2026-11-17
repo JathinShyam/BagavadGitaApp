@@ -12,9 +12,11 @@ import Animated, {
   withTiming,
   withSpring,
 } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
 
+import { haptics } from "@/lib/haptics";
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { Duration, Spring } from "@/theme/motion";
 import { getAppTitle } from "@/constants/languages";
 import { useContentLanguage } from "@/context/language-context";
 
@@ -31,6 +33,7 @@ type Props = {
 export function LaunchIntro({ onFinish }: Props) {
   const { colors, isDark } = useAppTheme();
   const { language } = useContentLanguage();
+  const reducedMotion = useReducedMotion();
 
   const overlayOpacity = useSharedValue(1);
   const ringScale = useSharedValue(0.55);
@@ -40,10 +43,30 @@ export function LaunchIntro({ onFinish }: Props) {
   const titleY = useSharedValue(18);
   const titleOpacity = useSharedValue(0);
   const subtitleOpacity = useSharedValue(0);
-  const lineWidth = useSharedValue(0);
+  const lineScale = useSharedValue(0);
 
   useEffect(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    if (reducedMotion) {
+      // Static brand card: no ring breathe, no rise, no 1.7 s hold.
+      ringOpacity.value = 1;
+      ringScale.value = 1;
+      markOpacity.value = 1;
+      markScale.value = 1;
+      titleOpacity.value = 1;
+      titleY.value = 0;
+      lineScale.value = 1;
+      subtitleOpacity.value = 1;
+
+      overlayOpacity.value = withDelay(
+        600,
+        withTiming(0, { duration: Duration.fast }, (finished) => {
+          if (finished) runOnJS(onFinish)();
+        })
+      );
+      return;
+    }
+
+    haptics.light();
 
     ringOpacity.value = withTiming(1, { duration: 420 });
     ringScale.value = withSequence(
@@ -54,18 +77,18 @@ export function LaunchIntro({ onFinish }: Props) {
     markOpacity.value = withDelay(180, withTiming(1, { duration: 380 }));
     markScale.value = withDelay(
       180,
-      withSpring(1, { damping: 12, stiffness: 120 })
+      withSpring(1, Spring.bouncy)
     );
 
     titleOpacity.value = withDelay(420, withTiming(1, { duration: 450 }));
     titleY.value = withDelay(
       420,
-      withSpring(0, { damping: 16, stiffness: 110 })
+      withSpring(0, Spring.gentle)
     );
 
-    lineWidth.value = withDelay(
+    lineScale.value = withDelay(
       560,
-      withTiming(SCREEN_WIDTH * 0.28, {
+      withTiming(1, {
         duration: 520,
         easing: Easing.out(Easing.cubic),
       })
@@ -81,9 +104,9 @@ export function LaunchIntro({ onFinish }: Props) {
         if (finished) runOnJS(finish)();
       })
     );
-    // Shared values are stable references; the intro runs once on mount.
+    // Shared values are stable references; the intro runs once per mode.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onFinish]);
+  }, [onFinish, reducedMotion]);
 
   const overlayStyle = useAnimatedStyle(() => ({
     opacity: overlayOpacity.value,
@@ -105,7 +128,7 @@ export function LaunchIntro({ onFinish }: Props) {
   }));
 
   const lineStyle = useAnimatedStyle(() => ({
-    width: lineWidth.value,
+    transform: [{ scaleX: lineScale.value }],
     opacity: titleOpacity.value,
   }));
 
@@ -155,12 +178,23 @@ export function LaunchIntro({ onFinish }: Props) {
               { backgroundColor: colors.primary + (isDark ? "18" : "1a") },
             ]}
           >
-            <Ionicons name="book" size={42} color={colors.primary} />
+            <Ionicons name="book" size={42} color={colors.brandText} />
           </Animated.View>
         </View>
 
         <Animated.View style={[styles.titleBlock, titleStyle]}>
-          <Text style={[styles.telugu, { color: colors.primary }]}>{getAppTitle(language)}</Text>
+          <Text
+            style={[
+              styles.telugu,
+              {
+                color: colors.brandText,
+                // Latin-only tracking; Indic scripts need their conjuncts intact.
+                letterSpacing: language === "en" ? 0.5 : 0,
+              },
+            ]}
+          >
+            {getAppTitle(language)}
+          </Text>
           <Animated.View
             style={[styles.rule, lineStyle, { backgroundColor: colors.primary }]}
           />
@@ -215,12 +249,13 @@ const styles = StyleSheet.create({
   telugu: {
     fontFamily: "PlayfairDisplay_700Bold",
     fontSize: 36,
-    letterSpacing: 1,
   },
   rule: {
+    width: SCREEN_WIDTH * 0.28,
     height: 1,
     marginTop: 14,
     borderRadius: 1,
+    transformOrigin: "left",
   },
   english: {
     fontSize: 14,

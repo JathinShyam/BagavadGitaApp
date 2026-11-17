@@ -70,7 +70,7 @@ export default function ExploreCategoryScreen() {
           headerShown: true,
           headerBackTitle: "Back",
           headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.primary,
+          headerTintColor: colors.brandText,
           headerTitleStyle: { color: colors.text, fontFamily: "PlayfairDisplay_700Bold" },
           headerShadowVisible: false,
         }}

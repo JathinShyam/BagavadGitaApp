@@ -19,4 +19,9 @@ export const STORAGE_KEYS = {
   SAVED_REVIEW_CURSOR: "savedReviewCursor",
   /** Last notification response id already used for in-app navigation (dedupe cold starts). */
   LAST_HANDLED_NOTIFICATION: "lastHandledNotificationResponseId",
+  /** Daily verse reminder preferences (Settings → Notifications). */
+  DAILY_VERSE_NOTIFICATIONS_ENABLED: "dailyVerseNotificationsEnabled",
+  DAILY_VERSE_NOTIFICATION_TIME: "dailyVerseNotificationTime",
+  /** Version of the scheduled-notification scheme; bump when identifiers change. */
+  NOTIFICATION_SCHEDULE_VERSION: "notificationScheduleVersion",
 } as const;

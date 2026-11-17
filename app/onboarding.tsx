@@ -16,15 +16,15 @@ import { router } from "expo-router";
 import Animated, {
   type SharedValue,
   FadeIn,
-  FadeInUp,
   FadeInDown,
   useSharedValue,
   useAnimatedStyle,
   interpolate,
   Extrapolation,
 } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
 
+import { haptics } from "@/lib/haptics";
+import { SelectableChip } from "@/components/ui/SelectableChip";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { ROUTES } from "@/constants/routes";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
@@ -55,10 +55,10 @@ function PaginationDot({
       index * SCREEN_WIDTH,
       (index + 1) * SCREEN_WIDTH,
     ];
-    const width = interpolate(
+    const scaleX = interpolate(
       scrollX.value,
       inputRange,
-      [6, 18, 6],
+      [1, 3, 1],
       Extrapolation.CLAMP
     );
     const opacity = interpolate(
@@ -67,7 +67,7 @@ function PaginationDot({
       [0.35, 1, 0.35],
       Extrapolation.CLAMP
     );
-    return { width, opacity };
+    return { transform: [{ scaleX }], opacity };
   });
 
   return (
@@ -110,7 +110,7 @@ const slides: OnboardingSlide[] = [
     title: "Save & Bookmark",
     subtitle: "Your Favorites",
     description:
-      "Double-tap any verse to bookmark it. Long-press to copy text. Swipe left or right to navigate between verses effortlessly.",
+      "Double-tap any verse to bookmark it. Long-press to copy or share it. Swipe left or right to navigate between verses effortlessly.",
   },
   {
     id: "4",
@@ -156,20 +156,18 @@ export default function OnboardingScreen() {
     const index = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
     if (index !== currentIndex) {
       setCurrentIndex(index);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
   };
 
   const goToNextSlide = () => {
     if (currentIndex < slides.length - 1) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
     }
   };
 
   const completeOnboarding = async () => {
     try {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptics.success();
       await AsyncStorage.setItem(STORAGE_KEYS.ONBOARDING, "true");
       router.replace(ROUTES.mainTabs);
     } catch (error) {
@@ -204,7 +202,6 @@ export default function OnboardingScreen() {
   };
 
   const skipOnboarding = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await completeOnboarding();
   };
 
@@ -213,24 +210,20 @@ export default function OnboardingScreen() {
   const renderSlide = ({ item }: { item: OnboardingSlide; index: number }) => {
     return (
       <View style={[styles.slide, { width: SCREEN_WIDTH, height: listHeight }]}>
-        <Animated.View
-          entering={FadeInUp.delay(200).springify()}
+        <View
           style={[
             styles.iconContainer,
             { backgroundColor: colors.primary + "14" },
           ]}
         >
-          <Ionicons name={item.icon} size={40} color={colors.primary} />
-        </Animated.View>
+          <Ionicons name={item.icon} size={40} color={colors.brandText} />
+        </View>
 
-        <Animated.View
-          entering={FadeInUp.delay(400).springify()}
-          style={styles.textContainer}
-        >
+        <View style={styles.textContainer}>
           <Text style={[styles.title, { color: colors.textMuted }]}>
             {item.title}
           </Text>
-          <Text style={[styles.subtitle, { color: colors.primary }]}>
+          <Text style={[styles.subtitle, { color: colors.brandText }]}>
             {item.kind === "language" ? getAppTitle(language) : item.subtitle}
           </Text>
           <Text style={[styles.description, { color: colors.textMuted }]}>
@@ -239,81 +232,61 @@ export default function OnboardingScreen() {
 
           {item.kind === "language" && (
             <View style={styles.timeChips}>
-              {CONTENT_LANGUAGES.map((opt) => {
-                const selected = language === opt.code;
-                return (
-                  <Pressable
-                    key={opt.code}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setLanguage(opt.code);
-                    }}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected }}
-                    accessibilityLabel={opt.label}
-                    style={[
-                      styles.timeChip,
-                      selected
-                        ? { backgroundColor: colors.primary }
-                        : {
-                            backgroundColor: "transparent",
-                            borderColor: colors.outline + "55",
-                            borderWidth: 1,
-                          },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.timeChipText,
-                        { color: selected ? colors.onPrimary : colors.textMuted },
-                      ]}
-                    >
-                      {opt.nativeLabel}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+              {CONTENT_LANGUAGES.map((opt) => (
+                <SelectableChip
+                  key={opt.code}
+                  label={opt.nativeLabel}
+                  selected={language === opt.code}
+                  onPressIn={haptics.light}
+                  onPress={() => {
+                    haptics.selection();
+                    setLanguage(opt.code);
+                  }}
+                  accessibilityRole="radio"
+                  accessibilityLabel={opt.label}
+                  containerStyle={styles.timeChip}
+                  labelStyle={styles.timeChipText}
+                  palette={{
+                    idleBackground: colors.background,
+                    activeBackground: colors.brandText,
+                    idleBorder: colors.outline + "55",
+                    activeBorder: colors.brandText,
+                    idleText: colors.textMuted,
+                    activeText: colors.onPrimary,
+                  }}
+                />
+              ))}
             </View>
           )}
 
           {item.kind === "reminder" && (
             <View style={styles.timeChips}>
-              {REMINDER_TIMES.map((t) => {
-                const selected = reminderTime === t;
-                return (
-                  <Pressable
-                    key={t}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setReminderTime(t);
-                    }}
-                    style={[
-                      styles.timeChip,
-                      selected
-                        ? { backgroundColor: colors.primary }
-                        : {
-                            backgroundColor: "transparent",
-                            borderColor: colors.outline + "55",
-                            borderWidth: 1,
-                          },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.timeChipText,
-                        {
-                          color: selected ? colors.onPrimary : colors.textMuted,
-                        },
-                      ]}
-                    >
-                      {formatChipLabel(t)}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+              {REMINDER_TIMES.map((t) => (
+                <SelectableChip
+                  key={t}
+                  label={formatChipLabel(t)}
+                  selected={reminderTime === t}
+                  onPressIn={haptics.light}
+                  onPress={() => {
+                    haptics.selection();
+                    setReminderTime(t);
+                  }}
+                  accessibilityRole="radio"
+                  containerStyle={styles.timeChip}
+                  labelStyle={styles.timeChipText}
+                  palette={{
+                    idleBackground: colors.background,
+                    activeBackground: colors.brandText,
+                    idleBorder: colors.outline + "55",
+                    activeBorder: colors.brandText,
+                    idleText: colors.textMuted,
+                    activeText: colors.onPrimary,
+                  }}
+                />
+              ))}
             </View>
           )}
-        </Animated.View>
+        </View>
       </View>
     );
   };
@@ -325,7 +298,7 @@ export default function OnboardingScreen() {
           key={index}
           index={index}
           scrollX={scrollX}
-          color={colors.primary}
+          color={colors.brandText}
         />
       ))}
     </View>
@@ -339,7 +312,7 @@ export default function OnboardingScreen() {
         entering={FadeIn.delay(600)}
         style={[styles.skipContainer, { top: Math.max(insets.top, 12) + 8 }]}
       >
-        <Pressable onPress={skipOnboarding} style={styles.skipButton}>
+        <Pressable onPressIn={haptics.light} onPress={skipOnboarding} style={styles.skipButton}>
           <Text style={[styles.skipText, { color: colors.textMuted }]}>Skip</Text>
         </Pressable>
       </Animated.View>
@@ -367,9 +340,10 @@ export default function OnboardingScreen() {
         {isReminderSlide ? (
           <View style={styles.reminderActions}>
             <Pressable
+              onPressIn={haptics.light}
               onPress={enableReminderAndFinish}
               disabled={enablingReminder}
-              style={[styles.actionButton, { backgroundColor: colors.primary }]}
+              style={[styles.actionButton, { backgroundColor: colors.brandText }]}
             >
               <Text style={[styles.actionButtonText, { color: colors.onPrimary }]}>
                 {enablingReminder ? "Enabling…" : "Enable reminders"}
@@ -381,7 +355,7 @@ export default function OnboardingScreen() {
                 style={{ marginLeft: 8 }}
               />
             </Pressable>
-            <Pressable onPress={skipReminderAndFinish} style={styles.secondaryAction}>
+            <Pressable onPressIn={haptics.light} onPress={skipReminderAndFinish} style={styles.secondaryAction}>
               <Text style={[styles.secondaryActionText, { color: colors.textMuted }]}>
                 Not now
               </Text>
@@ -389,8 +363,9 @@ export default function OnboardingScreen() {
           </View>
         ) : (
           <Pressable
+            onPressIn={haptics.light}
             onPress={goToNextSlide}
-            style={[styles.actionButton, { backgroundColor: colors.primary }]}
+            style={[styles.actionButton, { backgroundColor: colors.brandText }]}
           >
             <Text style={[styles.actionButtonText, { color: colors.onPrimary }]}>
               Next
@@ -471,6 +446,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 14,
+    borderWidth: 1,
   },
   timeChipText: {
     fontSize: 14,
@@ -487,6 +463,7 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
   paginationDot: {
+    width: 6,
     height: 6,
     borderRadius: 3,
     marginHorizontal: 3,

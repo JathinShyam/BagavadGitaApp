@@ -2,10 +2,19 @@ import { captureRef } from "react-native-view-shot";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import React from "react";
-import { View } from "react-native";
+import { Platform, Share, View, type ViewStyle } from "react-native";
 
 import { ShareCard } from "@/components/verse/ShareCard";
 import { StreakShareCard } from "@/components/verse/StreakShareCard";
+import { DEEP_LINKS } from "@/constants/routes";
+
+/**
+ * Cards are laid out at full size but placed outside the viewport, then captured
+ * from their own bounds. The wrapper must carry the measured size, so it has to
+ * be the positioned element — an absolutely positioned child inside a plain
+ * wrapper leaves the wrapper 0×0 and captureRef renders nothing.
+ */
+const offscreen: ViewStyle = { position: "absolute", left: -9999, top: -9999 };
 
 export async function captureShareCardRef(viewRef: any): Promise<string> {
   const uri = await captureRef(viewRef, {
@@ -29,21 +38,55 @@ export async function shareImage(uri: string): Promise<void> {
   });
 }
 
-export function ShareCardView(props: React.ComponentProps<typeof ShareCard>) {
+/**
+ * Capture and share a verse card.
+ *
+ * iOS can carry text and a file together, so the recipient gets the image plus a
+ * tappable `bagavadgita://verses/<id>` link. Android's Share API drops the file
+ * when text is present, so the image goes on its own and the deep link is
+ * printed on the card instead.
+ *
+ * Returns false when there is nothing to capture or no share sheet available.
+ */
+export async function shareVerseCard(
+  viewRef: React.RefObject<View | null>,
+  verseId: string,
+  caption: string
+): Promise<boolean> {
+  const view = viewRef.current;
+  if (!view) return false;
+
+  const uri = await captureShareCardRef(view);
+  const message = `${caption}\n${DEEP_LINKS.verse(verseId)}`;
+
+  if (Platform.OS === "ios") {
+    await Share.share({ message, url: uri });
+    return true;
+  }
+
+  if (!(await Sharing.isAvailableAsync())) return false;
+  await shareImage(uri);
+  return true;
+}
+
+export const ShareCardView = React.forwardRef<
+  View,
+  React.ComponentProps<typeof ShareCard>
+>(function ShareCardView(props, ref) {
   return (
-    <View style={{ position: "absolute", left: -9999, top: -9999, opacity: 0 }}>
+    <View ref={ref} collapsable={false} pointerEvents="none" style={offscreen}>
       <ShareCard {...props} />
     </View>
   );
-}
+});
 
-export function StreakShareCardView(
-  props: React.ComponentProps<typeof StreakShareCard>
-) {
+export const StreakShareCardView = React.forwardRef<
+  View,
+  React.ComponentProps<typeof StreakShareCard>
+>(function StreakShareCardView(props, ref) {
   return (
-    <View style={{ position: "absolute", left: -9999, top: -9999, opacity: 0 }}>
+    <View ref={ref} collapsable={false} pointerEvents="none" style={offscreen}>
       <StreakShareCard {...props} />
     </View>
   );
-}
-
+});

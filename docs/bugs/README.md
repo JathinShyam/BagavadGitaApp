@@ -42,6 +42,19 @@ on the iOS Simulator and Android emulator — see `BUILD_LOOP.md`.
 | [BUG-012](BUG-012-ios-toggle-not-accessible.md) | P2 | iOS/Android | Settings switches: no accessible name / web state | fixed [9] |
 | [BUG-013](BUG-013-web-chapter-page-crash.md) | P1 | Web | Every chapter page crashed (resolveAssetSource) | fixed [13] |
 | [BUG-014](BUG-014-audio-stays-paused-icon-at-end.md) | P3 | Android | Play button stays ⏸ after a verse finishes | fixed [25] |
+| [BUG-015](BUG-015-verse-share-button-missing.md) | P1 | Both | No way to share a verse — the store listing says there is | fixed [33] |
+| [BUG-016](BUG-016-long-press-to-copy-missing.md) | P1 | Both | Onboarding says "long-press to copy"; nothing is copyable | fixed [34] |
+| [BUG-017](BUG-017-daily-verse-never-reaches-chapters-11-18.md) | P1 | Both | Daily verse can never come from Chapters 11–18 (40% unreachable) | fixed [28] |
+| [BUG-018](BUG-018-rereading-verse-does-not-advance-streak.md) | P1 | Both | Re-reading a verse never advances the streak or daily goal | fixed [29] |
+| [BUG-019](BUG-019-stale-streak-chip-after-missed-day.md) | P1 | Both | Streak chip shows a stale streak after a missed day | fixed [29] |
+| [BUG-020](BUG-020-notifications-stop-after-eight-days.md) | P1 | Both | Daily notifications stop permanently after 8 days | fixed [32] |
+| [BUG-021](BUG-021-widget-goes-stale-after-eight-days.md) | P2 | Android | Widget shows a placeholder after 8 days without opening the app | fixed [32] |
+| [BUG-022](BUG-022-bundle-is-175mb.md) | P1 | Both | Bundle is 175 MB; the icon alone is 11 MB | partial [31] |
+| [BUG-023](BUG-023-schedule-exact-alarm-restricted-permission.md) | P1 | Android | `SCHEDULE_EXACT_ALARM` is a Play-restricted permission | fixed [32] |
+| [BUG-024](BUG-024-ci-uses-wrong-jdk-and-node.md) | P1 | Both | CI builds on JDK 11 / Node 18 with no test or lint gate | fixed [30] |
+| [BUG-025](BUG-025-light-theme-gold-fails-wcag-aa.md) | P1 | Both | Gold text fails WCAG AA on the cream theme | fixed [35] |
+| [BUG-026](BUG-026-letter-spacing-breaks-indic-conjuncts.md) | P1 | Both | Letter-spacing breaks Devanagari/Telugu/Tamil conjuncts | fixed [36] |
+| [BUG-027](BUG-027-motion-and-type-punch-list.md) | P3 | Both | Motion and typography punch list | fixed [37]–[40] (device pass owed) |
 
 ## Template
 

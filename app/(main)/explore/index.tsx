@@ -12,9 +12,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import * as Haptics from "expo-haptics";
 import { useMemo, useState } from "react";
 
+import { haptics } from "@/lib/haptics";
+import { SelectableChip } from "@/components/ui/SelectableChip";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useContentLanguage } from "@/context/language-context";
 import { useReadingProgress } from "@/hooks/useReadingProgress";
@@ -76,7 +77,7 @@ export default function ExploreScreen() {
       <View key={item.id} style={styles.tileContainer}>
         <Link href={ROUTES.exploreCategory(item.id)} asChild>
           <Pressable
-            onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+            onPressIn={haptics.light}
             style={({ pressed }) => [{ opacity: pressed ? 0.88 : 1 }]}
           >
             <View style={[styles.tileFrame, { borderRadius: TILE_RADIUS }]}>
@@ -110,7 +111,7 @@ export default function ExploreScreen() {
 
   const ListHeader = (
     <View>
-      <Text style={[styles.moodHeading, { color: colors.primary }]}>How do you feel?</Text>
+      <Text style={[styles.moodHeading, { color: colors.brandText }]}>How do you feel?</Text>
       <Text style={[styles.moodSub, { color: colors.textMuted }]}>
         One verse for this moment
       </Text>
@@ -119,35 +120,28 @@ export default function ExploreScreen() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.moodRow}
       >
-        {CATEGORIES.map((cat) => {
-          const selected = selectedMoodId === cat.id;
-          return (
-            <Pressable
-              key={cat.id}
-              onPress={() => {
-                Haptics.selectionAsync();
-                setSelectedMoodId(cat.id);
-              }}
-              style={[
-                styles.moodChip,
-                {
-                  borderColor: selected ? colors.primary : colors.outline + "44",
-                  backgroundColor: selected ? colors.primary + "22" : colors.surface,
-                },
-              ]}
-            >
-              <Text
-                style={{
-                  color: selected ? colors.primary : colors.text,
-                  fontWeight: "600",
-                  fontSize: 13,
-                }}
-              >
-                {cat.name}
-              </Text>
-            </Pressable>
-          );
-        })}
+        {CATEGORIES.map((cat) => (
+          <SelectableChip
+            key={cat.id}
+            label={cat.name}
+            selected={selectedMoodId === cat.id}
+            onPressIn={haptics.light}
+            onPress={() => {
+              haptics.selection();
+              setSelectedMoodId(cat.id);
+            }}
+            containerStyle={styles.moodChip}
+            labelStyle={styles.moodChipText}
+            palette={{
+              idleBackground: colors.surface,
+              activeBackground: colors.primary + "22",
+              idleBorder: colors.outline + "44",
+              activeBorder: colors.primary,
+              idleText: colors.text,
+              activeText: colors.brandText,
+            }}
+          />
+        ))}
       </ScrollView>
 
       {selectedMood && featuredVerse && (
@@ -159,7 +153,7 @@ export default function ExploreScreen() {
               resizeMode="contain"
             />
             <View style={styles.featuredBody}>
-              <Text style={[styles.featuredLabel, { color: colors.primary }]}>
+              <Text style={[styles.featuredLabel, { color: colors.brandText }]}>
                 For {selectedMood.name}
               </Text>
               <Text style={[styles.featuredRef, { color: colors.text }]}>
@@ -179,7 +173,7 @@ export default function ExploreScreen() {
           <View style={styles.featuredActions}>
             <Pressable
               onPress={() => router.push(ROUTES.verse(featuredVerse.id))}
-              style={[styles.featuredBtn, { backgroundColor: colors.primary }]}
+              style={[styles.featuredBtn, { backgroundColor: colors.brandText }]}
             >
               <Ionicons name="book-outline" size={16} color={colors.onPrimary} />
               <Text style={{ color: colors.onPrimary, fontWeight: "700", fontSize: 15 }}>
@@ -190,10 +184,10 @@ export default function ExploreScreen() {
               onPress={() => router.push(ROUTES.exploreCategory(selectedMood.id))}
               style={styles.featuredLink}
             >
-              <Text style={[styles.featuredLinkText, { color: colors.primary }]}>
+              <Text style={[styles.featuredLinkText, { color: colors.brandText }]}>
                 All {selectedMood.verses.length} verses
               </Text>
-              <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+              <Ionicons name="chevron-forward" size={14} color={colors.brandText} />
             </Pressable>
           </View>
         </GoldCard>
@@ -215,7 +209,7 @@ export default function ExploreScreen() {
           opacity={isDark ? 0.6 : 0.82}
           tint={false}
         />
-        <Text style={[styles.title, { color: colors.primary }]}>Explore</Text>
+        <Text style={[styles.title, { color: colors.brandText }]}>Explore</Text>
         <Text style={[styles.subtitle, { color: colors.textMuted }]}>
           Find wisdom for where you are
         </Text>
@@ -314,6 +308,10 @@ const styles = StyleSheet.create({
   moodRow: {
     gap: 8,
     paddingBottom: 4,
+  },
+  moodChipText: {
+    fontWeight: "600",
+    fontSize: 13,
   },
   moodChip: {
     flexDirection: "row",

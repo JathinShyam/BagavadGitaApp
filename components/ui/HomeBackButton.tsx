@@ -19,7 +19,7 @@ export function HomeBackButton() {
       accessibilityLabel="Go to Home"
       accessibilityRole="button"
     >
-      <Ionicons name="arrow-back" size={24} color={colors.primary} />
+      <Ionicons name="arrow-back" size={24} color={colors.brandText} />
     </Pressable>
   );
 }

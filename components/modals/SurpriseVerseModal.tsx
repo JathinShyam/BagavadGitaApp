@@ -12,13 +12,15 @@ import Animated, {
   withDelay,
   withSpring,
   Easing,
-  interpolate,
+  interpolateColor,
   FadeIn,
-  SlideInUp,
+  FadeInDown,
   ZoomIn,
 } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
+import { haptics } from "@/lib/haptics";
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { Spring } from "@/theme/motion";
 import { useContentLanguage } from "@/context/language-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { VERSE_SEQUENCES } from "@/constants/verse-sequences";
@@ -49,6 +51,7 @@ const ShuffleCard: React.FC<{
 }> = ({ chapter, verse, index, isActive, isFinal }) => {
   const { colors, isDark } = useAppTheme();
   const { language } = useContentLanguage();
+  const reducedMotion = useReducedMotion();
   const scale = useSharedValue(0.8);
   const opacity = useSharedValue(0);
   const rotateY = useSharedValue(0);
@@ -60,6 +63,17 @@ const ShuffleCard: React.FC<{
   const chapterData = chapters[chapter - 1];
 
   useEffect(() => {
+    if (reducedMotion) {
+      opacity.value = 1;
+      scale.value = 1;
+      translateY.value = 0;
+      imageScale.value = 1;
+      rotateY.value = 0;
+      rotateZ.value = 0;
+      borderGlow.value = isFinal ? 1 : 0;
+      return;
+    }
+
     if (isActive) {
       opacity.value = withTiming(1, { duration: 100 });
       scale.value = withSequence(
@@ -77,15 +91,15 @@ const ShuffleCard: React.FC<{
         withTiming(-2, { duration: 40 }),
         withTiming(0, { duration: 40 })
       );
-      translateY.value = withSpring(0, { damping: 15 });
+      translateY.value = withSpring(0, Spring.gentle);
       imageScale.value = withSequence(
         withTiming(1.1, { duration: 60 }),
         withTiming(1, { duration: 60 })
       );
     } else if (isFinal) {
       opacity.value = withTiming(1, { duration: 400 });
-      scale.value = withSpring(1, { damping: 10, stiffness: 80 });
-      translateY.value = withSpring(0, { damping: 12 });
+      scale.value = withSpring(1, Spring.bouncy);
+      translateY.value = withSpring(0, Spring.gentle);
       imageScale.value = withTiming(1.05, { duration: 600 });
       borderGlow.value = withSequence(
         withTiming(1, { duration: 300 }),
@@ -98,7 +112,7 @@ const ShuffleCard: React.FC<{
     }
     // Shared values are stable references; only the flags drive this animation.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isActive, isFinal]);
+  }, [isActive, isFinal, reducedMotion]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
@@ -116,8 +130,12 @@ const ShuffleCard: React.FC<{
   }));
 
   const glowStyle = useAnimatedStyle(() => ({
-    shadowOpacity: interpolate(borderGlow.value, [0, 1], [0.3, 0.8]),
-    borderWidth: interpolate(borderGlow.value, [0, 1], [2, 3]),
+    borderColor: interpolateColor(
+      borderGlow.value,
+      [0, 1],
+      [colors.outline, colors.primary]
+    ),
+    shadowOpacity: isFinal ? 0.6 : 0.4,
   }));
 
   return (
@@ -184,19 +202,19 @@ const ShuffleCard: React.FC<{
       {isFinal && (
         <>
           <Animated.View 
-            entering={ZoomIn.delay(300)} 
+            entering={ZoomIn.delay(300).withInitialValues({ transform: [{ scale: 0.92 }] })} 
             style={[styles.cornerAccent, styles.cornerTopLeft, { borderColor: colors.primary }]} 
           />
           <Animated.View 
-            entering={ZoomIn.delay(350)} 
+            entering={ZoomIn.delay(350).withInitialValues({ transform: [{ scale: 0.92 }] })} 
             style={[styles.cornerAccent, styles.cornerTopRight, { borderColor: colors.primary }]} 
           />
           <Animated.View 
-            entering={ZoomIn.delay(400)} 
+            entering={ZoomIn.delay(400).withInitialValues({ transform: [{ scale: 0.92 }] })} 
             style={[styles.cornerAccent, styles.cornerBottomLeft, { borderColor: colors.primary }]} 
           />
           <Animated.View 
-            entering={ZoomIn.delay(450)} 
+            entering={ZoomIn.delay(450).withInitialValues({ transform: [{ scale: 0.92 }] })} 
             style={[styles.cornerAccent, styles.cornerBottomRight, { borderColor: colors.primary }]} 
           />
         </>
@@ -231,7 +249,7 @@ const Sparkle: React.FC<{ delay: number; startX: number; startY: number }> = ({
     scale.value = withDelay(
       delay,
       withSequence(
-        withSpring(1, { damping: 8 }),
+        withSpring(1, Spring.bouncy),
         withTiming(0, { duration: 300 })
       )
     );
@@ -258,7 +276,7 @@ const Sparkle: React.FC<{ delay: number; startX: number; startY: number }> = ({
 
   return (
     <Animated.View style={[styles.sparkle, animatedStyle]}>
-      <Ionicons name="sparkles" size={16} color={colors.primary} />
+      <Ionicons name="sparkles" size={16} color={colors.brandText} />
     </Animated.View>
   );
 };
@@ -279,6 +297,8 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
   onClose,
 }) => {
   const { colors, isDark } = useAppTheme();
+  const reducedMotion = useReducedMotion();
+  const [rendered, setRendered] = useState(visible);
   const [isShuffling, setIsShuffling] = useState(false);
   const [currentDisplay, setCurrentDisplay] = useState({ chapter: 1, verse: "1" });
   const [finalSelection, setFinalSelection] = useState<{
@@ -308,13 +328,15 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
     setIsShuffling(true);
     setFinalSelection(null);
     setShowSparkles(false);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    haptics.medium();
 
-    // Spin the icon
-    iconRotation.value = withSequence(
-      withTiming(360 * 3, { duration: 1500, easing: Easing.out(Easing.cubic) }),
-      withTiming(360 * 3 + 360, { duration: 500 })
-    );
+    // Spin the icon (decorative; skip under Reduce Motion).
+    if (!reducedMotion) {
+      iconRotation.value = withSequence(
+        withTiming(360 * 3, { duration: 1500, easing: Easing.out(Easing.cubic) }),
+        withTiming(360 * 3 + 360, { duration: 500 })
+      );
+    }
 
     // Rapid shuffle through random verses
     let shuffleCount = 0;
@@ -322,7 +344,8 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
     const shuffleInterval = setInterval(() => {
       const random = generateRandomVerse();
       setCurrentDisplay(random);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      // Every third tick: 5 haptics instead of 15 in the fast phase.
+      if (shuffleCount % 3 === 0) haptics.light();
       shuffleCount++;
 
       if (shuffleCount >= maxShuffles) {
@@ -335,7 +358,8 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
         const slowInterval = setInterval(() => {
           const random = generateRandomVerse();
           setCurrentDisplay(random);
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          // Every third tick: 2 haptics instead of 5 in the slow phase.
+          if (slowCount % 3 === 0) haptics.light();
           slowCount++;
 
           if (slowCount >= slowShuffles) {
@@ -348,21 +372,20 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
             setFinalSelection(final);
             setIsShuffling(false);
             setShowSparkles(true);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            haptics.success();
           }
         }, 200);
         intervalIdsRef.current.push(slowInterval);
       }
     }, 80);
     intervalIdsRef.current.push(shuffleInterval);
-    // Shared values are stable references.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [generateRandomVerse, clearAllIntervals]);
+  }, [generateRandomVerse, clearAllIntervals, reducedMotion, iconRotation]);
 
   useEffect(() => {
     if (visible) {
+      setRendered(true);
       backdropOpacity.value = withTiming(1, { duration: 300 });
-      containerScale.value = withSpring(1, { damping: 12, stiffness: 100 });
+      containerScale.value = withSpring(1, Spring.gentle);
       const startTimer = setTimeout(startShuffle, 300);
       return () => {
         clearTimeout(startTimer);
@@ -375,6 +398,9 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
       setFinalSelection(null);
       setShowSparkles(false);
       iconRotation.value = 0;
+
+      const timer = setTimeout(() => setRendered(false), 220);
+      return () => clearTimeout(timer);
     }
     // Shared values are stable references.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -392,7 +418,7 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
     transform: [{ rotate: `${iconRotation.value}deg` }],
   }));
 
-  if (!visible) return null;
+  if (!visible && !rendered) return null;
 
   return (
     <View style={styles.overlay}>
@@ -411,7 +437,7 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
         <View style={styles.header}>
           <Animated.View style={[styles.iconWrapper, iconStyle]}>
             <View style={[styles.iconCircle, { backgroundColor: colors.primary + "20" }]}>
-              <Ionicons name="sparkles" size={32} color={colors.primary} />
+              <Ionicons name="sparkles" size={32} color={colors.brandText} />
             </View>
           </Animated.View>
           <Text style={[styles.title, { color: colors.text }]}>
@@ -433,7 +459,7 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
           />
 
           {/* Sparkles around the card when final */}
-          {showSparkles &&
+          {showSparkles && !reducedMotion &&
             Array.from({ length: 16 }).map((_, i) => (
               <Sparkle
                 key={i}
@@ -447,10 +473,10 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
         {/* Action buttons */}
         <View style={styles.actions}>
           {finalSelection ? (
-            <Animated.View entering={SlideInUp.delay(400).springify()}>
+            <Animated.View entering={FadeInDown.delay(400).springify()}>
               <Pressable
                 onPress={() => onComplete(finalSelection.chapter, finalSelection.verse)}
-                style={[styles.goButton, { backgroundColor: colors.primary }]}
+                style={[styles.goButton, { backgroundColor: colors.brandText }]}
                 accessibilityLabel="Open verse"
                 accessibilityRole="button"
               >
@@ -483,12 +509,13 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
         {finalSelection && (
           <Animated.View entering={FadeIn.delay(600)}>
             <Pressable
+              onPressIn={haptics.light}
               onPress={startShuffle}
               style={[styles.shuffleAgain, { borderColor: colors.outline, backgroundColor: colors.surface }]}
               accessibilityLabel="Try another random verse"
               accessibilityRole="button"
             >
-              <Ionicons name="shuffle" size={18} color={colors.primary} />
+              <Ionicons name="shuffle" size={18} color={colors.brandText} />
               <Text style={[styles.shuffleAgainText, { color: colors.text }]}>
                 Try Another
               </Text>

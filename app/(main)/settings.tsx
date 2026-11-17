@@ -15,11 +15,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 import Animated, { FadeIn, FadeInUp } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Constants from "expo-constants";
 
+import { haptics } from "@/lib/haptics";
 import { Spacing, Radius } from "@/theme/design-tokens";
 import { useTheme } from "@/context/theme-context";
 import { useContentLanguage } from "@/context/language-context";
@@ -37,6 +37,7 @@ import { APP_URLS } from "@/constants/app-urls";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
 import { CONTENT_LANGUAGES, type ContentLanguage } from "@/constants/languages";
 import { GoldCard } from "@/components/ui/GoldCard";
+import { Duration } from "@/theme/motion";
 import { OrnamentalDivider, ORNAMENTS } from "@/components/ui/OrnamentalDivider";
 import { IOSToggle } from "@/components/ui/IOSToggle";
 
@@ -62,7 +63,7 @@ const SettingItem: React.FC<SettingItemProps> = ({
   isLast = false,
   colors,
 }) => (
-  <Animated.View>
+  <Animated.View entering={FadeInUp.delay(delay).duration(Duration.slow)}>
     <Pressable
       style={[
         styles.settingItem,
@@ -71,13 +72,15 @@ const SettingItem: React.FC<SettingItemProps> = ({
           borderBottomColor: colors.outline + "40",
         },
       ]}
+      onPressIn={() => {
+        if (onPress) haptics.light();
+      }}
       onPress={() => {
-        if (onPress) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         onPress?.();
       }}
     >
       <View style={styles.settingItemLeft}>
-        <Ionicons name={icon} size={22} color={colors.primary} style={styles.settingIcon} />
+        <Ionicons name={icon} size={22} color={colors.brandText} style={styles.settingIcon} />
         <View style={styles.settingTextContainer}>
           <Text style={[styles.settingTitle, { color: colors.text }]}>
             {title}
@@ -164,7 +167,6 @@ export default function SettingsScreen() {
       setStoredPreferences(next, notificationTime).catch(() => {});
       return;
     }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const nextEnabled = !notificationsEnabled;
     if (nextEnabled) {
       const granted = await requestNotificationPermissions();
@@ -179,7 +181,7 @@ export default function SettingsScreen() {
         await setStoredPreferences(true, notificationTime);
         setNotificationsEnabled(true);
         await scheduleNextDailyVerseNotification();
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        haptics.success();
       } catch {
         Alert.alert(
           "Could not enable",
@@ -201,7 +203,6 @@ export default function SettingsScreen() {
   }, [notificationsEnabled, notificationTime]);
 
   const handleThemeToggle = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     toggleTheme();
   };
 
@@ -211,7 +212,7 @@ export default function SettingsScreen() {
         setShowLanguagePicker(false);
         return;
       }
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      haptics.medium();
       setLanguage(code);
       setShowLanguagePicker(false);
       try {
@@ -243,14 +244,12 @@ export default function SettingsScreen() {
     try {
       await setStoredPreferences(notificationsEnabled, nextTime);
       await scheduleNextDailyVerseNotification();
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch {
       // ignore — UI already updated
     }
   }, [draftTime, notificationsEnabled, toTimeString]);
 
   const handleAutoPlayToggle = useCallback(async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const next = !autoPlayAudio;
     setAutoPlayAudio(next);
     try {
@@ -261,7 +260,7 @@ export default function SettingsScreen() {
   }, [autoPlayAudio]);
 
   const handleResetProgress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    haptics.heavy();
     Alert.alert(
       "Reset Reading Progress",
       "This will reset all chapter progress, reading streak, and last read position to zero. This action cannot be undone.",
@@ -272,7 +271,7 @@ export default function SettingsScreen() {
           style: "destructive",
           onPress: async () => {
             await resetAllProgress();
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            haptics.success();
             Alert.alert("Done", "All reading progress has been reset.");
           },
         },
@@ -297,7 +296,7 @@ export default function SettingsScreen() {
           <OrnamentalDivider source={ORNAMENTS.settingsDivider} height={28} />
         </Animated.View>
 
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>
+        <Text style={[styles.sectionTitle, { color: colors.brandText }]}>
           Appearance
         </Text>
         <GoldCard style={styles.sectionCard}>
@@ -310,7 +309,7 @@ export default function SettingsScreen() {
                 accessibilityLabel="Dark mode"
                 value={theme === "dark"}
                 onValueChange={handleThemeToggle}
-                activeColor={colors.primary}
+                activeColor={colors.brandText}
               />
             }
             delay={100}
@@ -323,7 +322,7 @@ export default function SettingsScreen() {
             onPress={() => setShowLanguagePicker(true)}
             rightElement={
               <View style={styles.timeRow}>
-                <Text style={[styles.timeValue, { color: colors.primary }]}>
+                <Text style={[styles.timeValue, { color: colors.brandText }]}>
                   {languageOption.label}
                 </Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
@@ -333,7 +332,7 @@ export default function SettingsScreen() {
           />
         </GoldCard>
 
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>
+        <Text style={[styles.sectionTitle, { color: colors.brandText }]}>
           {Platform.OS === "web" ? "Audio" : "Audio & Notifications"}
         </Text>
         <GoldCard style={styles.sectionCard}>
@@ -351,7 +350,7 @@ export default function SettingsScreen() {
                 value={notificationsEnabled}
                 onValueChange={handleNotificationsToggle}
                 disabled={notificationsLoading}
-                activeColor={colors.primary}
+                activeColor={colors.brandText}
               />
             }
             delay={200}
@@ -363,7 +362,7 @@ export default function SettingsScreen() {
             onPress={openTimePicker}
             rightElement={
               <View style={styles.timeRow}>
-                <Text style={[styles.timeValue, { color: colors.primary }]}>
+                <Text style={[styles.timeValue, { color: colors.brandText }]}>
                   {formatDisplayTime(notificationTime)}
                 </Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
@@ -383,14 +382,14 @@ export default function SettingsScreen() {
                 accessibilityLabel="Auto-play audio"
                 value={autoPlayAudio}
                 onValueChange={handleAutoPlayToggle}
-                activeColor={colors.primary}
+                activeColor={colors.brandText}
               />
             }
             delay={300}
           />
         </GoldCard>
 
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>
+        <Text style={[styles.sectionTitle, { color: colors.brandText }]}>
           Data
         </Text>
         <GoldCard style={styles.sectionCard}>
@@ -411,7 +410,7 @@ export default function SettingsScreen() {
           />
         </GoldCard>
 
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>
+        <Text style={[styles.sectionTitle, { color: colors.brandText }]}>
           About
         </Text>
         <GoldCard style={styles.sectionCard}>
@@ -435,7 +434,7 @@ export default function SettingsScreen() {
               <Ionicons
                 name="chevron-forward"
                 size={18}
-                color={colors.primary}
+                color={colors.brandText}
               />
             }
             delay={500}
@@ -450,7 +449,7 @@ export default function SettingsScreen() {
               <Ionicons
                 name="chevron-forward"
                 size={18}
-                color={colors.primary}
+                color={colors.brandText}
               />
             }
             delay={600}
@@ -461,7 +460,7 @@ export default function SettingsScreen() {
           entering={FadeIn.duration(200)}
           style={styles.aboutBlock}
         >
-          <Text style={[styles.aboutTitle, { color: colors.primary }]}>
+          <Text style={[styles.aboutTitle, { color: colors.brandText }]}>
             Bhagavad Gita
           </Text>
           <Text style={[styles.aboutDescription, { color: colors.text }]}>
@@ -502,6 +501,7 @@ export default function SettingsScreen() {
               return (
                 <Pressable
                   key={opt.code}
+                  onPressIn={haptics.light}
                   onPress={() => handleLanguageSelect(opt.code)}
                   style={[
                     styles.languageRow,
@@ -520,7 +520,7 @@ export default function SettingsScreen() {
                     </Text>
                   </View>
                   {selected ? (
-                    <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+                    <Ionicons name="checkmark-circle" size={22} color={colors.brandText} />
                   ) : (
                     <Ionicons name="ellipse-outline" size={22} color={colors.textMuted} />
                   )}
@@ -529,7 +529,7 @@ export default function SettingsScreen() {
             })}
             <View style={styles.modalActions}>
               <Pressable
-                style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                style={[styles.modalButton, { backgroundColor: colors.brandText }]}
                 onPress={() => setShowLanguagePicker(false)}
               >
                 <Text style={[styles.modalButtonText, { color: colors.onPrimary }]}>
@@ -581,7 +581,8 @@ export default function SettingsScreen() {
                 </Text>
               </Pressable>
               <Pressable
-                style={[styles.modalButtonPrimary, { backgroundColor: colors.primary }]}
+                style={[styles.modalButtonPrimary, { backgroundColor: colors.brandText }]}
+                onPressIn={haptics.light}
                 onPress={saveNotificationTime}
               >
                 <Text style={[styles.modalButtonText, { color: colors.onPrimary }]}>

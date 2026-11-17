@@ -23,8 +23,9 @@ import Animated, {
   runOnJS,
   FadeIn,
 } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
+import * as Clipboard from "expo-clipboard";
 
+import { haptics } from "@/lib/haptics";
 import { getVerseById } from "@/data/verses/verse-catalog";
 import { getAudioFile } from "@/data/verses/verse-audio";
 import { useContentLanguage } from "@/context/language-context";
@@ -44,7 +45,6 @@ import { STORAGE_KEYS } from "@/constants/storage-keys";
 import type { StreakMilestone } from "@/constants/milestones";
 import CelebrationModal from "@/components/modals/CelebrationModal";
 import MilestoneModal from "@/components/modals/MilestoneModal";
-import { SkeletonVerseDetail } from "@/components/ui/SkeletonLoader";
 import { GoldCard } from "@/components/ui/GoldCard";
 import { OrnamentalDivider, ORNAMENTS } from "@/components/ui/OrnamentalDivider";
 import { VerseAudioPlayer } from "@/components/verse/VerseAudioPlayer";
@@ -53,6 +53,7 @@ import {
   StreakShareCardView,
   captureShareCardRef,
   shareImage,
+  shareVerseCard,
 } from "@/services/verse-share";
 import { getVerseNote, setVerseNote } from "@/lib/verse-notes";
 import {
@@ -61,10 +62,12 @@ import {
 } from "@/lib/milestones";
 import { markPathProgressForVerse } from "@/lib/reading-paths";
 import { getDailyVerseNotificationContent, getVerseForDate } from "@/lib/daily-verse";
+import { buildVerseCopyText } from "@/lib/verse-copy";
 
-import { ROUTES } from "@/constants/routes";
+import { ROUTES, DEEP_LINKS } from "@/constants/routes";
 import { VERSE_SEQUENCES } from "@/constants/verse-sequences";
 import { getRouteParam } from "@/lib/route-params";
+import { getScriptureFont } from "@/lib/scripture-font";
 import { Spacing } from "@/theme/design-tokens";
 
 const getAdjacentVerse = (
@@ -104,13 +107,14 @@ export default function VerseDetailScreen() {
     [verse, language]
   );
   const [isSaved, setIsSaved] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [autoPlayAudio, setAutoPlayAudio] = useState(false);
   const [isCommentaryExpanded, setIsCommentaryExpanded] = useState(true);
   // Meaning first; word-by-word grid on demand (it pushed the meaning below the fold).
   const [isWordsExpanded, setIsWordsExpanded] = useState(false);
   const [noteText, setNoteText] = useState("");
   const [showNoteSheet, setShowNoteSheet] = useState(false);
+  const [showVerseActions, setShowVerseActions] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const [milestoneDays, setMilestoneDays] = useState<StreakMilestone | null>(null);
   const [showMilestone, setShowMilestone] = useState(false);
   const router = useRouter();
@@ -138,11 +142,6 @@ export default function VerseDetailScreen() {
     const v = getVerseForDate(new Date(), language);
     return v ? getDailyVerseNotificationContent(v).body.slice(0, 120) : "";
   }, [language]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 480);
-    return () => clearTimeout(timer);
-  }, [idStr]);
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEYS.AUTO_PLAY_AUDIO)
@@ -187,7 +186,7 @@ export default function VerseDetailScreen() {
   }, []);
 
   useEffect(() => {
-    if (verse && !isLoading) {
+    if (verse) {
       const trackReading = async () => {
         const result = await markVerseAsRead(verse.chapter, verse.verse_number);
         if (result?.isNewCompletion && isLastVerseInChapter(verse.chapter, verse.verse_number)) {
@@ -213,13 +212,13 @@ export default function VerseDetailScreen() {
       };
       trackReading();
     }
-  }, [verse, isLoading, markVerseAsRead, isLastVerseInChapter, showToast]);
+  }, [verse, markVerseAsRead, isLastVerseInChapter, showToast]);
 
   useEffect(() => {
-    if (verse && !isLoading) {
+    if (verse) {
       setLastReadVerse(verse.id);
     }
-  }, [verse, isLoading, setLastReadVerse]);
+  }, [verse, setLastReadVerse]);
 
   const checkIfSaved = useCallback(async () => {
     if (!verse) return;
@@ -279,7 +278,7 @@ export default function VerseDetailScreen() {
       await AsyncStorage.setItem(STORAGE_KEYS.SAVED_VERSES, JSON.stringify(verses));
       setIsSaved(!isSaved);
 
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      haptics.medium();
       bookmarkScale.value = withSequence(
         withTiming(1.3, { duration: 150 }),
         withTiming(1, { duration: 150 })
@@ -293,6 +292,40 @@ export default function VerseDetailScreen() {
       console.error("Error toggling verse save:", error);
     }
   }, [verse, isSaved, showToast, bookmarkScale, language]);
+
+  const handleCopyVerse = useCallback(async () => {
+    if (!verse) return;
+    const text = buildVerseCopyText(verse, language);
+    if (!text) return;
+    try {
+      await Clipboard.setStringAsync(text);
+      haptics.success();
+      showToast(
+        `Verse copied · ${verse.chapter}.${verse.verse_number}`,
+        "success",
+        "copy-outline"
+      );
+    } catch (error) {
+      console.error("Copy verse failed:", error);
+      showToast("Could not copy the verse", "error", "alert-circle-outline");
+    }
+  }, [verse, language, showToast]);
+
+  const handleShareVerse = useCallback(async () => {
+    if (!verse || isSharing) return;
+    setIsSharing(true);
+    try {
+      await shareVerseCard(
+        shareCardRef,
+        verse.id,
+        `Bhagavad Gita · Chapter ${verse.chapter}, Verse ${verse.verse_number}`
+      );
+    } catch (error) {
+      console.error("Verse share failed:", error);
+    } finally {
+      setIsSharing(false);
+    }
+  }, [verse, isSharing]);
 
   const handleShareStreak = useCallback(async () => {
     if (!streakShareRef.current) return;
@@ -320,7 +353,6 @@ export default function VerseDetailScreen() {
 
       if (nextVerseNum) {
         const newId = `${chapterId}-${nextVerseNum}`;
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         router.replace(ROUTES.verse(newId));
       }
     },
@@ -376,31 +408,6 @@ export default function VerseDetailScreen() {
   const hasPrevVerse = !!getAdjacentVerse(verse.chapter, verse.verse_number, -1);
   const hasNextVerse = !!getAdjacentVerse(verse.chapter, verse.verse_number, 1);
 
-  if (isLoading) {
-    return (
-      <SafeAreaView
-        style={[verseScreenStyles.container, { backgroundColor: colors.background }]}
-        edges={["bottom"]}
-      >
-        <Stack.Screen
-          options={{
-            headerTitle: `Chapter ${verse.chapter} · Verse ${verse.verse_number}`,
-            headerStyle: { backgroundColor: colors.background },
-            headerTintColor: colors.primary,
-            headerTitleStyle: {
-              color: colors.primary,
-              fontSize: 15,
-              fontFamily: "PlayfairDisplay_700Bold",
-            },
-            headerShadowVisible: false,
-            headerTitleAlign: "center",
-          }}
-        />
-        <SkeletonVerseDetail />
-      </SafeAreaView>
-    );
-  }
-
   const headerTitle = `Chapter ${verse.chapter} · Verse ${verse.verse_number}`;
   const verseRef = `${verse.chapter}.${verse.verse_number}`;
   const wordMeanings = getVerseWordMeanings(verse, language);
@@ -419,6 +426,17 @@ export default function VerseDetailScreen() {
           headerRight: () => (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
               <Pressable
+                onPressIn={haptics.light}
+                onPress={handleShareVerse}
+                disabled={isSharing}
+                style={[verseScreenStyles.saveButton, isSharing && { opacity: 0.4 }]}
+                accessibilityLabel="Share verse"
+                accessibilityRole="button"
+              >
+                <Ionicons name="share-outline" size={22} color={colors.brandText} />
+              </Pressable>
+              <Pressable
+                onPressIn={haptics.light}
                 onPress={toggleSave}
                 style={verseScreenStyles.saveButton}
                 accessibilityLabel={isSaved ? "Remove from saved" : "Save verse"}
@@ -428,15 +446,13 @@ export default function VerseDetailScreen() {
                   <Ionicons
                     name={isSaved ? "bookmark" : "bookmark-outline"}
                     size={24}
-                    color={colors.primary}
+                    color={colors.brandText}
                   />
                 </Animated.View>
               </Pressable>
               <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setShowNoteSheet(true);
-                }}
+                onPressIn={haptics.light}
+                onPress={() => setShowNoteSheet(true)}
                 style={verseScreenStyles.saveButton}
                 accessibilityLabel={noteText.trim() ? "Edit reflection" : "Add reflection"}
                 accessibilityRole="button"
@@ -444,7 +460,7 @@ export default function VerseDetailScreen() {
                 <Ionicons
                   name={noteText.trim() ? "create" : "create-outline"}
                   size={22}
-                  color={colors.primary}
+                  color={colors.brandText}
                 />
               </Pressable>
             </View>
@@ -452,9 +468,9 @@ export default function VerseDetailScreen() {
           headerStyle: {
             backgroundColor: colors.background,
           },
-          headerTintColor: colors.primary,
+          headerTintColor: colors.brandText,
           headerTitleStyle: {
-            color: colors.primary,
+            color: colors.brandText,
             fontSize: 15,
             fontFamily: "PlayfairDisplay_700Bold",
           },
@@ -463,29 +479,20 @@ export default function VerseDetailScreen() {
         }}
       />
 
-      <View
+      <ShareCardView
         ref={shareCardRef}
-        style={{ position: "absolute", left: -9999, top: -9999, opacity: 0 }}
-        collapsable={false}
-      >
-        <ShareCardView
-          title={`Chapter ${verse.chapter}`}
-          subtitle={`Verse ${verse.verse_number}`}
-          sloka={slokaText}
-          meaning={meaningText}
-        />
-      </View>
-      <View
+        title={`Chapter ${verse.chapter}`}
+        subtitle={`Verse ${verse.verse_number}`}
+        sloka={slokaText}
+        meaning={meaningText}
+        link={DEEP_LINKS.verse(verse.id)}
+      />
+      <StreakShareCardView
         ref={streakShareRef}
-        style={{ position: "absolute", left: -9999, top: -9999, opacity: 0 }}
-        collapsable={false}
-      >
-        <StreakShareCardView
-          streakDays={streak.currentStreak}
-          longestStreak={streak.longestStreak}
-          insight={todayInsight}
-        />
-      </View>
+        streakDays={streak.currentStreak}
+        longestStreak={streak.longestStreak}
+        insight={todayInsight}
+      />
 
       <GestureDetector gesture={swipeGesture}>
         <Animated.View style={[{ flex: 1 }, animatedContentStyle]}>
@@ -508,12 +515,17 @@ export default function VerseDetailScreen() {
                   style={[
                     verseScreenStyles.teluguSlokaText,
                     localStyles.slokaText,
-                    { color: colors.text },
+                    { color: colors.text, fontFamily: getScriptureFont(language) },
                   ]}
+                  onLongPress={() => {
+                    haptics.medium();
+                    setShowVerseActions(true);
+                  }}
+                  accessibilityHint="Long-press to copy or share this verse"
                 >
                   {slokaText}
                 </Text>
-                <Text style={[localStyles.verseRef, { color: colors.primary }]}>
+                <Text style={[localStyles.verseRef, { color: colors.brandText }]}>
                   || {verseRef} ||
                 </Text>
                 <OrnamentalDivider
@@ -528,12 +540,15 @@ export default function VerseDetailScreen() {
             <Animated.View entering={FadeIn.delay(200)}>
               <GoldCard style={localStyles.sectionCard}>
                 <View style={localStyles.sectionHeader}>
-                  <Ionicons name="book" size={18} color={colors.primary} />
-                  <Text style={[localStyles.sectionTitle, { color: colors.primary }]}>
+                  <Ionicons name="book" size={18} color={colors.brandText} />
+                  <Text style={[localStyles.sectionTitle, { color: colors.brandText }]}>
                     Meaning
                   </Text>
                 </View>
-                <Text style={[verseScreenStyles.meaningStyle, { color: colors.text }]}>
+                <Text
+                  selectable
+                  style={[verseScreenStyles.meaningStyle, { color: colors.text }]}
+                >
                   {meaningText}
                 </Text>
               </GoldCard>
@@ -550,8 +565,8 @@ export default function VerseDetailScreen() {
                     accessibilityLabel={isWordsExpanded ? "Collapse word meanings" : "Expand word meanings"}
                   >
                     <View style={localStyles.sectionHeader}>
-                      <Ionicons name="book-outline" size={18} color={colors.primary} />
-                      <Text style={[localStyles.sectionTitle, { color: colors.primary }]}>
+                      <Ionicons name="book-outline" size={18} color={colors.brandText} />
+                      <Text style={[localStyles.sectionTitle, { color: colors.brandText }]}>
                         Word meanings
                       </Text>
                     </View>
@@ -603,8 +618,8 @@ export default function VerseDetailScreen() {
             <Animated.View entering={FadeIn.delay(400)}>
               <GoldCard style={localStyles.sectionCard}>
                 <Pressable
+                  onPressIn={haptics.light}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     setIsCommentaryExpanded((v) => !v);
                   }}
                   style={localStyles.commentaryHeader}
@@ -614,8 +629,8 @@ export default function VerseDetailScreen() {
                   }
                 >
                   <View style={localStyles.sectionHeader}>
-                    <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.primary} />
-                    <Text style={[localStyles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>
+                    <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.brandText} />
+                    <Text style={[localStyles.sectionTitle, { color: colors.brandText, marginBottom: 0 }]}>
                       Commentary
                     </Text>
                   </View>
@@ -632,7 +647,10 @@ export default function VerseDetailScreen() {
                 </Pressable>
                 {isCommentaryExpanded && (
                   <View style={{ marginTop: 12 }}>
-                    <Text style={[verseScreenStyles.commentaryText, { color: colors.text }]}>
+                    <Text
+                      selectable
+                      style={[verseScreenStyles.commentaryText, { color: colors.text }]}
+                    >
                       {commentaryText}
                     </Text>
                   </View>
@@ -658,6 +676,7 @@ export default function VerseDetailScreen() {
           ]}
         >
           <Pressable
+            onPressIn={haptics.light}
             onPress={() => navigateToVerse(-1)}
             disabled={!hasPrevVerse}
             hitSlop={8}
@@ -665,18 +684,19 @@ export default function VerseDetailScreen() {
             accessibilityRole="button"
             accessibilityLabel="Previous verse"
           >
-            <Ionicons name="chevron-back" size={24} color={colors.primary} />
+            <Ionicons name="chevron-back" size={24} color={colors.brandText} />
           </Pressable>
           <View style={{ flex: 1 }}>
             <VerseAudioPlayer
               audioSource={verseAudioSource}
-              primaryColor={colors.primary}
+              primaryColor={colors.brandText}
               textMutedColor={colors.textMuted}
               outlineColor={colors.outline}
               autoPlay={autoPlayAudio}
             />
           </View>
           <Pressable
+            onPressIn={haptics.light}
             onPress={() => navigateToVerse(1)}
             disabled={!hasNextVerse}
             hitSlop={8}
@@ -684,7 +704,7 @@ export default function VerseDetailScreen() {
             accessibilityRole="button"
             accessibilityLabel="Next verse"
           >
-            <Ionicons name="chevron-forward" size={24} color={colors.primary} />
+            <Ionicons name="chevron-forward" size={24} color={colors.brandText} />
           </Pressable>
         </View>
       ) : (
@@ -699,6 +719,7 @@ export default function VerseDetailScreen() {
           ]}
         >
           <Pressable
+            onPressIn={haptics.light}
             onPress={() => navigateToVerse(-1)}
             disabled={!hasPrevVerse}
             style={[
@@ -706,12 +727,13 @@ export default function VerseDetailScreen() {
               { borderColor: colors.primary + "88", opacity: hasPrevVerse ? 1 : 0.3 },
             ]}
           >
-            <Text style={{ fontSize: 16, color: colors.primary }}>◀</Text>
-            <Text style={[verseScreenStyles.navButtonText, { color: colors.primary }]}>
+            <Text style={{ fontSize: 16, color: colors.brandText }}>◀</Text>
+            <Text style={[verseScreenStyles.navButtonText, { color: colors.brandText }]}>
               Previous
             </Text>
           </Pressable>
           <Pressable
+            onPressIn={haptics.light}
             onPress={() => navigateToVerse(1)}
             disabled={!hasNextVerse}
             style={[
@@ -719,10 +741,10 @@ export default function VerseDetailScreen() {
               { borderColor: colors.primary + "88", opacity: hasNextVerse ? 1 : 0.3 },
             ]}
           >
-            <Text style={[verseScreenStyles.navButtonText, { color: colors.primary }]}>
+            <Text style={[verseScreenStyles.navButtonText, { color: colors.brandText }]}>
               Next
             </Text>
-            <Text style={{ fontSize: 16, color: colors.primary }}>▶</Text>
+            <Text style={{ fontSize: 16, color: colors.brandText }}>▶</Text>
           </Pressable>
         </View>
       )}
@@ -745,6 +767,59 @@ export default function VerseDetailScreen() {
       />
 
       <Modal
+        visible={showVerseActions}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowVerseActions(false)}
+      >
+        <View style={localStyles.noteBackdrop}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setShowVerseActions(false)}
+            accessibilityLabel="Dismiss verse actions"
+          />
+          <View
+            style={[
+              localStyles.actionSheet,
+              { backgroundColor: colors.surface, borderTopColor: colors.primary + "33" },
+            ]}
+          >
+            <Text style={[localStyles.actionTitle, { color: colors.brandText }]}>
+              Verse {verseRef}
+            </Text>
+            <Pressable
+              onPress={() => {
+                setShowVerseActions(false);
+                void handleCopyVerse();
+              }}
+              style={({ pressed }) => [localStyles.actionRow, pressed && { opacity: 0.6 }]}
+              accessibilityRole="button"
+              accessibilityLabel="Copy verse"
+            >
+              <Ionicons name="copy-outline" size={20} color={colors.brandText} />
+              <Text style={[localStyles.actionLabel, { color: colors.text }]}>
+                Copy verse
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                setShowVerseActions(false);
+                void handleShareVerse();
+              }}
+              style={({ pressed }) => [localStyles.actionRow, pressed && { opacity: 0.6 }]}
+              accessibilityRole="button"
+              accessibilityLabel="Share verse"
+            >
+              <Ionicons name="share-outline" size={20} color={colors.brandText} />
+              <Text style={[localStyles.actionLabel, { color: colors.text }]}>
+                Share verse
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
         visible={showNoteSheet}
         transparent
         animationType="slide"
@@ -762,7 +837,7 @@ export default function VerseDetailScreen() {
           >
             <View style={[localStyles.noteSheet, { backgroundColor: colors.surface }]}>
               <View style={localStyles.noteHeader}>
-                <Text style={[localStyles.noteTitle, { color: colors.primary }]}>
+                <Text style={[localStyles.noteTitle, { color: colors.brandText }]}>
                   Your reflection
                 </Text>
                 <Pressable
@@ -902,6 +977,30 @@ const localStyles = StyleSheet.create({
     flex: 1,
     justifyContent: "flex-end",
     backgroundColor: "rgba(0,0,0,0.35)",
+  },
+  actionSheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 26,
+  },
+  actionTitle: {
+    fontFamily: "PlayfairDisplay_700Bold",
+    fontSize: 20,
+    letterSpacing: 0.2,
+    marginBottom: 6,
+  },
+  actionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 14,
+  },
+  actionLabel: {
+    fontSize: 16,
+    fontWeight: "500",
   },
   noteKeyboard: {
     width: "100%",
