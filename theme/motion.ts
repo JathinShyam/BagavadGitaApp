@@ -12,6 +12,7 @@ export const Duration = {
   base: 220, // default UI transition
   slow: 320, // sheet, modal, ribbon
   ritual: 600, // reward entrance
+  turn: 900, // chariot wheel — one day turning
   ambient: 1200, // shimmer / breathing loop
 } as const;
 

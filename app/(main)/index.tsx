@@ -8,7 +8,15 @@ import {
   Platform,
   Alert,
 } from "react-native";
-import Animated, { FadeIn, FadeInUp } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeInUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 import { Text } from "react-native-paper";
 import { Link, useRouter, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -20,10 +28,13 @@ import { homeScreenStyles } from "@/theme/screen-styles";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useReadingProgress } from "@/hooks/useReadingProgress";
 import SurpriseVerseModal from "@/components/modals/SurpriseVerseModal";
+import { SelectableChip } from "@/components/ui/SelectableChip";
 import { PathPickerModal } from "@/components/practice/PathPickerModal";
 import { PracticeCalendarModal } from "@/components/practice/PracticeCalendarModal";
 import { WidgetNudgeModal } from "@/components/practice/WidgetNudgeModal";
 import { ROUTES } from "@/constants/routes";
+import { Duration, Ease, Spring } from "@/theme/motion";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { CHAPTER_SUMMARIES, getChapterName, type ChapterSummary } from "@/constants/chapter-summaries";
 import {
   getDailyVerseNotificationContent,
@@ -51,6 +62,43 @@ const LOTUS_ICON = require("../../assets/images/lotus-simple.png");
 
 function getStreakLabel(days: number): string {
   return days <= 0 ? "0" : `${days}`;
+}
+
+/** Chapter progress rail — scaleX so no layout pass runs per frame. */
+function ChapterProgressBar({
+  progress,
+  trackColor,
+  fillColor,
+  labelColor,
+}: {
+  progress: number;
+  trackColor: string;
+  fillColor: string;
+  labelColor: string;
+}) {
+  const fill = useSharedValue(0);
+
+  useEffect(() => {
+    fill.value = withTiming(Math.max(0, Math.min(100, progress)) / 100, {
+      duration: Duration.slow,
+      easing: Ease.standard,
+    });
+  }, [progress, fill]);
+
+  const fillStyle = useAnimatedStyle(() => ({
+    transform: [{ scaleX: fill.value }],
+  }));
+
+  return (
+    <View style={styles.chapterTileProgressRow}>
+      <View style={[styles.chapterTileTrack, { backgroundColor: trackColor }]}>
+        <Animated.View
+          style={[styles.chapterTileFill, { backgroundColor: fillColor }, fillStyle]}
+        />
+      </View>
+      <Text style={[styles.chapterTilePct, { color: labelColor }]}>{progress}%</Text>
+    </View>
+  );
 }
 
 export default function HomeScreen() {
@@ -123,6 +171,24 @@ export default function HomeScreen() {
     isDailyGoalComplete,
     isStreakAtRisk,
   } = useReadingProgress();
+
+  // The flame count bumps when today's read lands; otherwise it sits still.
+  const reducedMotion = useReducedMotion();
+  const streakPop = useSharedValue(1);
+  const streakPopStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: streakPop.value }],
+  }));
+  const previousStreakRef = useRef(streak.currentStreak);
+  useEffect(() => {
+    const grew = streak.currentStreak > previousStreakRef.current;
+    previousStreakRef.current = streak.currentStreak;
+    if (!grew || reducedMotion) return;
+
+    streakPop.value = withSequence(
+      withTiming(1.25, { duration: Duration.fast }),
+      withSpring(1, Spring.bouncy)
+    );
+  }, [streak.currentStreak, reducedMotion, streakPop]);
 
   const todaysVerse = useMemo(() => getVerseForDate(new Date(), language), [language]);
   const todayPreview = todaysVerse
@@ -273,27 +339,12 @@ export default function HomeScreen() {
                   {/* An empty 0% bar on every chapter is day-one noise — show the
                       verse count until the reader starts the chapter. */}
                   {progress > 0 ? (
-                    <View style={styles.chapterTileProgressRow}>
-                      <View
-                        style={[
-                          styles.chapterTileTrack,
-                          { backgroundColor: colors.outline + "28" },
-                        ]}
-                      >
-                        <View
-                          style={[
-                            styles.chapterTileFill,
-                            {
-                              width: `${Math.max(0, Math.min(100, progress))}%`,
-                              backgroundColor: colors.primary,
-                            },
-                          ]}
-                        />
-                      </View>
-                      <Text style={[styles.chapterTilePct, { color: colors.textMuted }]}>
-                        {progress}%
-                      </Text>
-                    </View>
+                    <ChapterProgressBar
+                      progress={progress}
+                      trackColor={colors.outline + "28"}
+                      fillColor={colors.primary}
+                      labelColor={colors.textMuted}
+                    />
                   ) : (
                     <Text style={[styles.chapterTilePct, { color: colors.textMuted, textAlign: "left" }]}>
                       {chapter.verses} verses
@@ -436,36 +487,28 @@ export default function HomeScreen() {
             { id: "all", label: "All" },
             { id: "continue", label: "Continue" },
             { id: "completed", label: "Completed" },
-          ].map((f) => {
-            const selected = activeFilter === f.id;
-            return (
-              <Pressable
-                key={f.id}
-                onPress={() => setActiveFilter(f.id as typeof activeFilter)}
-                style={[
-                  styles.filterChip,
-                  selected
-                    ? {
-                        backgroundColor: colors.brandText,
-                        borderColor: colors.primary,
-                      }
-                    : {
-                        backgroundColor: "transparent",
-                        borderColor: colors.primary + "66",
-                      },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.filterChipText,
-                    { color: selected ? colors.onPrimary : colors.brandText },
-                  ]}
-                >
-                  {f.label}
-                </Text>
-              </Pressable>
-            );
-          })}
+          ].map((f) => (
+            <SelectableChip
+              key={f.id}
+              label={f.label}
+              selected={activeFilter === f.id}
+              onPressIn={haptics.light}
+              onPress={() => {
+                haptics.selection();
+                setActiveFilter(f.id as typeof activeFilter);
+              }}
+              containerStyle={styles.filterChip}
+              labelStyle={styles.filterChipText}
+              palette={{
+                idleBackground: colors.background,
+                activeBackground: colors.brandText,
+                idleBorder: colors.primary + "66",
+                activeBorder: colors.primary,
+                idleText: colors.brandText,
+                activeText: colors.onPrimary,
+              }}
+            />
+          ))}
         </View>
         )}
 
@@ -544,10 +587,12 @@ export default function HomeScreen() {
           accessibilityLabel="Open reading calendar. Long press to share streak."
         >
           <Ionicons name="flame" size={14} color={colors.brandText} />
-          <Text style={[styles.streakText, { color: colors.brandText }]}>
+          <Animated.Text
+            style={[styles.streakText, { color: colors.brandText }, streakPopStyle]}
+          >
             {getStreakLabel(streak.currentStreak)}
             {streak.longestStreak > 0 ? ` · Best ${streak.longestStreak}` : ""}
-          </Text>
+          </Animated.Text>
         </Pressable>
       </Animated.View>
       <FlatList
@@ -845,8 +890,10 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   chapterTileFill: {
+    width: "100%",
     height: "100%",
     borderRadius: 999,
+    transformOrigin: "left",
   },
   chapterTilePct: {
     fontSize: 11,

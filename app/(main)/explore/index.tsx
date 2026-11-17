@@ -15,6 +15,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useMemo, useState } from "react";
 
 import { haptics } from "@/lib/haptics";
+import { SelectableChip } from "@/components/ui/SelectableChip";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useContentLanguage } from "@/context/language-context";
 import { useReadingProgress } from "@/hooks/useReadingProgress";
@@ -119,36 +120,28 @@ export default function ExploreScreen() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.moodRow}
       >
-        {CATEGORIES.map((cat) => {
-          const selected = selectedMoodId === cat.id;
-          return (
-            <Pressable
-              key={cat.id}
-              onPressIn={haptics.light}
-              onPress={() => {
-                haptics.selection();
-                setSelectedMoodId(cat.id);
-              }}
-              style={[
-                styles.moodChip,
-                {
-                  borderColor: selected ? colors.primary : colors.outline + "44",
-                  backgroundColor: selected ? colors.primary + "22" : colors.surface,
-                },
-              ]}
-            >
-              <Text
-                style={{
-                  color: selected ? colors.brandText : colors.text,
-                  fontWeight: "600",
-                  fontSize: 13,
-                }}
-              >
-                {cat.name}
-              </Text>
-            </Pressable>
-          );
-        })}
+        {CATEGORIES.map((cat) => (
+          <SelectableChip
+            key={cat.id}
+            label={cat.name}
+            selected={selectedMoodId === cat.id}
+            onPressIn={haptics.light}
+            onPress={() => {
+              haptics.selection();
+              setSelectedMoodId(cat.id);
+            }}
+            containerStyle={styles.moodChip}
+            labelStyle={styles.moodChipText}
+            palette={{
+              idleBackground: colors.surface,
+              activeBackground: colors.primary + "22",
+              idleBorder: colors.outline + "44",
+              activeBorder: colors.primary,
+              idleText: colors.text,
+              activeText: colors.brandText,
+            }}
+          />
+        ))}
       </ScrollView>
 
       {selectedMood && featuredVerse && (
@@ -315,6 +308,10 @@ const styles = StyleSheet.create({
   moodRow: {
     gap: 8,
     paddingBottom: 4,
+  },
+  moodChipText: {
+    fontWeight: "600",
+    fontSize: 13,
   },
   moodChip: {
     flexDirection: "row",

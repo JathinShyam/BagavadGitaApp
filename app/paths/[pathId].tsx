@@ -1,12 +1,23 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { View, StyleSheet, Pressable, ScrollView, Alert } from "react-native";
 import { Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import Animated, {
+  cancelAnimation,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 
 import { haptics } from "@/lib/haptics";
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { Duration, Ease } from "@/theme/motion";
 import { useContentLanguage } from "@/context/language-context";
 import { ROUTES } from "@/constants/routes";
 import { getRouteParam } from "@/lib/route-params";
@@ -23,6 +34,104 @@ import {
   type ActiveReadingPath,
 } from "@/lib/reading-paths";
 import { useToast } from "@/components/ui/Toast";
+
+/** Gold connector that fills as days are completed, from the top down. */
+function TimelineConnector({
+  filled,
+  index,
+  idleColor,
+  fillColor,
+}: {
+  filled: boolean;
+  index: number;
+  idleColor: string;
+  fillColor: string;
+}) {
+  const fill = useSharedValue(0);
+
+  useEffect(() => {
+    fill.value = withDelay(
+      index * 40,
+      withTiming(filled ? 1 : 0, {
+        duration: Duration.slow,
+        easing: Ease.standard,
+      })
+    );
+  }, [filled, index, fill]);
+
+  const fillStyle = useAnimatedStyle(() => ({
+    transform: [{ scaleY: fill.value }],
+  }));
+
+  return (
+    <View style={[styles.timelineLine, { backgroundColor: idleColor }]}>
+      <Animated.View
+        style={[
+          styles.timelineLineFill,
+          { backgroundColor: fillColor },
+          fillStyle,
+        ]}
+      />
+    </View>
+  );
+}
+
+/** Timeline dot: checked when done, breathing when it is the next day. */
+function TimelineDot({
+  done,
+  isNext,
+  activeColor,
+  idleColor,
+  onPrimary,
+}: {
+  done: boolean;
+  isNext: boolean;
+  activeColor: string;
+  idleColor: string;
+  onPrimary: string;
+}) {
+  const reducedMotion = useReducedMotion();
+  const pulse = useSharedValue(1);
+
+  useEffect(() => {
+    if (!isNext || reducedMotion) {
+      pulse.value = 1;
+      return;
+    }
+
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(1.16, { duration: Duration.ritual, easing: Ease.inOut }),
+        withTiming(1, { duration: Duration.ritual, easing: Ease.inOut })
+      ),
+      -1,
+      false
+    );
+
+    return () => cancelAnimation(pulse);
+  }, [isNext, reducedMotion, pulse]);
+
+  const pulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulse.value }],
+  }));
+
+  const active = done || isNext;
+
+  return (
+    <Animated.View
+      style={[
+        styles.timelineDot,
+        {
+          backgroundColor: active ? activeColor : idleColor,
+          borderColor: active ? activeColor : idleColor,
+        },
+        pulseStyle,
+      ]}
+    >
+      {done && <Ionicons name="checkmark" size={10} color={onPrimary} />}
+    </Animated.View>
+  );
+}
 
 export default function PathDetailScreen() {
   const { pathId } = useLocalSearchParams<{ pathId: string }>();
@@ -173,33 +282,19 @@ export default function PathDetailScreen() {
           return (
             <View key={day.id} style={styles.timelineRow}>
               <View style={styles.timelineRail}>
-                <View
-                  style={[
-                    styles.timelineDot,
-                    {
-                      backgroundColor: done
-                        ? colors.brandText
-                        : isNext
-                          ? colors.brandText
-                          : colors.outline + "66",
-                      borderColor: done || isNext ? colors.brandText : colors.outline + "66",
-                    },
-                  ]}
-                >
-                  {done && (
-                    <Ionicons name="checkmark" size={10} color={colors.onPrimary} />
-                  )}
-                </View>
+                <TimelineDot
+                  done={done}
+                  isNext={isNext}
+                  activeColor={colors.brandText}
+                  idleColor={colors.outline + "66"}
+                  onPrimary={colors.onPrimary}
+                />
                 {!isLast && (
-                  <View
-                    style={[
-                      styles.timelineLine,
-                      {
-                        backgroundColor: done
-                          ? colors.primary + "55"
-                          : colors.outline + "33",
-                      },
-                    ]}
+                  <TimelineConnector
+                    filled={done}
+                    index={index}
+                    idleColor={colors.outline + "33"}
+                    fillColor={colors.primary + "55"}
                   />
                 )}
               </View>
@@ -233,6 +328,7 @@ export default function PathDetailScreen() {
                 {day.verseIds.map((vid) => (
                   <Pressable
                     key={vid}
+                    onPressIn={haptics.light}
                     onPress={() => openDayVerse(vid)}
                     style={styles.verseLink}
                     hitSlop={4}
@@ -331,6 +427,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 0,
     minHeight: 12,
+  },
+  timelineLineFill: {
+    ...StyleSheet.absoluteFillObject,
+    transformOrigin: "top",
   },
   dayBody: {
     flex: 1,

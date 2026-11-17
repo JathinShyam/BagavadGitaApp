@@ -37,6 +37,7 @@ import { APP_URLS } from "@/constants/app-urls";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
 import { CONTENT_LANGUAGES, type ContentLanguage } from "@/constants/languages";
 import { GoldCard } from "@/components/ui/GoldCard";
+import { Duration } from "@/theme/motion";
 import { OrnamentalDivider, ORNAMENTS } from "@/components/ui/OrnamentalDivider";
 import { IOSToggle } from "@/components/ui/IOSToggle";
 
@@ -62,7 +63,7 @@ const SettingItem: React.FC<SettingItemProps> = ({
   isLast = false,
   colors,
 }) => (
-  <Animated.View>
+  <Animated.View entering={FadeInUp.delay(delay).duration(Duration.slow)}>
     <Pressable
       style={[
         styles.settingItem,

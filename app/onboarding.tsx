@@ -25,6 +25,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { haptics } from "@/lib/haptics";
+import { SelectableChip } from "@/components/ui/SelectableChip";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { ROUTES } from "@/constants/routes";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
@@ -236,80 +237,58 @@ export default function OnboardingScreen() {
 
           {item.kind === "language" && (
             <View style={styles.timeChips}>
-              {CONTENT_LANGUAGES.map((opt) => {
-                const selected = language === opt.code;
-                return (
-                  <Pressable
-                    key={opt.code}
-                    onPressIn={haptics.light}
-                    onPress={() => {
-                      haptics.selection();
-                      setLanguage(opt.code);
-                    }}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected }}
-                    accessibilityLabel={opt.label}
-                    style={[
-                      styles.timeChip,
-                      selected
-                        ? { backgroundColor: colors.brandText }
-                        : {
-                            backgroundColor: "transparent",
-                            borderColor: colors.outline + "55",
-                            borderWidth: 1,
-                          },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.timeChipText,
-                        { color: selected ? colors.onPrimary : colors.textMuted },
-                      ]}
-                    >
-                      {opt.nativeLabel}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+              {CONTENT_LANGUAGES.map((opt) => (
+                <SelectableChip
+                  key={opt.code}
+                  label={opt.nativeLabel}
+                  selected={language === opt.code}
+                  onPressIn={haptics.light}
+                  onPress={() => {
+                    haptics.selection();
+                    setLanguage(opt.code);
+                  }}
+                  accessibilityRole="radio"
+                  accessibilityLabel={opt.label}
+                  containerStyle={styles.timeChip}
+                  labelStyle={styles.timeChipText}
+                  palette={{
+                    idleBackground: colors.background,
+                    activeBackground: colors.brandText,
+                    idleBorder: colors.outline + "55",
+                    activeBorder: colors.brandText,
+                    idleText: colors.textMuted,
+                    activeText: colors.onPrimary,
+                  }}
+                />
+              ))}
             </View>
           )}
 
           {item.kind === "reminder" && (
             <View style={styles.timeChips}>
-              {REMINDER_TIMES.map((t) => {
-                const selected = reminderTime === t;
-                return (
-                  <Pressable
-                    key={t}
-                    onPressIn={haptics.light}
-                    onPress={() => {
-                      haptics.selection();
-                      setReminderTime(t);
-                    }}
-                    style={[
-                      styles.timeChip,
-                      selected
-                        ? { backgroundColor: colors.brandText }
-                        : {
-                            backgroundColor: "transparent",
-                            borderColor: colors.outline + "55",
-                            borderWidth: 1,
-                          },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.timeChipText,
-                        {
-                          color: selected ? colors.onPrimary : colors.textMuted,
-                        },
-                      ]}
-                    >
-                      {formatChipLabel(t)}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+              {REMINDER_TIMES.map((t) => (
+                <SelectableChip
+                  key={t}
+                  label={formatChipLabel(t)}
+                  selected={reminderTime === t}
+                  onPressIn={haptics.light}
+                  onPress={() => {
+                    haptics.selection();
+                    setReminderTime(t);
+                  }}
+                  accessibilityRole="radio"
+                  containerStyle={styles.timeChip}
+                  labelStyle={styles.timeChipText}
+                  palette={{
+                    idleBackground: colors.background,
+                    activeBackground: colors.brandText,
+                    idleBorder: colors.outline + "55",
+                    activeBorder: colors.brandText,
+                    idleText: colors.textMuted,
+                    activeText: colors.onPrimary,
+                  }}
+                />
+              ))}
             </View>
           )}
         </Animated.View>
@@ -472,6 +451,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 14,
+    borderWidth: 1,
   },
   timeChipText: {
     fontSize: 14,
