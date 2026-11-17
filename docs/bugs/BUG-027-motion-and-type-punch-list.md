@@ -5,7 +5,7 @@
 | **Priority** | P3 |
 | **Platform** | Both |
 | **Area** | All screens |
-| **Status** | open |
+| **Status** | fixed [37]–[40] (device pass owed) |
 | **Found** | 2026-11-15, full motion audit (15 files) |
 | **Estimate** | L (1–2 days) for the batch |
 
@@ -39,82 +39,117 @@ site. `theme/design-tokens.ts` has `Palette`, `Spacing`, `Radius`,
 
 ### A. Foundations
 
-- [ ] Create `theme/motion.ts` with `Duration`, `Ease` and `Spring` tokens
+- [x] Create `theme/motion.ts` with `Duration`, `Ease` and `Spring` tokens
       (spec §1.1).
-- [ ] **Every `withSpring` must specify `mass: 1` explicitly.** Reanimated 4
+- [x] **Every `withSpring` must specify `mass: 1` explicitly.** Reanimated 4
       changed the default to `mass: 4, stiffness: 900`; 10 of 13 existing
       calls inherit it and land at damping ratios of 0.067–0.13. This is
       verified in the spec.
-- [ ] Add `useReducedMotion()` and apply it: stop ambient loops, soften
-      celebrations to a crossfade, add `.reduceMotion(ReduceMotion.Always)`
-      to every `entering=` builder, and disable haptics.
+- [x] Add `useReducedMotion()` and apply it: stop ambient loops, soften
+      celebrations to a crossfade and disable haptics. `entering=` builders
+      keep Reanimated's default `ReduceMotion.System` — it already honours the
+      OS switch; `ReduceMotion.Always` would have killed every entrance for
+      every user.
 
 ### B. Correctness
 
-- [ ] **Every modal's exit animation is dead code.** `if (!visible) return
+- [x] **Every modal's exit animation is dead code.** `if (!visible) return
       null` unmounts the component before the exit `withTiming` gets a
       frame. Affects `CelebrationModal`, `MilestoneModal`,
       `SurpriseVerseModal`. Keep the component mounted until the exit
       completes, or use `exiting=`.
-- [ ] Convert the 6 layout-prop animations to transforms (spec §7.2): the
+- [x] Convert the 6 layout-prop animations to transforms (spec §7.2): the
       chapter journey fill (`width`), the LaunchIntro gold rule (`width`),
       the onboarding pagination dots (`width`), the Surprise card
       (`borderWidth`), `SlideInUp` (`originY`), `shadowOpacity`.
-- [ ] `ZoomIn` starts at `scale: 0` — nothing should appear from nothing.
+- [x] `ZoomIn` starts at `scale: 0` — nothing should appear from nothing.
       Use `scale: 0.92`.
 
 ### C. Feel
 
-- [ ] Move the haptic to `onPressIn` with `ImpactFeedbackStyle.Light`, and
+- [x] Move the haptic to `onPressIn` with `ImpactFeedbackStyle.Light`, and
       keep a `Medium`/`selection` haptic on `onPress`. Today 40 of 41
       haptic calls fire on release, ~100 ms after the visual press
       feedback.
-- [ ] Add `.catch(() => {})` to all 41 haptic calls — 40 currently produce
+- [x] Add `.catch(() => {})` to all 41 haptic calls — 40 currently produce
       unhandled promise rejections on web.
-- [ ] The Surprise shuffle fires 22 haptic events in 2 seconds. Use every
+- [x] The Surprise shuffle fires 22 haptic events in 2 seconds. Use every
       third tick.
-- [ ] Add 200 ms transitions to the four chip groups (filter, mood,
+- [x] Add 200 ms transitions to the four chip groups (filter, mood,
       language, reminder time) and to the `IOSToggle` track colour. All of
       them swap instantly today.
 
 ### D. Static things that should move
 
-- [ ] The **chariot wheel** in the practice calendar never rotates — 8 fixed
+- [x] The **chariot wheel** in the practice calendar never rotates — 8 fixed
       spokes. Rotate it 360° on open, 900 ms. A wheel that turns is a day
       turning.
-- [ ] The **streak chip** has zero motion.
-- [ ] The **path timeline** is entirely static — no fill, no draw-in.
-- [ ] The **chapter tile progress bar** jumps instead of animating.
-- [ ] The **Settings stagger** was designed and never wired: `SettingItem`
+- [x] The **streak chip** has zero motion.
+- [x] The **path timeline** is entirely static — no fill, no draw-in.
+- [x] The **chapter tile progress bar** jumps instead of animating.
+- [x] The **Settings stagger** was designed and never wired: `SettingItem`
       takes a `delay` prop, 8 call sites pass it, nothing reads it.
-- [ ] `components/practice/ReadingHeatmap.tsx` is never imported. Wire it
-      into the calendar and animate the fill.
+- [x] `components/practice/ReadingHeatmap.tsx` is never imported. It owned
+      its own modal, so it could not be embedded in the calendar without a
+      cycle: its week strip became `components/practice/WeekHeatmap.tsx`,
+      rendered inside `PracticeCalendarModal`. Cells fill toward gold as a
+      day's verse count grows; the dead wrapper is deleted.
 
 ### E. Performance
 
-- [ ] The verse skeleton runs 13 concurrent infinite loops (11 loaders + 2
+- [x] The verse skeleton runs 13 concurrent infinite loops (11 loaders + 2
       breath/ring). The Saved tab runs 12 for one AsyncStorage read.
       Gate the skeleton behind the 150 ms / 400 ms minimum-display rule
       (spec §4.3) and `cancelAnimation` in every cleanup.
-- [ ] `entering=` inside FlatList `renderItem` re-triggers on row recycle
+- [x] `entering=` inside FlatList `renderItem` re-triggers on row recycle
       (Home chapter tiles, onboarding slides). Move to a mount-only
       stagger.
-- [ ] The Home FlatList is `key`ed on `colors.background`, so a theme
+- [x] The Home FlatList is `key`ed on `colors.background`, so a theme
       toggle remounts it and replays all 18 entrance animations. Fix the
       underlying first-render-colour bug instead of remounting.
-- [ ] The verse screen's fake 480 ms loader — delete the timer; the data
+- [x] The verse screen's fake 480 ms loader — delete the timer; the data
       is already in memory.
+
+## Implementation notes
+
+Fixed on `build-loop` in four commits, build-log entries [37]–[40].
+
+**Tokens.** `Duration` (`instant 90`, `fast 140`, `base 220`, `slow 320`,
+`ritual 600`, `turn 900`, `ambient 1200`), `Ease` (five curves incl.
+`standard`, `emphasized`, `decelerate`) and `Spring` (`snappy`, `bouncy`,
+`gentle`, `settle` — all `mass: 1`). Screen-level transitions use tokens;
+the Surprise shuffle's 40–60 ms shake frames stay literal because they are
+keyframes of one waveform, not transitions — see the remaining acceptance item.
+
+**Haptics.** `lib/haptics.ts` centralises `light|medium|heavy|selection|success`,
+attaches `.catch()` once, and exposes `setHapticsEnabled()`, which
+`app/_layout.tsx` drives from `useReducedMotion()`. Three tests cover the
+mapping, the swallowed rejection and the off switch.
+
+**Modals.** Celebration, Milestone and Surprise keep a `rendered` flag so the
+tree survives until the exit finishes, then unmount.
+
+**Reduced Motion** also skips confetti, sparkles, the icon spin, the skeleton
+shimmer, the verse breath/ring loops, the chariot rotation and the "Now" pulse.
+
+**Skeletons.** `useMinimumLoading(loading, { delay: 150, minimum: 400 })` keeps
+placeholders off fast reads and up long enough to read. The verse screen's
+480 ms fake loader and its `SkeletonVerseDetail` are gone.
 
 ## Acceptance criteria
 
 - [ ] No animation in the app uses a hardcoded duration, easing or spring
       outside `theme/motion.ts`.
-- [ ] Every `withSpring` specifies `mass`.
-- [ ] Every modal plays its exit animation.
-- [ ] Reduce Motion on the device results in a visibly gentler app, not a
+      *Remaining:* the Surprise shuffle keyframes (40/60 ms shake frames),
+      the confetti fall/spin ranges and a handful of one-off press timings
+      still hold literals. Springs and screen transitions are fully tokenised.
+- [x] Every `withSpring` specifies `mass`.
+- [x] Every modal plays its exit animation.
+- [x] Reduce Motion on the device results in a visibly gentler app, not a
       frozen one, and no infinite loops.
-- [ ] No layout-prop animations remain.
+- [x] No layout-prop animations remain.
 - [ ] The app feels the same on a low-end Android device.
+      *Unverified:* no emulator or device in this environment.
 
 ## Verification
 

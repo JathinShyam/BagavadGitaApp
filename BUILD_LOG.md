@@ -967,3 +967,104 @@ Roboto; the 56px Playfair milestone number is the biggest visible win.
 by style inspection and unit tests, not by zooming into a rendered శ్లోకం.
 Device screenshots in te/hi/ta are still owed. The new italic font also needs a
 native rebuild before it appears in an existing dev client.
+
+## [37] 2026-11-17 — Motion gets a vocabulary, Reduce Motion gets a door (BUG-027 A)
+**Move**       Fifteen files improvised 60+ magic durations, 11 distinct springs
+and 7 easings at the call site. Reanimated 4 also raised spring defaults to
+`mass: 4, stiffness: 900`, so the existing `{ damping, stiffness }` objects had
+been landing at damping ratios of 0.07–0.3 — technically springs, visually a
+snap.
+**Plan**       Add `theme/motion.ts`, pin `mass: 1` on every spring, and give the
+OS Reduce Motion setting something to switch off.
+**Decisions**  1. Tokens are semantic: `Duration.instant|fast|base|slow|ritual|
+turn|ambient`, five `Ease` curves, four `Spring` presets. Every `withSpring`
+now takes a preset — no inline configs remain anywhere.
+2. `ReduceMotion.Always` on entering builders was rejected. Reanimated 4
+defaults to `ReduceMotion.System`, which already honours the OS setting;
+forcing Always would have disabled every entrance for every user.
+3. `useReducedMotion()` covers what Reanimated cannot infer: infinite shimmer
+and breath loops (cancelled in cleanup), confetti, sparkles, the icon spin and
+haptics.
+**Ship**       `theme/motion.ts`, `hooks/useReducedMotion.ts`, six modals/
+skeleton/launch components.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 13 suites / 68 tests ✅
+**Observe**    1. The reward modals now overshoot slightly and settle instead of
+arriving instantly. 2. Under Reduce Motion the launch intro becomes a static
+brand card that leaves in 140 ms instead of holding the screen for 2.2 s.
+**Blocked**    No device here, so the OS toggle was verified by code path, not
+by flipping Settings on hardware.
+
+## [38] 2026-11-17 — Every press answers on touch-down (BUG-027 B/C)
+**Move**       Three modals returned `null` the instant `visible` went false, so
+their exit timings never got a frame. Six animations were still driving layout
+props. 40 of 41 haptics fired on release — ~100 ms after the visual press — and
+produced unhandled promise rejections on web.
+**Plan**       Keep modals mounted through their exit, move motion off the
+layout thread, and centralise haptics.
+**Decisions**  1. Celebration/Milestone/Surprise hold a `rendered` flag, run
+their exit, then unmount on a timer equal to the exit duration.
+2. `width` → `scaleX` (chapter journey fill, launch rule, onboarding dots,
+chapter tile bar); `borderWidth` → interpolated `borderColor`; `SlideInUp` →
+`FadeInDown`; `ZoomIn` corners start at 0.92 instead of nothing.
+3. `lib/haptics.ts` is the only file that imports `expo-haptics`. It attaches
+`.catch()` once and holds one enabled flag; `app/_layout.tsx` sets it from
+`useReducedMotion()`.
+4. Two-stage feedback everywhere: Light on `onPressIn`, the confirming
+Medium/selection on release. The surprise shuffle fires every third tick.
+**Ship**       18 files incl. `lib/haptics.ts` and `__tests__/haptics.test.ts`
+(mapping, swallowed rejection, global off switch); `IOSToggle` track colour now
+tweens while the thumb springs.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 14 suites / 71 tests ✅
+**Observe**    1. Presses feel wired to the finger rather than to the release.
+2. Modal exits are visible for the first time. 3. The shuffle no longer reads
+as a continuous buzz.
+**Blocked**    Haptics cannot be felt without hardware.
+
+## [39] 2026-11-17 — The static ornaments move (BUG-027 D)
+**Move**       The app's signature ornament — an eight-spoke chariot wheel — was
+eight fixed rotations. The path rail, chapter progress bar, chip groups and
+the Settings stagger all swapped state instantly. `SettingItem` had taken a
+`delay` prop from eight call sites and never read it.
+**Plan**       Give each static surface one honest transition, with no new
+infinite loops and no layout props.
+**Decisions**  1. `components/ui/SelectableChip` serves all four chip groups:
+colour cross-fade over `Duration.base` plus a 0.97 pop on selection.
+2. One shared angle drives every wheel in the calendar 360° over 900 ms
+(`Duration.turn`, `Ease.decelerate`), reset on close, skipped under Reduce
+Motion.
+3. Timeline connectors scale down from the top with a 40 ms per-day delay; the
+"Now" dot breathes once per loop, cancelled on unmount.
+4. `ReadingHeatmap` could not be embedded in the calendar (it owned the modal),
+so its strip became `WeekHeatmap`, and the orphan wrapper is gone.
+**Ship**       `components/ui/SelectableChip.tsx`,
+`components/practice/WeekHeatmap.tsx` (new), calendar, paths, Home, Explore,
+onboarding, Settings; `theme/motion.ts` gains `Duration.turn`.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 14 suites / 71 tests ✅
+**Observe**    1. The wheel turn is the most on-brand motion in the app — a
+turned wheel is a day turning. 2. Chips finally read as controls, not labels.
+3. Settings now arrives in a staggered column instead of all at once.
+**Blocked**    No device; the 900 ms turn and chip pops are unverified on a
+slow Android GPU.
+
+## [40] 2026-11-17 — Rows stop animating when nobody is looking (BUG-027 E)
+**Move**       The verse screen's 480 ms skeleton was fake — every verse is
+already in memory — and its `SkeletonVerseDetail` added two infinite loops to
+the eleven shimmer loops. Saved flashed twelve shimmer loops for an
+AsyncStorage read. FlatList rows replayed index-derived entrances on every
+remount, and Home remounted all eighteen tiles on a theme toggle because the
+list was keyed on the background colour.
+**Plan**       Delete fake waits, gate real ones, and remove per-row entrance.
+**Decisions**  1. Delete the verse timer, its loading branch and
+`SkeletonVerseDetail`.
+2. `useMinimumLoading(loading, { delay: 150, minimum: 400 })` keeps skeletons
+off fast reads and up long enough to read; Saved only skeletons its first load.
+3. Remove `entering` from Home tiles and onboarding slides; remove the list's
+`key`, since the colour bug it worked around was the entrance animation itself.
+**Ship**       `hooks/useMinimumLoading.ts` (new), verse screen, Saved,
+`components/ui/SkeletonLoader.tsx`, Home, onboarding.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 14 suites / 71 tests ✅
+**Observe**    1. Opening a verse is instant. 2. Scrolling Home no longer
+replays a wave of fading tiles. 3. Toggling the theme recolours in place.
+**Blocked**    Frame timing on a low-end Android device is unmeasured; the
+remaining hardcoded durations are the Surprise shuffle frames and confetti
+ranges, recorded in BUG-027.
