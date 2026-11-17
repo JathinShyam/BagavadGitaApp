@@ -13,7 +13,9 @@ import Animated, {
 import * as Haptics from "expo-haptics";
 
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { Type } from "@/theme/design-tokens";
+import { Duration, Spring } from "@/theme/motion";
 import type { StreakMilestone } from "@/constants/milestones";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -45,22 +47,28 @@ type Props = {
 
 export default function MilestoneModal({ visible, days, onClose, onShare }: Props) {
   const { colors } = useAppTheme();
+  const reducedMotion = useReducedMotion();
   const scale = useSharedValue(0.8);
   const opacity = useSharedValue(0);
 
   useEffect(() => {
     if (visible && days) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      opacity.value = withTiming(1, { duration: 220 });
-      scale.value = withSequence(
-        withSpring(1.05, { damping: 12 }),
-        withSpring(1, { damping: 14 })
-      );
+      opacity.value = withTiming(1, { duration: Duration.base });
+      scale.value = reducedMotion
+        ? 1
+        : withSequence(
+            withSpring(1.05, Spring.bouncy),
+            withSpring(1, Spring.bouncy)
+          );
     } else {
-      opacity.value = withTiming(0, { duration: 160 });
-      scale.value = withTiming(0.9, { duration: 160, easing: Easing.out(Easing.quad) });
+      opacity.value = withTiming(0, { duration: Duration.fast });
+      scale.value = withTiming(reducedMotion ? 1 : 0.9, {
+        duration: Duration.fast,
+        easing: Easing.out(Easing.quad),
+      });
     }
-  }, [visible, days, opacity, scale]);
+  }, [visible, days, reducedMotion, opacity, scale]);
 
   const backdropStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
   const cardStyle = useAnimatedStyle(() => ({

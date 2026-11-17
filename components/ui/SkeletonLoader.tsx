@@ -8,10 +8,12 @@ import Animated, {
   withSequence,
   Easing,
   interpolate,
+  cancelAnimation,
   FadeIn,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -32,15 +34,20 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
   tone = "neutral",
 }) => {
   const { isDark, colors } = useAppTheme();
+  const reducedMotion = useReducedMotion();
   const shimmerValue = useSharedValue(0);
 
   useEffect(() => {
+    if (reducedMotion) return;
+
     shimmerValue.value = withRepeat(
       withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.ease) }),
       -1,
       false
     );
-  }, [shimmerValue]);
+
+    return () => cancelAnimation(shimmerValue);
+  }, [shimmerValue, reducedMotion]);
 
   const animatedStyle = useAnimatedStyle(() => {
     const translateX = interpolate(
@@ -137,10 +144,13 @@ export const SkeletonVerseCard: React.FC<{ style?: object }> = ({ style }) => {
 /** Calm gold opening state for verse detail — no boxed white cards. */
 export const SkeletonVerseDetail: React.FC = () => {
   const { colors } = useAppTheme();
+  const reducedMotion = useReducedMotion();
   const breath = useSharedValue(0);
   const ring = useSharedValue(0);
 
   useEffect(() => {
+    if (reducedMotion) return;
+
     breath.value = withRepeat(
       withSequence(
         withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
@@ -154,7 +164,12 @@ export const SkeletonVerseDetail: React.FC = () => {
       -1,
       false
     );
-  }, [breath, ring]);
+
+    return () => {
+      cancelAnimation(breath);
+      cancelAnimation(ring);
+    };
+  }, [breath, ring, reducedMotion]);
 
   const orbStyle = useAnimatedStyle(() => ({
     transform: [{ scale: 0.92 + breath.value * 0.08 }],

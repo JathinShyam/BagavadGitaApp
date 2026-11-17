@@ -19,6 +19,8 @@ import Animated, {
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { Spring } from "@/theme/motion";
 import { useContentLanguage } from "@/context/language-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { VERSE_SEQUENCES } from "@/constants/verse-sequences";
@@ -49,6 +51,7 @@ const ShuffleCard: React.FC<{
 }> = ({ chapter, verse, index, isActive, isFinal }) => {
   const { colors, isDark } = useAppTheme();
   const { language } = useContentLanguage();
+  const reducedMotion = useReducedMotion();
   const scale = useSharedValue(0.8);
   const opacity = useSharedValue(0);
   const rotateY = useSharedValue(0);
@@ -60,6 +63,17 @@ const ShuffleCard: React.FC<{
   const chapterData = chapters[chapter - 1];
 
   useEffect(() => {
+    if (reducedMotion) {
+      opacity.value = 1;
+      scale.value = 1;
+      translateY.value = 0;
+      imageScale.value = 1;
+      rotateY.value = 0;
+      rotateZ.value = 0;
+      borderGlow.value = isFinal ? 1 : 0;
+      return;
+    }
+
     if (isActive) {
       opacity.value = withTiming(1, { duration: 100 });
       scale.value = withSequence(
@@ -77,15 +91,15 @@ const ShuffleCard: React.FC<{
         withTiming(-2, { duration: 40 }),
         withTiming(0, { duration: 40 })
       );
-      translateY.value = withSpring(0, { damping: 15 });
+      translateY.value = withSpring(0, Spring.gentle);
       imageScale.value = withSequence(
         withTiming(1.1, { duration: 60 }),
         withTiming(1, { duration: 60 })
       );
     } else if (isFinal) {
       opacity.value = withTiming(1, { duration: 400 });
-      scale.value = withSpring(1, { damping: 10, stiffness: 80 });
-      translateY.value = withSpring(0, { damping: 12 });
+      scale.value = withSpring(1, Spring.bouncy);
+      translateY.value = withSpring(0, Spring.gentle);
       imageScale.value = withTiming(1.05, { duration: 600 });
       borderGlow.value = withSequence(
         withTiming(1, { duration: 300 }),
@@ -98,7 +112,7 @@ const ShuffleCard: React.FC<{
     }
     // Shared values are stable references; only the flags drive this animation.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isActive, isFinal]);
+  }, [isActive, isFinal, reducedMotion]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
@@ -231,7 +245,7 @@ const Sparkle: React.FC<{ delay: number; startX: number; startY: number }> = ({
     scale.value = withDelay(
       delay,
       withSequence(
-        withSpring(1, { damping: 8 }),
+        withSpring(1, Spring.bouncy),
         withTiming(0, { duration: 300 })
       )
     );
@@ -279,6 +293,7 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
   onClose,
 }) => {
   const { colors, isDark } = useAppTheme();
+  const reducedMotion = useReducedMotion();
   const [isShuffling, setIsShuffling] = useState(false);
   const [currentDisplay, setCurrentDisplay] = useState({ chapter: 1, verse: "1" });
   const [finalSelection, setFinalSelection] = useState<{
@@ -310,11 +325,13 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
     setShowSparkles(false);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    // Spin the icon
-    iconRotation.value = withSequence(
-      withTiming(360 * 3, { duration: 1500, easing: Easing.out(Easing.cubic) }),
-      withTiming(360 * 3 + 360, { duration: 500 })
-    );
+    // Spin the icon (decorative; skip under Reduce Motion).
+    if (!reducedMotion) {
+      iconRotation.value = withSequence(
+        withTiming(360 * 3, { duration: 1500, easing: Easing.out(Easing.cubic) }),
+        withTiming(360 * 3 + 360, { duration: 500 })
+      );
+    }
 
     // Rapid shuffle through random verses
     let shuffleCount = 0;
@@ -355,14 +372,12 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
       }
     }, 80);
     intervalIdsRef.current.push(shuffleInterval);
-    // Shared values are stable references.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [generateRandomVerse, clearAllIntervals]);
+  }, [generateRandomVerse, clearAllIntervals, reducedMotion, iconRotation]);
 
   useEffect(() => {
     if (visible) {
       backdropOpacity.value = withTiming(1, { duration: 300 });
-      containerScale.value = withSpring(1, { damping: 12, stiffness: 100 });
+      containerScale.value = withSpring(1, Spring.gentle);
       const startTimer = setTimeout(startShuffle, 300);
       return () => {
         clearTimeout(startTimer);
@@ -433,7 +448,7 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
           />
 
           {/* Sparkles around the card when final */}
-          {showSparkles &&
+          {showSparkles && !reducedMotion &&
             Array.from({ length: 16 }).map((_, i) => (
               <Sparkle
                 key={i}

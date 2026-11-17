@@ -7,6 +7,8 @@ import Animated, {
 import { useEffect } from "react";
 import * as Haptics from "expo-haptics";
 
+import { Spring } from "@/theme/motion";
+
 type Props = {
   value: boolean;
   onValueChange: (next: boolean) => void;
@@ -35,11 +37,7 @@ export function IOSToggle({
   const progress = useSharedValue(value ? 1 : 0);
 
   useEffect(() => {
-    progress.value = withSpring(value ? 1 : 0, {
-      damping: 18,
-      stiffness: 220,
-      mass: 0.6,
-    });
+    progress.value = withSpring(value ? 1 : 0, Spring.snappy);
   }, [value, progress]);
 
   const thumbStyle = useAnimatedStyle(() => ({

@@ -14,7 +14,9 @@ import Animated, {
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { Type } from "@/theme/design-tokens";
+import { Duration, Spring } from "@/theme/motion";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -80,7 +82,7 @@ const ConfettiParticle: React.FC<{
     );
     scale.value = withDelay(
       startDelay,
-      withSpring(1.2, { damping: 10 })
+      withSpring(1.2, Spring.bouncy)
     );
   }, [startDelay, seed, translateY, translateX, rotate, opacity, scale]);
 
@@ -126,6 +128,7 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
   onClose,
 }) => {
   const { colors } = useAppTheme();
+  const reducedMotion = useReducedMotion();
   const backdropOpacity = useSharedValue(0);
   const contentScale = useSharedValue(0.5);
   const contentOpacity = useSharedValue(0);
@@ -150,21 +153,26 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
   useEffect(() => {
     if (visible) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      
-      backdropOpacity.value = withTiming(1, { duration: 300 });
-      contentScale.value = withSpring(1, { damping: 12, stiffness: 100 });
-      contentOpacity.value = withTiming(1, { duration: 300 });
-      starScale.value = withDelay(
-        300,
-        withSpring(1, { damping: 8, stiffness: 150 })
-      );
+
+      backdropOpacity.value = withTiming(1, { duration: Duration.slow });
+      contentOpacity.value = withTiming(1, {
+        duration: reducedMotion ? Duration.fast : Duration.slow,
+      });
+      contentScale.value = reducedMotion ? 1 : withSpring(1, Spring.gentle);
+      starScale.value = reducedMotion
+        ? 1
+        : withDelay(300, withSpring(1, Spring.bouncy));
     } else {
-      backdropOpacity.value = withTiming(0, { duration: 200 });
-      contentScale.value = withTiming(0.5, { duration: 200 });
-      contentOpacity.value = withTiming(0, { duration: 200 });
-      starScale.value = withTiming(0, { duration: 200 });
+      backdropOpacity.value = withTiming(0, { duration: Duration.base });
+      contentScale.value = withTiming(reducedMotion ? 1 : 0.5, {
+        duration: Duration.base,
+      });
+      contentOpacity.value = withTiming(0, { duration: Duration.base });
+      starScale.value = withTiming(reducedMotion ? 1 : 0, {
+        duration: Duration.base,
+      });
     }
-  }, [visible, backdropOpacity, contentScale, contentOpacity, starScale]);
+  }, [visible, reducedMotion, backdropOpacity, contentScale, contentOpacity, starScale]);
 
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: backdropOpacity.value,
@@ -183,8 +191,9 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
 
   return (
     <View style={styles.overlay}>
-      {/* Confetti */}
-      {confettiDelays.map((delay, i) => (
+      {/* Confetti — decorative motion, skipped under Reduce Motion. */}
+      {!reducedMotion &&
+        confettiDelays.map((delay, i) => (
         <ConfettiParticle
           key={i}
           index={i}

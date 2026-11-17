@@ -15,6 +15,8 @@ import Animated, {
 import * as Haptics from "expo-haptics";
 
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { Duration, Spring } from "@/theme/motion";
 import { getAppTitle } from "@/constants/languages";
 import { useContentLanguage } from "@/context/language-context";
 
@@ -31,6 +33,7 @@ type Props = {
 export function LaunchIntro({ onFinish }: Props) {
   const { colors, isDark } = useAppTheme();
   const { language } = useContentLanguage();
+  const reducedMotion = useReducedMotion();
 
   const overlayOpacity = useSharedValue(1);
   const ringScale = useSharedValue(0.55);
@@ -43,6 +46,26 @@ export function LaunchIntro({ onFinish }: Props) {
   const lineWidth = useSharedValue(0);
 
   useEffect(() => {
+    if (reducedMotion) {
+      // Static brand card: no ring breathe, no rise, no 1.7 s hold.
+      ringOpacity.value = 1;
+      ringScale.value = 1;
+      markOpacity.value = 1;
+      markScale.value = 1;
+      titleOpacity.value = 1;
+      titleY.value = 0;
+      lineWidth.value = SCREEN_WIDTH * 0.28;
+      subtitleOpacity.value = 1;
+
+      overlayOpacity.value = withDelay(
+        600,
+        withTiming(0, { duration: Duration.fast }, (finished) => {
+          if (finished) runOnJS(onFinish)();
+        })
+      );
+      return;
+    }
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
 
     ringOpacity.value = withTiming(1, { duration: 420 });
@@ -54,13 +77,13 @@ export function LaunchIntro({ onFinish }: Props) {
     markOpacity.value = withDelay(180, withTiming(1, { duration: 380 }));
     markScale.value = withDelay(
       180,
-      withSpring(1, { damping: 12, stiffness: 120 })
+      withSpring(1, Spring.bouncy)
     );
 
     titleOpacity.value = withDelay(420, withTiming(1, { duration: 450 }));
     titleY.value = withDelay(
       420,
-      withSpring(0, { damping: 16, stiffness: 110 })
+      withSpring(0, Spring.gentle)
     );
 
     lineWidth.value = withDelay(
@@ -81,9 +104,9 @@ export function LaunchIntro({ onFinish }: Props) {
         if (finished) runOnJS(finish)();
       })
     );
-    // Shared values are stable references; the intro runs once on mount.
+    // Shared values are stable references; the intro runs once per mode.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onFinish]);
+  }, [onFinish, reducedMotion]);
 
   const overlayStyle = useAnimatedStyle(() => ({
     opacity: overlayOpacity.value,
