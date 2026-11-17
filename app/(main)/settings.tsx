@@ -15,11 +15,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 import Animated, { FadeIn, FadeInUp } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Constants from "expo-constants";
 
+import { haptics } from "@/lib/haptics";
 import { Spacing, Radius } from "@/theme/design-tokens";
 import { useTheme } from "@/context/theme-context";
 import { useContentLanguage } from "@/context/language-context";
@@ -71,8 +71,10 @@ const SettingItem: React.FC<SettingItemProps> = ({
           borderBottomColor: colors.outline + "40",
         },
       ]}
+      onPressIn={() => {
+        if (onPress) haptics.light();
+      }}
       onPress={() => {
-        if (onPress) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         onPress?.();
       }}
     >
@@ -164,7 +166,6 @@ export default function SettingsScreen() {
       setStoredPreferences(next, notificationTime).catch(() => {});
       return;
     }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const nextEnabled = !notificationsEnabled;
     if (nextEnabled) {
       const granted = await requestNotificationPermissions();
@@ -179,7 +180,7 @@ export default function SettingsScreen() {
         await setStoredPreferences(true, notificationTime);
         setNotificationsEnabled(true);
         await scheduleNextDailyVerseNotification();
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        haptics.success();
       } catch {
         Alert.alert(
           "Could not enable",
@@ -201,7 +202,6 @@ export default function SettingsScreen() {
   }, [notificationsEnabled, notificationTime]);
 
   const handleThemeToggle = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     toggleTheme();
   };
 
@@ -211,7 +211,7 @@ export default function SettingsScreen() {
         setShowLanguagePicker(false);
         return;
       }
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      haptics.medium();
       setLanguage(code);
       setShowLanguagePicker(false);
       try {
@@ -243,14 +243,12 @@ export default function SettingsScreen() {
     try {
       await setStoredPreferences(notificationsEnabled, nextTime);
       await scheduleNextDailyVerseNotification();
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch {
       // ignore — UI already updated
     }
   }, [draftTime, notificationsEnabled, toTimeString]);
 
   const handleAutoPlayToggle = useCallback(async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const next = !autoPlayAudio;
     setAutoPlayAudio(next);
     try {
@@ -261,7 +259,7 @@ export default function SettingsScreen() {
   }, [autoPlayAudio]);
 
   const handleResetProgress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    haptics.heavy();
     Alert.alert(
       "Reset Reading Progress",
       "This will reset all chapter progress, reading streak, and last read position to zero. This action cannot be undone.",
@@ -272,7 +270,7 @@ export default function SettingsScreen() {
           style: "destructive",
           onPress: async () => {
             await resetAllProgress();
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            haptics.success();
             Alert.alert("Done", "All reading progress has been reset.");
           },
         },
@@ -502,6 +500,7 @@ export default function SettingsScreen() {
               return (
                 <Pressable
                   key={opt.code}
+                  onPressIn={haptics.light}
                   onPress={() => handleLanguageSelect(opt.code)}
                   style={[
                     styles.languageRow,
@@ -582,6 +581,7 @@ export default function SettingsScreen() {
               </Pressable>
               <Pressable
                 style={[styles.modalButtonPrimary, { backgroundColor: colors.brandText }]}
+                onPressIn={haptics.light}
                 onPress={saveNotificationTime}
               >
                 <Text style={[styles.modalButtonText, { color: colors.onPrimary }]}>

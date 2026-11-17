@@ -4,8 +4,8 @@ import { Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 
+import { haptics } from "@/lib/haptics";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useContentLanguage } from "@/context/language-context";
 import { ROUTES } from "@/constants/routes";
@@ -69,7 +69,7 @@ export default function PathDetailScreen() {
   }
 
   const startPath = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    haptics.medium();
     const next = await setActivePath(path.id);
     setActive(next);
     showToast("Path started", "success", "map");
@@ -133,6 +133,7 @@ export default function PathDetailScreen() {
 
         {!isThisActive && (
           <Pressable
+            onPressIn={haptics.light}
             onPress={startPath}
             style={[styles.primaryCta, { backgroundColor: colors.brandText }]}
           >
@@ -144,8 +145,8 @@ export default function PathDetailScreen() {
 
         {isThisActive && nextDay && !completed && (
           <Pressable
+            onPressIn={haptics.light}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               openDayVerse(nextDay.verseIds[0]);
             }}
             style={[styles.primaryCta, { backgroundColor: colors.brandText }]}

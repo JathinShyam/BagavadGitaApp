@@ -12,10 +12,10 @@ import Animated, { FadeIn, FadeInUp } from "react-native-reanimated";
 import { Text } from "react-native-paper";
 import { Link, useRouter, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as Haptics from "expo-haptics";
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { Ionicons } from "@expo/vector-icons";
 
+import { haptics } from "@/lib/haptics";
 import { homeScreenStyles } from "@/theme/screen-styles";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useReadingProgress } from "@/hooks/useReadingProgress";
@@ -85,7 +85,7 @@ export default function HomeScreen() {
   const onRefresh = useCallback(() => {
     if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     setRefreshing(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    haptics.medium();
     refreshPracticeState().catch(() => {});
     refreshTimerRef.current = setTimeout(() => {
       setRefreshing(false);
@@ -100,7 +100,6 @@ export default function HomeScreen() {
 
   const openSurpriseVerseModal = useCallback(() => {
     if (shuffleModalTimerRef.current) clearTimeout(shuffleModalTimerRef.current);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     shuffleModalTimerRef.current = setTimeout(() => {
       setShowSurpriseVerseModal(true);
       shuffleModalTimerRef.current = null;
@@ -193,7 +192,7 @@ export default function HomeScreen() {
     if (sharingStreak) return;
     setSharingStreak(true);
     try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      haptics.light();
       const uri = await captureShareCardRef(streakShareRef);
       await shareImage(uri);
     } catch (e) {
@@ -232,7 +231,7 @@ export default function HomeScreen() {
       return (
         <Link href={ROUTES.chapter(chapter.id)} asChild>
           <Pressable
-            onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+            onPressIn={() => haptics.light()}
             accessibilityRole="button"
             accessibilityLabel={`Chapter ${chapter.id}, ${chapterName}`}
             style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
@@ -347,8 +346,9 @@ export default function HomeScreen() {
             </View>
 
             <Pressable
+              onPressIn={haptics.light}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                haptics.medium();
                 router.push(ROUTES.verse(todaysVerse.id));
               }}
               style={[styles.heroCta, { backgroundColor: colors.brandText }]}
@@ -387,6 +387,7 @@ export default function HomeScreen() {
             </>
           ) : null}
           <Pressable
+            onPressIn={haptics.light}
             onPress={openSurpriseVerseModal}
             style={styles.actionHalf}
             accessibilityRole="button"
@@ -527,8 +528,9 @@ export default function HomeScreen() {
           {getAppTitle(language)}
         </Text>
         <Pressable
+          onPressIn={haptics.light}
           onPress={() => {
-            Haptics.selectionAsync();
+            haptics.selection();
             setCalendarOpen(true);
           }}
           onLongPress={handleShareStreak}

@@ -17,7 +17,7 @@ import Animated, {
   FadeInDown,
   ZoomIn,
 } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
+import { haptics } from "@/lib/haptics";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { Spring } from "@/theme/motion";
@@ -328,7 +328,7 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
     setIsShuffling(true);
     setFinalSelection(null);
     setShowSparkles(false);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    haptics.medium();
 
     // Spin the icon (decorative; skip under Reduce Motion).
     if (!reducedMotion) {
@@ -344,7 +344,8 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
     const shuffleInterval = setInterval(() => {
       const random = generateRandomVerse();
       setCurrentDisplay(random);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      // Every third tick: 5 haptics instead of 15 in the fast phase.
+      if (shuffleCount % 3 === 0) haptics.light();
       shuffleCount++;
 
       if (shuffleCount >= maxShuffles) {
@@ -357,7 +358,8 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
         const slowInterval = setInterval(() => {
           const random = generateRandomVerse();
           setCurrentDisplay(random);
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          // Every third tick: 2 haptics instead of 5 in the slow phase.
+          if (slowCount % 3 === 0) haptics.light();
           slowCount++;
 
           if (slowCount >= slowShuffles) {
@@ -370,7 +372,7 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
             setFinalSelection(final);
             setIsShuffling(false);
             setShowSparkles(true);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            haptics.success();
           }
         }, 200);
         intervalIdsRef.current.push(slowInterval);
@@ -507,6 +509,7 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
         {finalSelection && (
           <Animated.View entering={FadeIn.delay(600)}>
             <Pressable
+              onPressIn={haptics.light}
               onPress={startShuffle}
               style={[styles.shuffleAgain, { borderColor: colors.outline, backgroundColor: colors.surface }]}
               accessibilityLabel="Try another random verse"

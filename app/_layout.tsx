@@ -29,6 +29,8 @@ import { getVerseForDate } from "@/lib/daily-verse";
 import { scheduleNextDailyVerseNotification } from "@/lib/daily-verse-notifications";
 import { shouldLoadExpoNotifications } from "@/lib/notification-availability";
 import { syncDailyVerseWidget } from "@/lib/widget-data";
+import { setHapticsEnabled } from "@/lib/haptics";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { ROUTES } from "@/constants/routes";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
 
@@ -55,6 +57,12 @@ export default function RootLayout() {
     PlayfairDisplay_700Bold,
   });
   const [isOnboardingComplete, setIsOnboardingComplete] = useState<boolean | null>(null);
+  // Reduce Motion also silences haptics — the system setting means "no
+  // unsolicited feedback", not only "no movement" (BUG-027 §D).
+  const reducedMotion = useReducedMotion();
+  useEffect(() => {
+    setHapticsEnabled(!reducedMotion);
+  }, [reducedMotion]);
   // Web starts without the splash so static HTML and the client agree; the
   // effect below opts in on the first visit to "/" in a browser session.
   const [showLaunchIntro, setShowLaunchIntro] = useState(Platform.OS !== "web");

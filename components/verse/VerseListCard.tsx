@@ -1,7 +1,7 @@
 import { View, Pressable, StyleSheet, Text as RNText } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 
+import { haptics } from "@/lib/haptics";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { Radius, Spacing } from "@/theme/design-tokens";
 
@@ -30,10 +30,8 @@ export function VerseListCard({
 
   return (
     <Pressable
-      onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        onPress();
-      }}
+      onPressIn={haptics.light}
+      onPress={onPress}
       style={({ pressed }) => [
         styles.card,
         {

@@ -23,9 +23,9 @@ import Animated, {
   runOnJS,
   FadeIn,
 } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
 import * as Clipboard from "expo-clipboard";
 
+import { haptics } from "@/lib/haptics";
 import { getVerseById } from "@/data/verses/verse-catalog";
 import { getAudioFile } from "@/data/verses/verse-audio";
 import { useContentLanguage } from "@/context/language-context";
@@ -285,7 +285,7 @@ export default function VerseDetailScreen() {
       await AsyncStorage.setItem(STORAGE_KEYS.SAVED_VERSES, JSON.stringify(verses));
       setIsSaved(!isSaved);
 
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      haptics.medium();
       bookmarkScale.value = withSequence(
         withTiming(1.3, { duration: 150 }),
         withTiming(1, { duration: 150 })
@@ -306,7 +306,7 @@ export default function VerseDetailScreen() {
     if (!text) return;
     try {
       await Clipboard.setStringAsync(text);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptics.success();
       showToast(
         `Verse copied · ${verse.chapter}.${verse.verse_number}`,
         "success",
@@ -321,7 +321,6 @@ export default function VerseDetailScreen() {
   const handleShareVerse = useCallback(async () => {
     if (!verse || isSharing) return;
     setIsSharing(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       await shareVerseCard(
         shareCardRef,
@@ -361,7 +360,6 @@ export default function VerseDetailScreen() {
 
       if (nextVerseNum) {
         const newId = `${chapterId}-${nextVerseNum}`;
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         router.replace(ROUTES.verse(newId));
       }
     },
@@ -460,6 +458,7 @@ export default function VerseDetailScreen() {
           headerRight: () => (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
               <Pressable
+                onPressIn={haptics.light}
                 onPress={handleShareVerse}
                 disabled={isSharing}
                 style={[verseScreenStyles.saveButton, isSharing && { opacity: 0.4 }]}
@@ -469,6 +468,7 @@ export default function VerseDetailScreen() {
                 <Ionicons name="share-outline" size={22} color={colors.brandText} />
               </Pressable>
               <Pressable
+                onPressIn={haptics.light}
                 onPress={toggleSave}
                 style={verseScreenStyles.saveButton}
                 accessibilityLabel={isSaved ? "Remove from saved" : "Save verse"}
@@ -483,10 +483,8 @@ export default function VerseDetailScreen() {
                 </Animated.View>
               </Pressable>
               <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setShowNoteSheet(true);
-                }}
+                onPressIn={haptics.light}
+                onPress={() => setShowNoteSheet(true)}
                 style={verseScreenStyles.saveButton}
                 accessibilityLabel={noteText.trim() ? "Edit reflection" : "Add reflection"}
                 accessibilityRole="button"
@@ -552,7 +550,7 @@ export default function VerseDetailScreen() {
                     { color: colors.text, fontFamily: getScriptureFont(language) },
                   ]}
                   onLongPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    haptics.medium();
                     setShowVerseActions(true);
                   }}
                   accessibilityHint="Long-press to copy or share this verse"
@@ -652,8 +650,8 @@ export default function VerseDetailScreen() {
             <Animated.View entering={FadeIn.delay(400)}>
               <GoldCard style={localStyles.sectionCard}>
                 <Pressable
+                  onPressIn={haptics.light}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     setIsCommentaryExpanded((v) => !v);
                   }}
                   style={localStyles.commentaryHeader}
@@ -710,6 +708,7 @@ export default function VerseDetailScreen() {
           ]}
         >
           <Pressable
+            onPressIn={haptics.light}
             onPress={() => navigateToVerse(-1)}
             disabled={!hasPrevVerse}
             hitSlop={8}
@@ -729,6 +728,7 @@ export default function VerseDetailScreen() {
             />
           </View>
           <Pressable
+            onPressIn={haptics.light}
             onPress={() => navigateToVerse(1)}
             disabled={!hasNextVerse}
             hitSlop={8}
@@ -751,6 +751,7 @@ export default function VerseDetailScreen() {
           ]}
         >
           <Pressable
+            onPressIn={haptics.light}
             onPress={() => navigateToVerse(-1)}
             disabled={!hasPrevVerse}
             style={[
@@ -764,6 +765,7 @@ export default function VerseDetailScreen() {
             </Text>
           </Pressable>
           <Pressable
+            onPressIn={haptics.light}
             onPress={() => navigateToVerse(1)}
             disabled={!hasNextVerse}
             style={[

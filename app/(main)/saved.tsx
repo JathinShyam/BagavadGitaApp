@@ -5,8 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 
+import { haptics } from "@/lib/haptics";
 import { savedScreenStyles } from "@/theme/screen-styles";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useContentLanguage } from "@/context/language-context";
@@ -87,7 +87,6 @@ export default function SavedVersesScreen() {
 
   const openSavedVerse = useCallback(
     async (item: SavedVerse) => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       try {
         const next = savedVerses.map((v) =>
           v.id === item.id ? { ...v, lastOpenedAt: new Date().toISOString() } : v
@@ -102,7 +101,6 @@ export default function SavedVersesScreen() {
 
   const removeVerse = useCallback(
     async (item: SavedVerse) => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       try {
         const next = savedVerses.filter((v) => v.id !== item.id);
         setSavedVerses(next);
@@ -115,7 +113,6 @@ export default function SavedVersesScreen() {
   );
 
   const shareSavedVerse = useCallback((item: SavedVerse) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setShareTarget(item);
   }, []);
 
@@ -150,6 +147,7 @@ export default function SavedVersesScreen() {
   const renderVerse = useCallback(
     ({ item }: { item: SavedVerse }) => (
       <Pressable
+        onPressIn={haptics.light}
         onPress={() => openSavedVerse(item)}
         style={({ pressed }) => [{ opacity: pressed ? 0.92 : 1 }]}
         accessibilityRole="button"
@@ -198,6 +196,7 @@ export default function SavedVersesScreen() {
 
           <View style={[styles.cardFooter, { borderTopColor: colors.primary + "33" }]}>
             <Pressable
+              onPressIn={haptics.light}
               onPress={(e) => {
                 e?.stopPropagation?.();
                 removeVerse(item);
@@ -210,6 +209,7 @@ export default function SavedVersesScreen() {
               <Text style={[styles.footerActionText, { color: colors.brandText }]}>Unsave</Text>
             </Pressable>
             <Pressable
+              onPressIn={haptics.light}
               onPress={(e) => {
                 e?.stopPropagation?.();
                 shareSavedVerse(item);

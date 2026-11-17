@@ -12,8 +12,8 @@ import Animated, {
   withTiming,
   withSpring,
 } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
 
+import { haptics } from "@/lib/haptics";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { Duration, Spring } from "@/theme/motion";
@@ -66,7 +66,7 @@ export function LaunchIntro({ onFinish }: Props) {
       return;
     }
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    haptics.light();
 
     ringOpacity.value = withTiming(1, { duration: 420 });
     ringScale.value = withSequence(

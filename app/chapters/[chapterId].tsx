@@ -3,7 +3,6 @@ import { Text } from "react-native-paper";
 import { useLocalSearchParams, Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
@@ -12,6 +11,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import { haptics } from "@/lib/haptics";
 import { getChapterById } from "@/data/chapters/chapter-details";
 import { CHAPTER_IMAGES } from "@/constants/chapter-images";
 import type { Verse } from "@/types";
@@ -212,8 +212,9 @@ export default function ChapterDetailScreen() {
                 </View>
               </View>
               <Pressable
+                onPressIn={haptics.light}
                 onPress={() => {
-                  Haptics.selectionAsync();
+                  haptics.selection();
                   setIsContextExpanded((v) => !v);
                 }}
                 accessibilityRole="button"

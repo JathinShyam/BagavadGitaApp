@@ -23,8 +23,8 @@ import Animated, {
   interpolate,
   Extrapolation,
 } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
 
+import { haptics } from "@/lib/haptics";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { ROUTES } from "@/constants/routes";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
@@ -156,20 +156,18 @@ export default function OnboardingScreen() {
     const index = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
     if (index !== currentIndex) {
       setCurrentIndex(index);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
   };
 
   const goToNextSlide = () => {
     if (currentIndex < slides.length - 1) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
     }
   };
 
   const completeOnboarding = async () => {
     try {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptics.success();
       await AsyncStorage.setItem(STORAGE_KEYS.ONBOARDING, "true");
       router.replace(ROUTES.mainTabs);
     } catch (error) {
@@ -204,7 +202,6 @@ export default function OnboardingScreen() {
   };
 
   const skipOnboarding = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await completeOnboarding();
   };
 
@@ -244,8 +241,9 @@ export default function OnboardingScreen() {
                 return (
                   <Pressable
                     key={opt.code}
+                    onPressIn={haptics.light}
                     onPress={() => {
-                      Haptics.selectionAsync();
+                      haptics.selection();
                       setLanguage(opt.code);
                     }}
                     accessibilityRole="radio"
@@ -283,8 +281,9 @@ export default function OnboardingScreen() {
                 return (
                   <Pressable
                     key={t}
+                    onPressIn={haptics.light}
                     onPress={() => {
-                      Haptics.selectionAsync();
+                      haptics.selection();
                       setReminderTime(t);
                     }}
                     style={[
@@ -339,7 +338,7 @@ export default function OnboardingScreen() {
         entering={FadeIn.delay(600)}
         style={[styles.skipContainer, { top: Math.max(insets.top, 12) + 8 }]}
       >
-        <Pressable onPress={skipOnboarding} style={styles.skipButton}>
+        <Pressable onPressIn={haptics.light} onPress={skipOnboarding} style={styles.skipButton}>
           <Text style={[styles.skipText, { color: colors.textMuted }]}>Skip</Text>
         </Pressable>
       </Animated.View>
@@ -367,6 +366,7 @@ export default function OnboardingScreen() {
         {isReminderSlide ? (
           <View style={styles.reminderActions}>
             <Pressable
+              onPressIn={haptics.light}
               onPress={enableReminderAndFinish}
               disabled={enablingReminder}
               style={[styles.actionButton, { backgroundColor: colors.brandText }]}
@@ -381,7 +381,7 @@ export default function OnboardingScreen() {
                 style={{ marginLeft: 8 }}
               />
             </Pressable>
-            <Pressable onPress={skipReminderAndFinish} style={styles.secondaryAction}>
+            <Pressable onPressIn={haptics.light} onPress={skipReminderAndFinish} style={styles.secondaryAction}>
               <Text style={[styles.secondaryActionText, { color: colors.textMuted }]}>
                 Not now
               </Text>
@@ -389,6 +389,7 @@ export default function OnboardingScreen() {
           </View>
         ) : (
           <Pressable
+            onPressIn={haptics.light}
             onPress={goToNextSlide}
             style={[styles.actionButton, { backgroundColor: colors.brandText }]}
           >

@@ -12,9 +12,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import * as Haptics from "expo-haptics";
 import { useMemo, useState } from "react";
 
+import { haptics } from "@/lib/haptics";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useContentLanguage } from "@/context/language-context";
 import { useReadingProgress } from "@/hooks/useReadingProgress";
@@ -76,7 +76,7 @@ export default function ExploreScreen() {
       <View key={item.id} style={styles.tileContainer}>
         <Link href={ROUTES.exploreCategory(item.id)} asChild>
           <Pressable
-            onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+            onPressIn={haptics.light}
             style={({ pressed }) => [{ opacity: pressed ? 0.88 : 1 }]}
           >
             <View style={[styles.tileFrame, { borderRadius: TILE_RADIUS }]}>
@@ -124,8 +124,9 @@ export default function ExploreScreen() {
           return (
             <Pressable
               key={cat.id}
+              onPressIn={haptics.light}
               onPress={() => {
-                Haptics.selectionAsync();
+                haptics.selection();
                 setSelectedMoodId(cat.id);
               }}
               style={[

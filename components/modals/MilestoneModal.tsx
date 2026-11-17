@@ -10,8 +10,8 @@ import Animated, {
   withSequence,
   Easing,
 } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
 
+import { haptics } from "@/lib/haptics";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { Type } from "@/theme/design-tokens";
@@ -55,7 +55,7 @@ export default function MilestoneModal({ visible, days, onClose, onShare }: Prop
   useEffect(() => {
     if (visible && days) {
       setRendered(true);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptics.success();
       opacity.value = withTiming(1, { duration: Duration.base });
       scale.value = reducedMotion
         ? 1

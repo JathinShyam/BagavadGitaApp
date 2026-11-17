@@ -12,7 +12,7 @@ import Animated, {
   withRepeat,
   Easing,
 } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
+import { haptics } from "@/lib/haptics";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { Type } from "@/theme/design-tokens";
@@ -154,7 +154,7 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
   useEffect(() => {
     if (visible) {
       setRendered(true);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptics.success();
 
       backdropOpacity.value = withTiming(1, { duration: Duration.slow });
       contentOpacity.value = withTiming(1, {
