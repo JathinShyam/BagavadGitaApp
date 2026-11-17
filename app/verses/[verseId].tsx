@@ -45,7 +45,6 @@ import { STORAGE_KEYS } from "@/constants/storage-keys";
 import type { StreakMilestone } from "@/constants/milestones";
 import CelebrationModal from "@/components/modals/CelebrationModal";
 import MilestoneModal from "@/components/modals/MilestoneModal";
-import { SkeletonVerseDetail } from "@/components/ui/SkeletonLoader";
 import { GoldCard } from "@/components/ui/GoldCard";
 import { OrnamentalDivider, ORNAMENTS } from "@/components/ui/OrnamentalDivider";
 import { VerseAudioPlayer } from "@/components/verse/VerseAudioPlayer";
@@ -108,7 +107,6 @@ export default function VerseDetailScreen() {
     [verse, language]
   );
   const [isSaved, setIsSaved] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [autoPlayAudio, setAutoPlayAudio] = useState(false);
   const [isCommentaryExpanded, setIsCommentaryExpanded] = useState(true);
   // Meaning first; word-by-word grid on demand (it pushed the meaning below the fold).
@@ -144,11 +142,6 @@ export default function VerseDetailScreen() {
     const v = getVerseForDate(new Date(), language);
     return v ? getDailyVerseNotificationContent(v).body.slice(0, 120) : "";
   }, [language]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 480);
-    return () => clearTimeout(timer);
-  }, [idStr]);
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEYS.AUTO_PLAY_AUDIO)
@@ -193,7 +186,7 @@ export default function VerseDetailScreen() {
   }, []);
 
   useEffect(() => {
-    if (verse && !isLoading) {
+    if (verse) {
       const trackReading = async () => {
         const result = await markVerseAsRead(verse.chapter, verse.verse_number);
         if (result?.isNewCompletion && isLastVerseInChapter(verse.chapter, verse.verse_number)) {
@@ -219,13 +212,13 @@ export default function VerseDetailScreen() {
       };
       trackReading();
     }
-  }, [verse, isLoading, markVerseAsRead, isLastVerseInChapter, showToast]);
+  }, [verse, markVerseAsRead, isLastVerseInChapter, showToast]);
 
   useEffect(() => {
-    if (verse && !isLoading) {
+    if (verse) {
       setLastReadVerse(verse.id);
     }
-  }, [verse, isLoading, setLastReadVerse]);
+  }, [verse, setLastReadVerse]);
 
   const checkIfSaved = useCallback(async () => {
     if (!verse) return;
@@ -414,31 +407,6 @@ export default function VerseDetailScreen() {
 
   const hasPrevVerse = !!getAdjacentVerse(verse.chapter, verse.verse_number, -1);
   const hasNextVerse = !!getAdjacentVerse(verse.chapter, verse.verse_number, 1);
-
-  if (isLoading) {
-    return (
-      <SafeAreaView
-        style={[verseScreenStyles.container, { backgroundColor: colors.background }]}
-        edges={["bottom"]}
-      >
-        <Stack.Screen
-          options={{
-            headerTitle: `Chapter ${verse.chapter} · Verse ${verse.verse_number}`,
-            headerStyle: { backgroundColor: colors.background },
-            headerTintColor: colors.brandText,
-            headerTitleStyle: {
-              color: colors.brandText,
-              fontSize: 15,
-              fontFamily: "PlayfairDisplay_700Bold",
-            },
-            headerShadowVisible: false,
-            headerTitleAlign: "center",
-          }}
-        />
-        <SkeletonVerseDetail />
-      </SafeAreaView>
-    );
-  }
 
   const headerTitle = `Chapter ${verse.chapter} · Verse ${verse.verse_number}`;
   const verseRef = `${verse.chapter}.${verse.verse_number}`;

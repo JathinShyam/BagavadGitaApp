@@ -12,6 +12,7 @@ import { useAppTheme } from "@/hooks/useAppTheme";
 import { useContentLanguage } from "@/context/language-context";
 import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonVerseCard } from "@/components/ui/SkeletonLoader";
+import { useMinimumLoading } from "@/hooks/useMinimumLoading";
 import { GoldCard } from "@/components/ui/GoldCard";
 import { ScreenCornerArt, CORNER_ART } from "@/components/ui/ScreenCornerArt";
 import { ROUTES, DEEP_LINKS } from "@/constants/routes";
@@ -60,6 +61,10 @@ export default function SavedVersesScreen() {
   const [loading, setLoading] = useState(true);
   const [shareTarget, setShareTarget] = useState<SavedVerse | null>(null);
   const shareCardRef = useRef<View | null>(null);
+  // Only the first load can show the skeleton; later focus refreshes keep
+  // the list on screen instead of flashing placeholder cards.
+  const hasLoadedRef = useRef(false);
+  const showSkeleton = useMinimumLoading(loading && !hasLoadedRef.current);
 
   const loadSavedVerses = useCallback(async () => {
     setLoading(true);
@@ -75,6 +80,7 @@ export default function SavedVersesScreen() {
       console.error("Error loading saved verses:", error);
       setSavedVerses([]);
     } finally {
+      hasLoadedRef.current = true;
       setLoading(false);
     }
   }, []);
@@ -232,7 +238,7 @@ export default function SavedVersesScreen() {
     [colors, openSavedVerse, removeVerse, shareSavedVerse, language]
   );
 
-  if (loading) {
+  if (showSkeleton) {
     return (
       <SafeAreaView
         style={[savedScreenStyles.container, { backgroundColor: colors.background }]}

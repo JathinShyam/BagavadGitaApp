@@ -16,7 +16,6 @@ import { router } from "expo-router";
 import Animated, {
   type SharedValue,
   FadeIn,
-  FadeInUp,
   FadeInDown,
   useSharedValue,
   useAnimatedStyle,
@@ -211,20 +210,16 @@ export default function OnboardingScreen() {
   const renderSlide = ({ item }: { item: OnboardingSlide; index: number }) => {
     return (
       <View style={[styles.slide, { width: SCREEN_WIDTH, height: listHeight }]}>
-        <Animated.View
-          entering={FadeInUp.delay(200).springify()}
+        <View
           style={[
             styles.iconContainer,
             { backgroundColor: colors.primary + "14" },
           ]}
         >
           <Ionicons name={item.icon} size={40} color={colors.brandText} />
-        </Animated.View>
+        </View>
 
-        <Animated.View
-          entering={FadeInUp.delay(400).springify()}
-          style={styles.textContainer}
-        >
+        <View style={styles.textContainer}>
           <Text style={[styles.title, { color: colors.textMuted }]}>
             {item.title}
           </Text>
@@ -291,7 +286,7 @@ export default function OnboardingScreen() {
               ))}
             </View>
           )}
-        </Animated.View>
+        </View>
       </View>
     );
   };

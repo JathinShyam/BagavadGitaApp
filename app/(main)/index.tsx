@@ -302,8 +302,7 @@ export default function HomeScreen() {
             accessibilityLabel={`Chapter ${chapter.id}, ${chapterName}`}
             style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
           >
-            <Animated.View
-              entering={FadeInUp.delay(Math.min(index, 12) * 35).springify()}
+            <View
               style={[
                 styles.chapterTile,
                 {
@@ -354,7 +353,7 @@ export default function HomeScreen() {
 
                 <Ionicons name="chevron-forward" size={18} color={colors.brandText} />
               </View>
-            </Animated.View>
+            </View>
           </Pressable>
         </Link>
       );
@@ -596,9 +595,6 @@ export default function HomeScreen() {
         </Pressable>
       </Animated.View>
       <FlatList
-        // Rows are `entering`-animated views that keep their first-render
-        // colours; remount the list when the palette changes (BUG-011).
-        key={`chapters-${colors.background}`}
         data={filteredChapters}
         renderItem={renderChapterTile}
         keyExtractor={(item) => String(item.id)}
