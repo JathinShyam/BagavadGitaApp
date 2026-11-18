@@ -455,12 +455,12 @@ delete — rejected items move to the Not-doing list with a reason.
   cited source, not generation. tags: area:content
 - `[?] Large-text audit` — every reading screen at the largest Dynamic Type /
   font scale. tags: area:a11y
-- `[?] Localise the UI chrome` — the scripture is 100% covered in te/en/hi/ta
+- ~~Localise the UI chrome~~ shipped in [41] — the scripture is 100% covered in te/en/hi/ta
   but every button, label and heading is English. The competition ships
   *separate* apps per language (Shrimad Hindi 222 ratings, Telugu 141,
   Gujarati 187) precisely because they can't localise in-app. Biggest
   single growth lever; ~120 strings. tags: area:i18n, effort:2, growth:high
-- `[?] Search the whole corpus` — full-text over sloka + meaning +
+- ~~Search the whole corpus~~ shipped in [46] — full-text over sloka + meaning +
   commentary in all four languages, plus a ~80-tag topic taxonomy so
   "dealing with anxiety" matches verses that never say "anxiety". Not a
   tab (AGENTS.md forbids a Search tab) — a search field inside Explore.
@@ -472,15 +472,15 @@ delete — rejected items move to the Not-doing list with a reason.
 - `[?] Configurable daily goal` — 1 / 3 / 5 / 10 verses, slider at
   onboarding and in Settings. `DAILY_VERSE_GOAL` is currently hardcoded to
   1. tags: area:practice, effort:1, retention:high
-- `[?] Streak rail + flame states` — persistent 7-dot rail under the Home
+- ~~Streak rail + flame states~~ shipped in [42] (rail) and [43] (ribbon) — persistent 7-dot rail under the Home
   brand bar, flame states for idle/at-risk/broken/frozen, number roll, and
   an inline "day complete" ribbon (not a modal — the user is reading).
   Spec in `docs/reviews/motion-and-typography-spec.md` §2. tags:
   area:home, effort:2, retention:high
-- `[?] Streak freeze / lotus mark` — one earned freeze per 7 days; a missed
+- ~~Streak freeze / lotus mark~~ shipped in [44] — one earned freeze per 7 days; a missed
   day no longer resets the streak. The highest-ROI retention feature in
   the comparable apps. tags: area:practice, effort:1, retention:high
-- `[?] At-risk push notification` — "your N-day streak ends at midnight" at
+- ~~At-risk push notification~~ shipped in [45] — "your N-day streak ends at midnight" at
   reminder time + 4h. `isStreakAtRisk()` already detects it; nothing
   sends it. tags: area:notifications, effort:1, retention:high
 - `[?] Rating prompt` — `expo-store-review` after a positive event

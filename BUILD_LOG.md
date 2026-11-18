@@ -1256,3 +1256,52 @@ already died.
 **Blocked**    Delivery timing on real Android (Doze, exact-alarm restricted)
 is unverified without a device; BUG-023 removed the exact-alarm permission, so
 this stays a best-effort window.
+
+## [46] 2026-11-18 — Every verse is now reachable by a word (Feature 4)
+**Move**       The catalogue has 640 verses and no way in except scrolling.
+520 of them are never surfaced by a topic, the daily verse or a path, so a
+reader who remembers "the one about the mind being restless" has to hunt.
+Every serious competitor ships search; the brief bans a Search tab, so it
+belongs inside Explore.
+**Plan**       One lazy index over sloka + meaning + commentary in all four
+scripts, plus the curated topic names, behind a search field at the top of
+Explore.
+**Decisions**  1. `lib/verse-search.ts` owns normalisation, indexing, scoring,
+snippets and highlighting; the index builds on the first query and is
+prewarmed 600 ms after Explore mounts, so the first keystroke does not pay
+for it (build ~170 ms, query 2–14 ms in Node).
+2. Normalisation folds Latin diacritics only (`Kṛipayā` → `kripaya`), then
+NFC + punctuation collapse. Indic vowel signs are combining marks and are
+never stripped (BUG-026). Matching is word-prefix, so "anger" finds "anger"
+and "angers" but never "dangerous"; suffixing Telugu/Tamil words still match.
+3. Structural English stop words are dropped for text matching, so "dealing
+with envy" searches "envy". Topic matching keeps the raw tokens, so the same
+query still names the topic. Queries under two characters do nothing.
+4. Topic matches are a separate scoring path: a localized name (`కోపం`)
+surfaces every Anger verse even though the verse never says the word. Only
+the 20 existing curated topics exist — the brief's ~80-tag taxonomy was not
+invented, because topic content needs a cited source.
+5. References resolve directly: `2.47`, `2-47`, `16.1-3` and
+"chapter 2 verse 47" all open the verse.
+6. Results cap at 40. Text hits outrank topic-only hits; snippets are a
+word-window around the match (character slicing would split Indic clusters),
+and the matched terms render gold.
+7. The field sits in the Explore header; browsing stays untouched until the
+query is non-empty, then results replace the topic grid. Each row shows the
+reference, the topic when it contributed, the script when the snippet comes
+from another language, and three lines of context. Empty state explains what
+to try and offers "Browse topics".
+8. `useDeferredValue` keeps typing smooth; the result count and empty state
+wait for the deferred query so there is no "nothing found" flash.
+**Ship**       `lib/verse-search.ts`, `app/(main)/explore/index.tsx`,
+`lib/i18n.ts` (9 `explore.search*` keys ×4), `__tests__/verse-search.test.ts`,
+`BUILD_LOOP.md` (shipped items struck through).
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 19 suites / 121 tests ✅
+**Observe**    1. An English word, a Telugu word and a feeling all land on
+the right verses. 2. Typing a reference opens that verse first.
+3. Snippets show the matching language and are highlighted, so the result is
+explained without opening it.
+**Blocked**    No simulator, so the long localized placeholder, the topic
+chips and the field against the Krishna header art are unverified. Search
+covers the 20 curated topics, not an 80-tag taxonomy; transliterated queries
+only find what the text actually contains.
