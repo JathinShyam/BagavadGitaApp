@@ -1439,3 +1439,48 @@ or store build, and there is no emulator or iOS toolchain on this machine.
 Crash reporting, analytics and EAS Update stay deferred with the concrete
 steps above; each needs an account, credentials or a binary this loop cannot
 produce.
+
+## [49] 2026-11-18 — The shelf, restocked (Feature 7: ASO refresh; premium deferred)
+**Move**       The store copy predates the last four features: it sells a
+library with no way to search it, never mentions the widget or the streak
+protections, and spends keyword characters repeating the subtitle. Installs
+and ratings are won on those first lines. Premium is the one growth item that
+cannot be built here — it needs products, credentials and receipt validation.
+**Plan**       Rewrite both stores' copy against what the binary actually does,
+measure every character, and write the premium prerequisites down instead of
+half-building a paywall.
+**Decisions**  1. The iOS keyword field now spends all 100 characters on
+non-duplicated intent. `daily`, `verse`, `telugu` and `hindi` are gone because
+Apple already indexes the subtitle; `search`, `offline` and `sanskrit` are in.
+Misspellings `geeta` and `bhagwad` stay — they are how people type it.
+2. Counts: keywords 100/100, Play short 78/80, promotional 143/170, full
+description 1667/4000. The description only claims shipped behaviour; the iOS
+widget line carries an explicit ship gate because the extension is still
+unverified.
+3. "All 700 verses" checked rather than assumed: 640 reading entries cover 701
+canonical verses through combined ranges (`16-1-3`), so the traditional count
+is honest. Noted in the file so the next editor does not "fix" it to 640.
+4. The new sections are search, lotus freezes / at-risk nudge, the home-screen
+widget and the four-language interface — the four things a competitor cannot
+copy from the screenshots alone.
+5. The screenshot set now leads with search and the widget; Saved drops out to
+keep the carousel at eight.
+6. **Premium stays deferred.** It needs non-consumable products in both
+consoles, a purchase SDK (`expo-in-app-purchases` is deprecated and
+unmaintained; use `react-native-iap` or RevenueCat), entitlement + Restore
+Purchases + server or RevenueCat receipt validation, and Privacy/Terms/
+declaration updates. The full checklist lives in `docs/store/listing.md`
+§ Monetization. The public Price row stays "Free, no IAP, no ads" until all
+of it exists.
+7. The rating prompt (BUILD_LOG [48]) does not change the privacy answers: the
+dialog belongs to the OS, and only a local counter is stored.
+**Ship**       `docs/store/listing.md`, `BUILD_LOOP.md`.
+**Gate**       docs-only; lint ✅ (0) · tsc ✅ (0) · jest 20 suites / 131 ✅
+**Observe**    1. Paste each field into its console and confirm the built-in
+counter matches the numbers above. 2. Search the stores for "Gita search",
+"offline Gita" and "Gita Telugu" after the next release and watch which
+keyword starts ranking. 3. Confirm the iOS widget line is removed or the
+extension is verified before submission.
+**Blocked**    Premium: store products, tax/pricing setup and purchase
+credentials are operator work. iOS widget copy depends on BUILD_LOG [47]'s
+native build and App Group approval.

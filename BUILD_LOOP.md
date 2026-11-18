@@ -497,10 +497,12 @@ delete — rejected items move to the Not-doing list with a reason.
 - `[?] Light / Dark / System theme` — currently a binary toggle with a
   dark default, while every screenshot and the website show cream. tags:
   area:settings, effort:1
-- `[?] One-time Premium unlock` — the category norm (Everyday, For All,
-  Updesh, Daily Bhakti all have IAP). Keeps the "no ads, no tracking,
-  no account" promise intact; unlocks extra paths, audio packs, themes,
-  export. tags: area:growth, effort:3
+- `[?] One-time Premium unlock` — deferred in [49]; the category norm
+  (Everyday, For All, Updesh, Daily Bhakti all have IAP). Keeps the "no ads,
+  no tracking, no account" promise intact; unlocks extra paths, audio packs,
+  themes, export. Blocked on store products, a purchase SDK/receipt
+  validation and privacy updates — checklist in `docs/store/listing.md`
+  § Monetization. tags: area:growth, effort:3
 - `[?] Continuous chapter audio` — play straight through a chapter with
   per-word sync highlight. `Updesh` and `Read & Search` have it as a paid
   feature; free, offline, in four languages would make this the reference
