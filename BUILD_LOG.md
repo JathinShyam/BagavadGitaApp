@@ -1113,3 +1113,45 @@ arrives titled in Telugu/Hindi/Tamil, with the verse preview in that script.
 Telugu/Hindi/Tamil labels against the four-tab bar or the share cards.
 Translations are first-pass drafts and need a native-speaker review before
 release.
+
+## [42] 2026-11-18 — The streak becomes a row of seven dots (Feature 2, part 1)
+**Move**       The streak lived in a small pill in the corner: a flame, a
+number and the best-ever count, all in 12px. Nothing showed *this week*, and a
+reader had to open the calendar to see whether they were one day or six days
+into a run. There was also no state beyond "a number": an expiring streak and
+a live one looked identical, and a broken streak kept the same warm flame.
+**Plan**       Replace the pill with a persistent rail under the brand bar:
+flame + count on the left, the current week as seven dots on the right, one
+tap to the calendar. Give the flame four honest states.
+**Decisions**  1. `components/home/StreakRail.tsx`: Playfair 600 at 15px for
+the count (no tracking), 6px dots with a 4px gap, today's dot ringed at 40%
+— all from the spec, all from palette tokens rather than literals.
+2. Week maths moved to `lib/streak.ts` as `getStreakWeek()` so it can be
+tested without mounting Ionicons; Sunday-first to match the calendar sheet.
+3. Dot fill: 0.4 → 1 on `Spring.snappy`, a gold ring opening to 2.4× over
+420ms, one light impact. The fill usually lands while Home is behind the verse
+screen, so `useFocusEffect` diffs the week on return and pulses the dot that
+was actually earned — no animation plays off-screen.
+4. Flame states: idle (static), increment (bouncy 1.18 → 1 + ring +
+success haptic), atRisk (900ms ± 6% breath, stopped when Home blurs), broken
+(muted `streakBroken`, 4px drop and 0.6 opacity on the transition only). A
+flame with no streak behind it is grey, not orange.
+5. The count rolls in from below with the old one leaving upward, inside a
+fixed 20px box — zero layout shift; straight swap under Reduce Motion.
+6. Effect order is deliberate: opacity is touched only by the state
+transition, scale only by the breath, and the increment runs last so saving
+the day wins the shared value instead of being cancelled by the breath's
+exit.
+7. The best-ever count moved into the calendar sheet as one line, so the rail
+stays slim and nothing is lost.
+**Ship**       `components/home/StreakRail.tsx`, `lib/streak.ts`,
+`theme/design-tokens.ts` (four `streak*` tokens per palette),
+`components/practice/PracticeCalendarModal.tsx`, `app/(main)/index.tsx`,
+`lib/i18n.ts` + `__tests__/streak-rail.test.ts`.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 16 suites / 85 tests ✅
+**Observe**    1. The week is readable at a glance without opening anything.
+2. An expiring streak breathes warm red and stops breathing the moment you
+leave Home. 3. A finished read animates one dot, not the whole row.
+**Blocked**    No simulator here, so the rail's optical weight against the
+32px brand title is unverified. The at-risk threshold is still the 18:00
+hardcode; feature 3 replaces it with the reader's reminder time.

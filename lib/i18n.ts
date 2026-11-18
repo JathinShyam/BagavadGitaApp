@@ -68,7 +68,8 @@ const en = {
   "home.widgetTip": "Tip: add Daily Verse to your home screen",
   "home.emptyInProgress": "No chapters in progress yet — open any chapter to begin",
   "home.emptyCompleted": "No completed chapters yet — your journey starts with one verse",
-  "home.streakA11y": "Open reading calendar. Long press to share streak.",
+  "home.streakA11y": "Streak {count}, {days} of 7 days read this week.",
+  "home.streakHint": "Opens the reading calendar. Long press to share your streak.",
   "home.bestStreak": "Best {count}",
   "home.chapterA11y": "Chapter {chapter}, {name}",
   "home.switchPathTitle": "Switch reading path?",
@@ -269,6 +270,7 @@ const en = {
   "calendar.thisWeek": "This week",
   "calendar.dayRead": "Day you read",
   "calendar.close": "Close",
+  "calendar.streakLine": "{current}-day streak · best {best}",
 
   "widgetNudge.title": "Daily verse on your home screen",
   "widgetNudge.body":
@@ -368,7 +370,8 @@ const te: Record<TranslationKey, string> = {
   "home.widgetTip": "చిట్కా: రోజు శ్లోకాన్ని మీ హోమ్ స్క్రీన్కు జోడించండి",
   "home.emptyInProgress": "ఇంకా ఏ అధ్యాయం ప్రారంభించలేదు — ఏదైనా అధ్యాయాన్ని తెరవండి",
   "home.emptyCompleted": "ఇంకా పూర్తయిన అధ్యాయాలు లేవు — మీ ప్రయాణం ఒక శ్లోకంతో మొదలవుతుంది",
-  "home.streakA11y": "చదవడం క్యాలెండర్ తెరవండి. స్ట్రీక్ పంచుకోవడానికి దీర్ఘంగా నొక్కండి.",
+  "home.streakA11y": "స్ట్రీక్ {count}, ఈ వారంలో 7లో {days} రోజులు చదివారు.",
+  "home.streakHint": "చదవడం క్యాలెండర్ తెరుస్తుంది. స్ట్రీక్ పంచుకోవడానికి దీర్ఘంగా నొక్కండి.",
   "home.bestStreak": "ఉత్తమ {count}",
   "home.chapterA11y": "అధ్యాయం {chapter}, {name}",
   "home.switchPathTitle": "చదవడం మార్గం మార్చాలా?",
@@ -569,6 +572,7 @@ const te: Record<TranslationKey, string> = {
   "calendar.thisWeek": "ఈ వారం",
   "calendar.dayRead": "మీరు చదివిన రోజు",
   "calendar.close": "మూసివేయండి",
+  "calendar.streakLine": "{current} రోజుల స్ట్రీక్ · ఉత్తమ {best}",
 
   "widgetNudge.title": "మీ హోమ్ స్క్రీన్లో రోజు శ్లోకం",
   "widgetNudge.body":
@@ -665,7 +669,8 @@ const hi: Record<TranslationKey, string> = {
   "home.widgetTip": "सुझाव: आज का श्लोक अपनी होम स्क्रीन पर जोड़ें",
   "home.emptyInProgress": "अभी कोई अध्याय जारी नहीं — शुरू करने के लिए कोई अध्याय खोलें",
   "home.emptyCompleted": "अभी कोई अध्याय पूरा नहीं — आपकी यात्रा एक श्लोक से शुरू होती है",
-  "home.streakA11y": "पढ़ने का कैलेंडर खोलें। स्ट्रीक साझा करने के लिए देर तक दबाएँ।",
+  "home.streakA11y": "स्ट्रीक {count}, इस सप्ताह 7 में से {days} दिन पढ़े।",
+  "home.streakHint": "पढ़ने का कैलेंडर खोलता है। स्ट्रीक साझा करने के लिए देर तक दबाएँ।",
   "home.bestStreak": "सर्वश्रेष्ठ {count}",
   "home.chapterA11y": "अध्याय {chapter}, {name}",
   "home.switchPathTitle": "पढ़ने का पथ बदलें?",
@@ -866,6 +871,7 @@ const hi: Record<TranslationKey, string> = {
   "calendar.thisWeek": "यह सप्ताह",
   "calendar.dayRead": "जिस दिन आपने पढ़ा",
   "calendar.close": "बंद करें",
+  "calendar.streakLine": "{current} दिन की स्ट्रीक · सर्वश्रेष्ठ {best}",
 
   "widgetNudge.title": "आपकी होम स्क्रीन पर आज का श्लोक",
   "widgetNudge.body":
@@ -962,7 +968,8 @@ const ta: Record<TranslationKey, string> = {
   "home.widgetTip": "குறிப்பு: இன்றைய வசனத்தை முகப்புத் திரையில் சேர்க்கவும்",
   "home.emptyInProgress": "இன்னும் எந்த அத்தியாயமும் தொடங்கவில்லை — தொடங்க ஏதேனும் அத்தியாயத்தைத் திறக்கவும்",
   "home.emptyCompleted": "இன்னும் அத்தியாயங்கள் முடியவில்லை — உங்கள் பயணம் ஒரு வசனத்தில் தொடங்குகிறது",
-  "home.streakA11y": "படிப்பு நாட்காட்டியைத் திறக்கவும். தொடரைப் பகிர நீண்ட அழுத்தம்.",
+  "home.streakA11y": "ஸ்ட்ரீக் {count}, இந்த வாரம் 7-ல் {days} நாட்கள் படித்துள்ளீர்கள்.",
+  "home.streakHint": "படிப்பு நாட்காட்டியைத் திறக்கும். தொடரைப் பகிர நீண்ட அழுத்தம்.",
   "home.bestStreak": "சிறந்தது {count}",
   "home.chapterA11y": "அத்தியாயம் {chapter}, {name}",
   "home.switchPathTitle": "படிப்புப் பாதையை மாற்றவா?",
@@ -1163,6 +1170,7 @@ const ta: Record<TranslationKey, string> = {
   "calendar.thisWeek": "இந்த வாரம்",
   "calendar.dayRead": "நீங்கள் படித்த நாள்",
   "calendar.close": "மூடு",
+  "calendar.streakLine": "{current} நாள் தொடர் · சிறந்தது {best}",
 
   "widgetNudge.title": "உங்கள் முகப்புத் திரையில் இன்றைய வசனம்",
   "widgetNudge.body":

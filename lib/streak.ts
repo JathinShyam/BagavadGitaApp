@@ -6,7 +6,7 @@
  * must not keep showing the old number (BUG-019).
  */
 
-import { daysBetweenDateKeys } from "@/lib/date-keys";
+import { addDaysToDateKey, daysBetweenDateKeys, getLocalDateKey } from "@/lib/date-keys";
 import type { ReadingActivity, ReadingStreak } from "@/types";
 
 /**
@@ -73,4 +73,19 @@ export function creditDayAsRead(
   if (isNewVerse) return { ...activity, [todayKey]: count + 1 };
   if (count > 0) return activity;
   return { ...activity, [todayKey]: 1 };
+}
+
+export type WeekDay = { key: string; filled: boolean; today: boolean };
+
+/** The current week, Sunday first — matching the calendar sheet and heatmap. */
+export function getStreakWeek(
+  activity: ReadingActivity,
+  now: Date = new Date()
+): WeekDay[] {
+  const todayKey = getLocalDateKey(now);
+  const startKey = addDaysToDateKey(todayKey, -now.getDay());
+  return Array.from({ length: 7 }, (_, i) => {
+    const key = addDaysToDateKey(startKey, i);
+    return { key, filled: (activity[key] ?? 0) > 0, today: key === todayKey };
+  });
 }

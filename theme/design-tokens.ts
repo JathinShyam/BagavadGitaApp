@@ -20,6 +20,14 @@ export const Palette = {
     success: "#2E7D32",
     warning: "#B26A00",
     danger: "#C62828",
+    /** Streak flame — live streak (4.89:1 on background). */
+    streakFlame: "#C2410C",
+    /** Streak flame — about to expire tonight (5.14:1). */
+    streakAtRisk: "#C0392B",
+    /** Streak flame — streak reset, kept as a memory (5.08:1). */
+    streakBroken: "#6F6A60",
+    /** Lotus freeze mark (6.88:1). */
+    streakFrozen: "#1E5A8A",
   },
   dark: {
     // Dark theme - current dark gold theme
@@ -41,6 +49,14 @@ export const Palette = {
     success: "#7AD19F",
     warning: "#F3BE6C",
     danger: "#F08A7E",
+    /** Streak flame — live streak (8.74:1 on background). */
+    streakFlame: "#FB923C",
+    /** Streak flame — about to expire tonight (8.11:1). */
+    streakAtRisk: "#F08A7E",
+    /** Streak flame — streak reset, kept as a memory (7.65:1). */
+    streakBroken: "#A8A094",
+    /** Lotus freeze mark (9.09:1). */
+    streakFrozen: "#7FB6DE",
   },
 };
 

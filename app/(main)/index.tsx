@@ -13,8 +13,6 @@ import Animated, {
   FadeInUp,
   useAnimatedStyle,
   useSharedValue,
-  withSequence,
-  withSpring,
   withTiming,
 } from "react-native-reanimated";
 import { Text } from "react-native-paper";
@@ -33,10 +31,10 @@ import SurpriseVerseModal from "@/components/modals/SurpriseVerseModal";
 import { SelectableChip } from "@/components/ui/SelectableChip";
 import { PathPickerModal } from "@/components/practice/PathPickerModal";
 import { PracticeCalendarModal } from "@/components/practice/PracticeCalendarModal";
+import { StreakRail } from "@/components/home/StreakRail";
 import { WidgetNudgeModal } from "@/components/practice/WidgetNudgeModal";
 import { ROUTES } from "@/constants/routes";
-import { Duration, Ease, Spring } from "@/theme/motion";
-import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { Duration, Ease } from "@/theme/motion";
 import { CHAPTER_SUMMARIES, getChapterName, type ChapterSummary } from "@/constants/chapter-summaries";
 import {
   getDailyVerseNotificationContent,
@@ -61,10 +59,6 @@ import {
 import type { ReadingPath } from "@/data/reading-paths";
 
 const LOTUS_ICON = require("../../assets/images/lotus-simple.png");
-
-function getStreakLabel(days: number): string {
-  return days <= 0 ? "0" : `${days}`;
-}
 
 /** Chapter progress rail — scaleX so no layout pass runs per frame. */
 function ChapterProgressBar({
@@ -175,23 +169,8 @@ export default function HomeScreen() {
     isStreakAtRisk,
   } = useReadingProgress();
 
-  // The flame count bumps when today's read lands; otherwise it sits still.
-  const reducedMotion = useReducedMotion();
-  const streakPop = useSharedValue(1);
-  const streakPopStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: streakPop.value }],
-  }));
-  const previousStreakRef = useRef(streak.currentStreak);
-  useEffect(() => {
-    const grew = streak.currentStreak > previousStreakRef.current;
-    previousStreakRef.current = streak.currentStreak;
-    if (!grew || reducedMotion) return;
-
-    streakPop.value = withSequence(
-      withTiming(1.25, { duration: Duration.fast }),
-      withSpring(1, Spring.bouncy)
-    );
-  }, [streak.currentStreak, reducedMotion, streakPop]);
+  // The rail stops its at-risk breath while another screen is on top.
+  const [screenFocused, setScreenFocused] = useState(true);
 
   const todaysVerse = useMemo(() => getVerseForDate(new Date(), language), [language]);
   const todayPreview = todaysVerse
@@ -217,7 +196,9 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      setScreenFocused(true);
       refreshPracticeState();
+      return () => setScreenFocused(false);
     }, [refreshPracticeState])
   );
 
@@ -590,32 +571,15 @@ export default function HomeScreen() {
         >
           {getAppTitle(language)}
         </Text>
-        <Pressable
-          onPressIn={haptics.light}
-          onPress={() => {
-            haptics.selection();
-            setCalendarOpen(true);
-          }}
+        <StreakRail
+          activity={activity}
+          streakDays={streak.currentStreak}
+          longestStreak={streak.longestStreak}
+          atRisk={streakAtRisk}
+          active={screenFocused}
+          onPress={() => setCalendarOpen(true)}
           onLongPress={handleShareStreak}
-          style={[
-            styles.streakChip,
-            {
-              backgroundColor: colors.primary + "14",
-              borderColor: colors.primary + "28",
-            },
-          ]}
-          accessibilityLabel={t("home.streakA11y")}
-        >
-          <Ionicons name="flame" size={14} color={colors.brandText} />
-          <Animated.Text
-            style={[styles.streakText, { color: colors.brandText }, streakPopStyle]}
-          >
-            {getStreakLabel(streak.currentStreak)}
-            {streak.longestStreak > 0
-              ? ` · ${t("home.bestStreak", { count: streak.longestStreak })}`
-              : ""}
-          </Animated.Text>
-        </Pressable>
+        />
       </Animated.View>
       <FlatList
         data={filteredChapters}
@@ -657,6 +621,8 @@ export default function HomeScreen() {
       />
       <PracticeCalendarModal
         visible={calendarOpen}
+        streakDays={streak.currentStreak}
+        longestStreak={streak.longestStreak}
         activity={activity}
         onClose={() => setCalendarOpen(false)}
       />
@@ -680,32 +646,15 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   fixedBrandBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
     width: "100%",
     paddingHorizontal: 16,
     paddingTop: 24,
-    paddingBottom: 10,
+    paddingBottom: 8,
   },
   brand: {
-    flexShrink: 1,
-    marginRight: 8,
     fontFamily: "PlayfairDisplay_700Bold",
     fontSize: 32,
-  },
-  streakChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  streakText: {
-    fontSize: 12,
-    fontWeight: "700",
+    marginBottom: 2,
   },
   atRisk: {
     fontSize: 12,

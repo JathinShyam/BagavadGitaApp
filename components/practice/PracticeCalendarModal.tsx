@@ -25,6 +25,8 @@ const WHEEL_SPOKES = [0, 45, 90, 135, 180, 225, 270, 315];
 type Props = {
   visible: boolean;
   activity: ReadingActivity;
+  streakDays: number;
+  longestStreak: number;
   onClose: () => void;
 };
 
@@ -63,7 +65,13 @@ function ChariotWheelMark({
   );
 }
 
-export function PracticeCalendarModal({ visible, activity, onClose }: Props) {
+export function PracticeCalendarModal({
+  visible,
+  activity,
+  streakDays,
+  longestStreak,
+  onClose,
+}: Props) {
   const { colors } = useAppTheme();
   const { language } = useContentLanguage();
   const { t } = useTranslation();
@@ -115,7 +123,15 @@ export function PracticeCalendarModal({ visible, activity, onClose }: Props) {
           <Text style={[styles.sheetTitle, { color: colors.text }]}>
             {t("calendar.title")}
           </Text>
-          <Text style={[styles.monthLabel, { color: colors.textMuted }]}>{monthLabel}</Text>
+          <Text style={[styles.monthLabel, { color: colors.textMuted }]}>
+            {monthLabel}
+            {streakDays > 0 || longestStreak > 0
+              ? ` · ${t("calendar.streakLine", {
+                  current: streakDays,
+                  best: longestStreak,
+                })}`
+              : ""}
+          </Text>
           <WeekHeatmap activity={activity} cellSize={24} />
           <View style={styles.monthDowRow}>
             {weekdays.map((d, i) => (
