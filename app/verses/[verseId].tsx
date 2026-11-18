@@ -48,6 +48,10 @@ import { STORAGE_KEYS } from "@/constants/storage-keys";
 import type { StreakMilestone } from "@/constants/milestones";
 import CelebrationModal from "@/components/modals/CelebrationModal";
 import MilestoneModal from "@/components/modals/MilestoneModal";
+import {
+  DAY_RIBBON_MS,
+  DayCompleteRibbon,
+} from "@/components/practice/DayCompleteRibbon";
 import { GoldCard } from "@/components/ui/GoldCard";
 import { OrnamentalDivider, ORNAMENTS } from "@/components/ui/OrnamentalDivider";
 import { VerseAudioPlayer } from "@/components/verse/VerseAudioPlayer";
@@ -123,9 +127,17 @@ export default function VerseDetailScreen() {
   const [showMilestone, setShowMilestone] = useState(false);
   const router = useRouter();
   const [showCelebration, setShowCelebration] = useState(false);
+  const [showDayRibbon, setShowDayRibbon] = useState(false);
+  const [ribbonStreak, setRibbonStreak] = useState(0);
+  // Held back while the celebration is on screen: one reward at a time.
+  const [pendingMilestone, setPendingMilestone] = useState<StreakMilestone | null>(
+    null
+  );
   const shareCardRef = useRef<View | null>(null);
   const streakShareRef = useRef<View | null>(null);
   const noteSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const celebrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const milestoneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { showToast } = useToast();
   const {
@@ -184,27 +196,55 @@ export default function VerseDetailScreen() {
     };
   }, [verse, flushPendingNote]);
 
-  const celebrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => {
-    if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
+      if (milestoneTimerRef.current) clearTimeout(milestoneTimerRef.current);
+    },
+    []
+  );
 
   useEffect(() => {
     if (verse) {
       const trackReading = async () => {
         const result = await markVerseAsRead(verse.chapter, verse.verse_number);
-        if (result?.isNewCompletion && isLastVerseInChapter(verse.chapter, verse.verse_number)) {
+
+        // The day's goal can land on any verse, not just the last of a chapter.
+        // The ribbon is the reward; modals wait for it to clear (spec §2.4).
+        const goalJustCompleted = result?.dailyGoalJustCompleted ?? false;
+        if (goalJustCompleted) {
+          setRibbonStreak(result.currentStreak);
+          setShowDayRibbon(true);
+        }
+        const rewardDelay = goalJustCompleted ? DAY_RIBBON_MS + 400 : 500;
+        const chapterJustCompleted =
+          result?.isNewCompletion &&
+          isLastVerseInChapter(verse.chapter, verse.verse_number);
+
+        if (chapterJustCompleted) {
           if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
           celebrationTimerRef.current = setTimeout(() => {
             celebrationTimerRef.current = null;
             setShowCelebration(true);
-          }, 500);
+          }, rewardDelay);
         }
         if (result?.wasNewlyRead) {
           const milestone = await getUnseenMilestoneReached(result.currentStreak);
           if (milestone) {
             setMilestoneDays(milestone);
-            setShowMilestone(true);
+            if (chapterJustCompleted) {
+              // Ribbon → celebration → milestone. The celebration's close
+              // handler opens the milestone, so the two never stack.
+              setPendingMilestone(milestone);
+            } else if (goalJustCompleted) {
+              if (milestoneTimerRef.current) clearTimeout(milestoneTimerRef.current);
+              milestoneTimerRef.current = setTimeout(() => {
+                milestoneTimerRef.current = null;
+                setShowMilestone(true);
+              }, rewardDelay);
+            } else {
+              setShowMilestone(true);
+            }
           }
           const pathResult = await markPathProgressForVerse(verse.id);
           if (pathResult.pathCompleted) {
@@ -781,10 +821,25 @@ export default function VerseDetailScreen() {
         </View>
       )}
 
+      <DayCompleteRibbon
+        visible={showDayRibbon}
+        streakDays={ribbonStreak}
+        onHidden={() => setShowDayRibbon(false)}
+      />
+
       <CelebrationModal
         visible={showCelebration}
         chapterNumber={verse.chapter}
-        onClose={() => setShowCelebration(false)}
+        onClose={() => {
+          setShowCelebration(false);
+          if (!pendingMilestone) return;
+          setPendingMilestone(null);
+          if (milestoneTimerRef.current) clearTimeout(milestoneTimerRef.current);
+          milestoneTimerRef.current = setTimeout(() => {
+            milestoneTimerRef.current = null;
+            setShowMilestone(true);
+          }, 400);
+        }}
       />
       <MilestoneModal
         visible={showMilestone}

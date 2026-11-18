@@ -271,6 +271,7 @@ const en = {
   "calendar.dayRead": "Day you read",
   "calendar.close": "Close",
   "calendar.streakLine": "{current}-day streak · best {best}",
+  "ribbon.dayComplete": "Day {count} complete",
 
   "widgetNudge.title": "Daily verse on your home screen",
   "widgetNudge.body":
@@ -573,6 +574,7 @@ const te: Record<TranslationKey, string> = {
   "calendar.dayRead": "మీరు చదివిన రోజు",
   "calendar.close": "మూసివేయండి",
   "calendar.streakLine": "{current} రోజుల స్ట్రీక్ · ఉత్తమ {best}",
+  "ribbon.dayComplete": "రోజు {count} పూర్తి",
 
   "widgetNudge.title": "మీ హోమ్ స్క్రీన్లో రోజు శ్లోకం",
   "widgetNudge.body":
@@ -872,6 +874,7 @@ const hi: Record<TranslationKey, string> = {
   "calendar.dayRead": "जिस दिन आपने पढ़ा",
   "calendar.close": "बंद करें",
   "calendar.streakLine": "{current} दिन की स्ट्रीक · सर्वश्रेष्ठ {best}",
+  "ribbon.dayComplete": "दिन {count} पूरा हुआ",
 
   "widgetNudge.title": "आपकी होम स्क्रीन पर आज का श्लोक",
   "widgetNudge.body":
@@ -1171,6 +1174,7 @@ const ta: Record<TranslationKey, string> = {
   "calendar.dayRead": "நீங்கள் படித்த நாள்",
   "calendar.close": "மூடு",
   "calendar.streakLine": "{current} நாள் தொடர் · சிறந்தது {best}",
+  "ribbon.dayComplete": "நாள் {count} நிறைவு",
 
   "widgetNudge.title": "உங்கள் முகப்புத் திரையில் இன்றைய வசனம்",
   "widgetNudge.body":

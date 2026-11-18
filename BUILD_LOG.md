@@ -1155,3 +1155,35 @@ leave Home. 3. A finished read animates one dot, not the whole row.
 **Blocked**    No simulator here, so the rail's optical weight against the
 32px brand title is unverified. The at-risk threshold is still the 18:00
 hardcode; feature 3 replaces it with the reader's reminder time.
+
+## [43] 2026-11-18 — The receipt arrives where the reading happens (Feature 2, part 2)
+**Move**       Completing the day had no receipt on the verse screen — the
+thing the reader actually did. The only rewards were full-screen modals for a
+chapter end or a 7/21/108 streak, so days 1–6 of a new habit got nothing at
+all. That is the window where the habit is won or lost.
+**Plan**       One inline gold ribbon on the verse screen when the daily goal
+lands, and a strict order when several rewards are due.
+**Decisions**  1. `components/practice/DayCompleteRibbon.tsx`: 320ms in,
+1400 hold, 240 out, absolutely placed under the header so the verse never
+moves. A modal would interrupt the one thing the reader is doing — a verse is
+not a lesson that has ended.
+2. Content is "Day N complete" (the streak length after this read), a lotus
+and a flame, on the theme's own gold gradient with `#1B1302` ink (5.6:1 on
+the lightest stop in either theme).
+3. Haptics escalate with the ladder's spirit: light for the first days,
+medium from day 3, and the lotus turns once from day 7 — drawn once, never a
+loop. Day 1–6 now get a real reward without a modal.
+4. Reduce Motion keeps the fade and drops the slide and the turn.
+5. Reward order is ribbon → 400ms → chapter celebration → (close) → milestone.
+Previously a chapter-finishing read with a milestone stacked two modals; the
+milestone is now held in state and opened by the celebration's close handler.
+**Ship**       `components/practice/DayCompleteRibbon.tsx`,
+`app/verses/[verseId].tsx`, `lib/i18n.ts` (`ribbon.dayComplete` ×4).
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 16 suites / 85 tests ✅
+**Observe**    1. Finishing a day now has a receipt that does not steal the
+page. 2. The seventh day turns the lotus before the milestone appears.
+3. No two rewards ever cover each other.
+**Blocked**    The ladder's modal thresholds are still 7/21/108 — the spec
+wants 14/21/30/50/100/108, which means new copy and new stored-seen keys.
+Left as written up in the spec rather than half-migrated; the ribbon already
+covers the cold-start days the ladder was meant to fix.
