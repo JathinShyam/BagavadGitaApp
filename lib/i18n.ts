@@ -52,6 +52,10 @@ const en = {
   "notifications.atRiskTitle": "Your {count}-day streak ends at midnight",
   "notifications.atRiskBody": "One verse keeps it alive.",
 
+  "widget.refreshTitle": "Open the app for today’s verse",
+  "widget.refreshBody":
+    "Your daily verse returns when you next open Bhagavad Gita.",
+
   "home.today": "Today",
   "home.atRisk": "Streak ends at midnight — one verse keeps it alive",
   "home.readToday": "Read today",
@@ -369,6 +373,10 @@ const te: Record<TranslationKey, string> = {
   "notifications.atRiskTitle": "మీ {count} రోజుల స్ట్రీక్ అర్ధరాత్రితో ముగుస్తుంది",
   "notifications.atRiskBody": "ఒక శ్లోకం దాన్ని కాపాడుతుంది.",
 
+  "widget.refreshTitle": "ఈరోజు శ్లోకం కోసం యాప్ను తెరవండి",
+  "widget.refreshBody":
+    "మీరు తదుపరిసారి భగవద్గీత యాప్ను తెరిచినప్పుడు విడ్జెట్ మళ్లీ నవీకరించబడుతుంది.",
+
   "home.today": "ఈరోజు",
   "home.atRisk": "అర్ధరాత్రితో స్ట్రీక్ ముగుస్తుంది — ఒక శ్లోకం దాన్ని కాపాడుతుంది",
   "home.readToday": "ఈరోజు చదివారు",
@@ -683,6 +691,10 @@ const hi: Record<TranslationKey, string> = {
   "notifications.atRiskTitle": "आपकी {count} दिन की स्ट्रीक आधी रात को खत्म हो रही है",
   "notifications.atRiskBody": "एक श्लोक उसे बचा लेगा।",
 
+  "widget.refreshTitle": "आज के श्लोक के लिए ऐप खोलें",
+  "widget.refreshBody":
+    "भगवद्गीता ऐप अगली बार खोलने पर विजेट फिर से अपडेट हो जाएगा।",
+
   "home.today": "आज",
   "home.atRisk": "स्ट्रीक आधी रात को खत्म होगी — एक श्लोक उसे बचाएगा",
   "home.readToday": "आज पढ़ा",
@@ -996,6 +1008,10 @@ const ta: Record<TranslationKey, string> = {
   "notifications.channelDescription": "தினசரி பகவத் கீதை வசன நினைவூட்டல்",
   "notifications.atRiskTitle": "உங்கள் {count} நாள் தொடர் நள்ளிரவில் முடிகிறது",
   "notifications.atRiskBody": "ஒரு வசனம் அதைக் காப்பாற்றும்.",
+
+  "widget.refreshTitle": "இன்றைய வசனத்திற்கு செயலியைத் திறக்கவும்",
+  "widget.refreshBody":
+    "பகவத் கீதை செயலியை அடுத்த முறை திறக்கும்போது விட்ஜெட் மீண்டும் புதுப்பிக்கப்படும்.",
 
   "home.today": "இன்று",
   "home.atRisk": "நள்ளிரவில் தொடர் முடியும் — ஒரு வசனம் அதைத் தக்கவைக்கும்",

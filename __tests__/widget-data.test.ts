@@ -1,3 +1,4 @@
+import { APP_TITLES } from "@/constants/languages";
 import { buildWidgetSyncPayload } from "@/lib/widget-data";
 
 // The payload builder is pure; the storage-backed language lookup is only used
@@ -21,6 +22,19 @@ describe("widget payload (BUG-021)", () => {
     for (const day of payload.days) {
       expect(day.verseId).toMatch(/^\d+-\d+/);
       expect(day.title).toContain("Chapter");
+      expect(day.sloka.length).toBeGreaterThan(0);
+      expect(day.meaning.length).toBeGreaterThan(0);
     }
+  });
+
+  it("carries localized fallback copy for a widget that outlives the payload", () => {
+    const en = buildWidgetSyncPayload(new Date(2026, 10, 16), "en");
+    const te = buildWidgetSyncPayload(new Date(2026, 10, 16), "te");
+
+    expect(en.strings.appTitle).toBe(APP_TITLES.en);
+    expect(te.strings.appTitle).toBe(APP_TITLES.te);
+    expect(te.strings.refreshTitle).not.toBe(en.strings.refreshTitle);
+    expect(te.strings.refreshTitle.length).toBeGreaterThan(0);
+    expect(te.strings.refreshBody.length).toBeGreaterThan(0);
   });
 });

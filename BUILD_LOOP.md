@@ -449,8 +449,9 @@ delete — rejected items move to the Not-doing list with a reason.
   verse. tags: area:home/explore
 - `[?] Streak grace day` — one missed day doesn't break the streak; copy
   welcomes the user back. tags: area:practice, effort:2
-- `[?] iOS home-screen widget` — WidgetKit extension; Android already has
-  one, iOS has only a storage stub. tags: area:widget, effort:4
+- ~~iOS home-screen widget~~ shipped in [47] — WidgetKit extension sharing the
+  Android 30-day payload through an App Group; small, medium and lock-screen
+  families. Live Activity deliberately deferred (see BUILD_LOG [47]).
 - `[?] Chapter titles in hi/ta` — currently fall back (README). Needs a
   cited source, not generation. tags: area:content
 - `[?] Large-text audit` — every reading screen at the largest Dynamic Type /

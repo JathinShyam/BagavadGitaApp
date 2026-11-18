@@ -220,7 +220,7 @@ export default function SettingsScreen() {
         return;
       }
       haptics.medium();
-      setLanguage(code);
+      await setLanguage(code);
       setShowLanguagePicker(false);
       try {
         await Promise.all([

@@ -55,6 +55,7 @@ on the iOS Simulator and Android emulator — see `BUILD_LOOP.md`.
 | [BUG-025](BUG-025-light-theme-gold-fails-wcag-aa.md) | P1 | Both | Gold text fails WCAG AA on the cream theme | fixed [35] |
 | [BUG-026](BUG-026-letter-spacing-breaks-indic-conjuncts.md) | P1 | Both | Letter-spacing breaks Devanagari/Telugu/Tamil conjuncts | fixed [36] |
 | [BUG-027](BUG-027-motion-and-type-punch-list.md) | P3 | Both | Motion and typography punch list | fixed [37]–[40] (device pass owed) |
+| [BUG-028](BUG-028-language-switch-syncs-in-old-language.md) | P2 | Both | Language switch leaves widget/reminder in the old language | fixed [47] (device verification owed) |
 
 ## Template
 

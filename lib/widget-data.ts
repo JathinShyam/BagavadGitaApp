@@ -3,7 +3,11 @@ import { NativeModules, Platform } from "react-native";
 import { addDaysToDateKey, getLocalDateKey } from "@/lib/date-keys";
 import { getVerseForDate } from "@/lib/daily-verse";
 import { getStoredContentLanguage } from "@/lib/chapter-content";
-import { DEFAULT_CONTENT_LANGUAGE, type ContentLanguage } from "@/constants/languages";
+import {
+  APP_TITLES,
+  DEFAULT_CONTENT_LANGUAGE,
+  type ContentLanguage,
+} from "@/constants/languages";
 import { INTL_LOCALES, translate, WEEKDAY_SHORT } from "@/lib/i18n";
 
 export type WidgetDayPayload = {
@@ -18,6 +22,16 @@ export type WidgetDayPayload = {
 export type WidgetSyncPayload = {
   days: WidgetDayPayload[];
   updatedAt: number;
+  /**
+   * Fallback copy for the native widget's empty/stale state. Native code has no
+   * access to the JS dictionary, so the strings travel with the payload (the
+   * iOS extension reads the same JSON after 30 days without an app launch).
+   */
+  strings: {
+    refreshTitle: string;
+    refreshBody: string;
+    appTitle: string;
+  };
 };
 
 const { WidgetDataModule } = NativeModules as {
@@ -73,7 +87,15 @@ export function buildWidgetSyncPayload(
     });
   }
 
-  return { days, updatedAt: Date.now() };
+  return {
+    days,
+    updatedAt: Date.now(),
+    strings: {
+      refreshTitle: translate(language, "widget.refreshTitle"),
+      refreshBody: translate(language, "widget.refreshBody"),
+      appTitle: APP_TITLES[language],
+    },
+  };
 }
 
 export async function setWidgetVerseData(data: WidgetSyncPayload): Promise<void> {

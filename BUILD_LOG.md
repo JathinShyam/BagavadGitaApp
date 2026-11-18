@@ -1305,3 +1305,73 @@ explained without opening it.
 chips and the field against the Krishna header art are unverified. Search
 covers the 20 curated topics, not an 80-tag taxonomy; transliterated queries
 only find what the text actually contains.
+
+## [47] 2026-11-18 — The verse leaves the app (Feature 5: iOS widget)
+**Move**       Android has had a home-screen widget since [32]. iOS had a Swift
+storage stub that was never in the app target and wrote to
+`UserDefaults.standard`, where no extension could read it. A daily-practice app
+that disappears from the home screen loses the loop that makes it a habit — and
+iOS is where most of this app's ratings live.
+**Plan**       A WidgetKit extension that reads the same 30-day payload as
+Android through a shared App Group, with small/medium and lock-screen families,
+plus the bridge work that makes the Swift module reachable at all.
+**Decisions**  1. One App Group, `group.com.bhagavadgita.ios`, declared on both
+targets and in `app.json` so prebuild keeps it. `WidgetDataModule.swift` writes
+there, flushes, then calls `WidgetCenter.reloadAllTimelines()`.
+2. `WidgetDataModule.swift` was not in the app target's Sources — it had never
+been compiled. It is now, and `WidgetDataModuleBridge.m` registers it with
+`RCT_EXTERN_MODULE`; a Swift class conforming to `RCTBridgeModule` is not
+discovered without that constructor. Without this the JS bridge would still see
+`NativeModules.WidgetDataModule` as undefined.
+3. The extension target, its embed phase, target dependency and build
+configurations were added to `project.pbxproj` by hand with stable UUIDs (no
+Xcode, Ruby or `xcodeproj` gem on this machine), then parsed back with the
+`xcode` package: both targets resolve, sources/embed/dependency are wired, and
+there are no unresolved UUIDs.
+4. The timeline holds one entry per remaining payload day at local midnight,
+then an honest refresh entry the day after the window ends (`.atEnd`). An empty
+payload retries at next midnight — not `.atEnd`, which would ask WidgetKit to
+reload immediately and loop. That gives the same 30-day promise as BUG-021's
+Android fix.
+5. Views: small = eyebrow, reference, sloka, brand; medium adds the meaning in
+a second column; accessory inline, circular and rectangular on iOS 16+ behind
+availability checks. Cream/gold in light, night/gold in dark. The serif system
+font shapes Indic text through the platform; no tracking/kerning is applied to
+scripture (BUG-026).
+6. The extension cannot read the JS dictionary, so the fallback copy and app
+title travel in the payload (`widget.refreshTitle`, `widget.refreshBody`,
+`APP_TITLES`). A widget that outlives its data still speaks the reader's
+language instead of dropping to English.
+7. Taps deep-link to `bagavadgita://verses/{id}`, or to the app root from the
+refresh state.
+8. **Live Activity deliberately deferred.** An all-day verse card is a widget,
+not a live event; Apple expects a defined start and end. The defensible event
+is the at-risk countdown (starts at the derived at-risk hour, ends at midnight),
+but that needs iOS 16.1+, ActivityKit, an opt-in toggle and a real build to
+verify. Writing that blind would ship an activity nobody can stop. Recorded
+here as the next step for that surface.
+9. Language changes now await `setLanguage` before re-syncing the widget and
+reminders (BUG-028); both helpers re-read storage and previously raced the
+write.
+**Ship**       `ios/DailyVerseWidget/` (Swift widget, Info.plist, entitlements),
+`ios/BagavadGita/WidgetDataModule.swift` (shared suite + WidgetKit reload),
+`ios/BagavadGita/WidgetDataModuleBridge.m`, `ios/BagavadGita.entitlements`,
+`ios/BagavadGita/BagavadGita.entitlements`,
+`ios/BagavadGita.xcodeproj/project.pbxproj`, `lib/widget-data.ts` (payload
+copy), `lib/i18n.ts` (2 `widget.*` keys ×4), `context/language-context.tsx`,
+`app/(main)/settings.tsx`, `__tests__/widget-data.test.ts`, `app.json`,
+`docs/bugs/BUG-028…`, `BUILD_LOOP.md`.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 19 suites / 122 tests ✅
+**Observe**    1. Add the widget from the gallery and open the app: today's
+verse appears, not a placeholder. 2. Tap it: that verse opens. 3. Move the
+device clock forward two days without opening the app: the widget rolls over;
+past day 30 it shows the refresh copy. 4. Switch to Telugu and confirm the
+widget brand/verse follow immediately. 5. Dark mode gives the night background
+and gold accents; all three lock-screen families render.
+**Blocked**    No macOS, Xcode, CocoaPods or `xcodebuild` here, so the extension
+has never been compiled or run — the project file is parse-validated, not
+build-validated. The App Group and `com.bhagavadgita.ios.DailyVerseWidget` must
+be enabled on both App IDs in the Apple Developer portal, and EAS credentials
+must cover the extension, or signing will fail. Widget fonts, long
+Telugu/Tamil labels and the lock-screen families are visually unverified.
+Live Activity is deferred as described above.
