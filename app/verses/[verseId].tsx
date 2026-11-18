@@ -68,6 +68,7 @@ import {
   markMilestoneSeen,
 } from "@/lib/milestones";
 import { markPathProgressForVerse } from "@/lib/reading-paths";
+import { maybeRequestReview, notePositiveEvent } from "@/lib/review-prompt";
 import { getDailyVerseNotificationContent, getVerseForDate } from "@/lib/daily-verse";
 import { buildVerseCopyText } from "@/lib/verse-copy";
 
@@ -378,6 +379,16 @@ export default function VerseDetailScreen() {
       setIsSharing(false);
     }
   }, [verse, isSharing, t, language]);
+
+  // A finished chapter or a streak milestone is a genuine win. Record it, then
+  // ask for a rating only when no other reward modal is queued behind this one.
+  const recordWin = useCallback((allowPrompt: boolean) => {
+    notePositiveEvent()
+      .then(() => {
+        if (allowPrompt) return maybeRequestReview();
+      })
+      .catch(() => {});
+  }, []);
 
   const handleShareStreak = useCallback(async () => {
     if (!streakShareRef.current) return;
@@ -832,6 +843,9 @@ export default function VerseDetailScreen() {
         chapterNumber={verse.chapter}
         onClose={() => {
           setShowCelebration(false);
+          // If a milestone is queued, the celebration close is only the first
+          // of two wins; don't put a rating dialog between them.
+          recordWin(!pendingMilestone);
           if (!pendingMilestone) return;
           setPendingMilestone(null);
           if (milestoneTimerRef.current) clearTimeout(milestoneTimerRef.current);
@@ -849,6 +863,7 @@ export default function VerseDetailScreen() {
             markMilestoneSeen(milestoneDays).catch(() => {});
           }
           setShowMilestone(false);
+          recordWin(true);
         }}
         onShare={handleShareStreak}
       />

@@ -40,6 +40,7 @@
     "expo-router": "~6.0.23",
     "expo-sharing": "~14.0.8",
     "expo-splash-screen": "~31.0.13",
+    "expo-store-review": "~9.0.9",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",

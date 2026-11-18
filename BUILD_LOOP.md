@@ -484,14 +484,13 @@ delete — rejected items move to the Not-doing list with a reason.
 - ~~At-risk push notification~~ shipped in [45] — "your N-day streak ends at midnight" at
   reminder time + 4h. `isStreakAtRisk()` already detects it; nothing
   sends it. tags: area:notifications, effort:1, retention:high
-- `[?] Rating prompt` — `expo-store-review` after a positive event
-  (chapter complete, milestone, path done). The cheapest
-  download→rating multiplier in existence, and this category ranks on
-  review count. tags: area:growth, effort:1
-- `[?] Crash reporting + privacy-safe analytics + EAS Update` — no crash
-  telemetry, no D1/D7/D30 funnel, and `expo.modules.updates.ENABLED=false`
-  so every fix needs a store review. Can stay "Data Not Collected" with
-  scrubbed Sentry. tags: area:infra, effort:1
+- ~~Rating prompt~~ shipped in [48] — native store dialog after two wins
+  (chapter complete or streak milestone), 90-day cooldown. Needs a rebuilt
+  native client; TestFlight/Expo Go suppress it. tags: area:growth, effort:1
+- `[?] Crash reporting + privacy-safe analytics + EAS Update` — deferred in
+  [48] with setup steps: all three need a DSN/vendor account, updated privacy
+  declarations and a new binary. `expo.modules.updates.ENABLED=false` still
+  means every fix needs a store review. tags: area:infra, effort:1
 - `[?] Font-size setting (S/M/L/XL)` — four competitors ship this as
   baseline. One token change in `theme/design-tokens.ts`. tags: area:a11y,
   effort:1

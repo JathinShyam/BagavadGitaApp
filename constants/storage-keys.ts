@@ -17,6 +17,8 @@ export const STORAGE_KEYS = {
   ACTIVE_PATH: "activeReadingPath",
   WIDGET_NUDGE_DISMISSED: "widgetNudgeDismissedUntil",
   MILESTONES_SEEN: "milestonesSeen",
+  /** Positive moments counted toward the rating prompt, and when we last asked. */
+  REVIEW_PROMPT: "reviewPrompt",
   SAVED_REVIEW_CURSOR: "savedReviewCursor",
   /** Last notification response id already used for in-app navigation (dedupe cold starts). */
   LAST_HANDLED_NOTIFICATION: "lastHandledNotificationResponseId",

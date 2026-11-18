@@ -1375,3 +1375,67 @@ be enabled on both App IDs in the Apple Developer portal, and EAS credentials
 must cover the extension, or signing will fail. Widget fonts, long
 Telugu/Tamil labels and the lock-screen families are visually unverified.
 Live Activity is deferred as described above.
+
+## [48] 2026-11-18 — After the good part (Feature 6: rating prompt; infra deferred)
+**Move**       This category ranks on review count and the app has never asked
+for a rating. Three backlog items travel together — rating prompt, crash
+reporting and EAS Update — but only the first can ship from this machine:
+the other two need operator accounts, a DSN and a new binary. Shipping the
+prompt and writing down the rest precisely beats stalling all three.
+**Plan**       A small gate module (`lib/review-prompt.ts`) plus two triggers
+at the close of the chapter celebration and the streak milestone.
+**Decisions**  1. Two positive events and a 90-day cooldown
+(`MIN_POSITIVE_EVENTS`, `PROMPT_COOLDOWN_DAYS`). The counter and the last ask
+persist in `reviewPrompt` (`constants/storage-keys.ts`); one win is a
+coincidence, two is a habit.
+2. Events are chapter completions and streak milestones — the moments the app
+already rewards. No path-completion trigger: paths advance from the same
+reading screen, so a path day can complete under an open celebration, and a
+third trigger would stack the ask on a modal.
+3. When a milestone is queued behind the celebration, the celebration close
+records the win but does not ask (`recordWin(!pendingMilestone)`); the
+milestone close is the ask point. One reward at a time.
+4. `hasAction()` runs before `requestReview()`. TestFlight, web and a
+dismissing host view can all refuse the dialog; a refusal is not recorded, so
+the next eligible moment can still ask.
+5. The module is lazy-`require`d behind try/catch and returns early on web, the
+same pattern as notifications. Expo Go has no `expo-store-review` native
+module; importing eagerly would crash the verse screen.
+6. `expo-store-review@9.0.9` needs a native rebuild (`pod install`); until the
+dev client is rebuilt, `hasAction()` is false and nothing appears.
+7. Storage is best-effort: a failed read/write never throws, and corrupt JSON
+parses to zero wins instead of suppressing the prompt forever.
+8. **Crash reporting deferred — an account decision, not code.** Unblock with:
+a Sentry org/project + DSN, `npx expo install @sentry/react-native` (and the
+Expo config plugin), `EXPO_PUBLIC_SENTRY_DSN`, `SENTRY_AUTH_TOKEN` for source
+maps, then a native rebuild. Scrub PII (`sendDefaultPii: false`, no verse or
+note text in breadcrumbs) and update the App Privacy answer from "Data Not
+Collected" to Diagnostics → Crash Data. Recommended over Firebase because a
+scrubbed Sentry can stay close to the current "no data" posture.
+9. **Privacy-safe analytics deferred — same gate.** A D1/D7/D30 funnel needs a
+vendor (PostHog or Amplitude) and a matching privacy-policy / Play Data Safety
+update. Local-only counters cannot answer the funnel question, and uploading
+them still changes both declarations.
+10. **EAS Update deferred.** `expo-updates` cannot be added to an
+already-shipped binary. When an account/build pass is possible:
+`npx expo install expo-updates`, `eas update:configure`, set
+`updates.url` + `runtimeVersion` + a `channel` per build profile in
+`eas.json`, flip `expo.modules.updates.ENABLED` (the Android manifest currently
+hard-codes `false`), build and ship a new binary, then `eas update` works
+against it. Installing it now would add an unused native module to every
+future build and still change nothing until that binary ships.
+**Ship**       `lib/review-prompt.ts`, `constants/storage-keys.ts`
+(`REVIEW_PROMPT`), `app/verses/[verseId].tsx` (two close handlers),
+`__tests__/review-prompt.test.ts`, `package.json` + `package-lock.json`
+(`expo-store-review`), `BUILD_LOOP.md`.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 20 suites / 131 tests ✅
+**Observe**    1. Finish a chapter and close the celebration (then the milestone
+if one appears): on the second positive event a store-installed production
+build shows the native review dialog once. 2. Finish another chapter or
+milestone within 90 days: no dialog. 3. Repeat on TestFlight/Expo Go: no
+dialog and no crash — `hasAction()` is false there by design.
+**Blocked**    Device verification owed: the prompt needs a rebuilt dev client
+or store build, and there is no emulator or iOS toolchain on this machine.
+Crash reporting, analytics and EAS Update stay deferred with the concrete
+steps above; each needs an account, credentials or a binary this loop cannot
+produce.
