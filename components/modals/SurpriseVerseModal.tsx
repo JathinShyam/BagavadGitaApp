@@ -22,6 +22,8 @@ import { useAppTheme } from "@/hooks/useAppTheme";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { Spring } from "@/theme/motion";
 import { useContentLanguage } from "@/context/language-context";
+import { useTranslation } from "@/hooks/useTranslation";
+import { tracking } from "@/lib/i18n";
 import { LinearGradient } from "expo-linear-gradient";
 import { VERSE_SEQUENCES } from "@/constants/verse-sequences";
 import { CHAPTER_IMAGES } from "@/constants/chapter-images";
@@ -51,6 +53,7 @@ const ShuffleCard: React.FC<{
 }> = ({ chapter, verse, index, isActive, isFinal }) => {
   const { colors, isDark } = useAppTheme();
   const { language } = useContentLanguage();
+  const { t } = useTranslation();
   const reducedMotion = useReducedMotion();
   const scale = useSharedValue(0.8);
   const opacity = useSharedValue(0);
@@ -172,14 +175,21 @@ const ShuffleCard: React.FC<{
       <View style={styles.cardContent}>
         {/* Chapter badge */}
         <View style={[styles.chapterBadge, { backgroundColor: colors.primary + "E6" }]}>
-          <Text style={[styles.chapterBadgeText, { color: colors.onPrimary }]}>
-            Chapter {chapter}
+          <Text
+            style={[
+              styles.chapterBadgeText,
+              { color: colors.onPrimary, letterSpacing: tracking(language, 0.3) },
+            ]}
+          >
+            {t("common.chapterN", { chapter })}
           </Text>
         </View>
 
         {/* Verse number - prominent display */}
         <View style={styles.verseSection}>
-          <Text style={styles.verseLabel}>Verse</Text>
+          <Text style={[styles.verseLabel, { letterSpacing: tracking(language, 2) }]}>
+            {t("common.verse")}
+          </Text>
           <Text style={styles.verseNumber}>{verse}</Text>
         </View>
 
@@ -297,6 +307,8 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
   onClose,
 }) => {
   const { colors, isDark } = useAppTheme();
+  const { language } = useContentLanguage();
+  const { t } = useTranslation();
   const reducedMotion = useReducedMotion();
   const [rendered, setRendered] = useState(visible);
   const [isShuffling, setIsShuffling] = useState(false);
@@ -440,11 +452,24 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
               <Ionicons name="sparkles" size={32} color={colors.brandText} />
             </View>
           </Animated.View>
-          <Text style={[styles.title, { color: colors.text }]}>
-            {isShuffling ? "Discovering..." : finalSelection ? "Divine Selection" : "Divine Shuffle"}
+          <Text
+            style={[
+              styles.title,
+              { color: colors.text, letterSpacing: tracking(language, 0.5) },
+            ]}
+          >
+            {isShuffling
+              ? t("surprise.discovering")
+              : finalSelection
+                ? t("surprise.selection")
+                : t("surprise.shuffle")}
           </Text>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-            {isShuffling ? "Let the universe guide you" : finalSelection ? "Your verse has been revealed" : ""}
+            {isShuffling
+              ? t("surprise.guiding")
+              : finalSelection
+                ? t("surprise.revealed")
+                : ""}
           </Text>
         </View>
 
@@ -477,12 +502,17 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
               <Pressable
                 onPress={() => onComplete(finalSelection.chapter, finalSelection.verse)}
                 style={[styles.goButton, { backgroundColor: colors.brandText }]}
-                accessibilityLabel="Open verse"
+                accessibilityLabel={t("surprise.openA11y")}
                 accessibilityRole="button"
               >
                 <Ionicons name="book-outline" size={20} color={colors.onPrimary} />
-                <Text style={[styles.goButtonText, { color: colors.onPrimary }]}>
-                  Open Verse
+                <Text
+                  style={[
+                    styles.goButtonText,
+                    { color: colors.onPrimary, letterSpacing: tracking(language, 0.3) },
+                  ]}
+                >
+                  {t("surprise.openVerse")}
                 </Text>
                 <Ionicons name="arrow-forward" size={18} color={colors.onPrimary} />
               </Pressable>
@@ -512,12 +542,12 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
               onPressIn={haptics.light}
               onPress={startShuffle}
               style={[styles.shuffleAgain, { borderColor: colors.outline, backgroundColor: colors.surface }]}
-              accessibilityLabel="Try another random verse"
+              accessibilityLabel={t("surprise.tryAnotherA11y")}
               accessibilityRole="button"
             >
               <Ionicons name="shuffle" size={18} color={colors.brandText} />
               <Text style={[styles.shuffleAgainText, { color: colors.text }]}>
-                Try Another
+                {t("surprise.tryAnother")}
               </Text>
             </Pressable>
           </Animated.View>
@@ -527,7 +557,7 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
         <Pressable
           style={[styles.closeButton, { backgroundColor: colors.surface + "CC" }]}
           onPress={onClose}
-          accessibilityLabel="Close"
+          accessibilityLabel={t("surprise.closeA11y")}
           accessibilityRole="button"
         >
           <Ionicons name="close" size={22} color={colors.text} />
@@ -572,7 +602,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "700",
     textAlign: "center",
-    letterSpacing: 0.5,
   },
   subtitle: {
     fontSize: 14,
@@ -631,7 +660,6 @@ const styles = StyleSheet.create({
   chapterBadgeText: {
     fontSize: 13,
     fontWeight: "600",
-    letterSpacing: 0.3,
   },
   verseSection: {
     alignItems: "center",
@@ -643,7 +671,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: "rgba(255,255,255,0.7)",
     textTransform: "uppercase",
-    letterSpacing: 2,
   },
   verseNumber: {
     fontSize: 56,
@@ -730,7 +757,6 @@ const styles = StyleSheet.create({
   goButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    letterSpacing: 0.3,
   },
   shufflingIndicator: {
     flexDirection: "row",

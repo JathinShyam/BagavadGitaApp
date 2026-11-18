@@ -18,6 +18,7 @@ import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { STORAGE_KEYS } from "@/constants/storage-keys";
+import { translate } from "@/lib/i18n";
 
 import {
   getDailyVerseNotificationContent,
@@ -93,9 +94,10 @@ export async function requestNotificationPermissions(): Promise<boolean> {
   if (!Notifications) return false;
 
   if (Platform.OS === "android") {
+    const channelLanguage = await getStoredContentLanguage();
     await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
-      name: "Daily Verse",
-      description: "Daily Bhagavad Gita verse reminder",
+      name: translate(channelLanguage, "notifications.channelName"),
+      description: translate(channelLanguage, "notifications.channelDescription"),
       importance: Notifications.AndroidImportance.DEFAULT,
       sound: "default",
       vibrationPattern: [0, 250, 250, 250],
@@ -198,7 +200,10 @@ export async function scheduleNextDailyVerseNotification(): Promise<void> {
       const verse = getVerseForDate(triggerAt, language);
       if (!verse) continue;
 
-      const { title, body, verseId } = getDailyVerseNotificationContent(verse);
+      const { title, body, verseId } = getDailyVerseNotificationContent(
+        verse,
+        language
+      );
 
       await Notifications.scheduleNotificationAsync({
         identifier: `${IDENTIFIER_PREFIX}${getLocalDateKey(triggerAt)}`,

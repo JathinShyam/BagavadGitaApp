@@ -26,6 +26,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { haptics } from "@/lib/haptics";
 import { homeScreenStyles } from "@/theme/screen-styles";
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useTranslation } from "@/hooks/useTranslation";
+import { tracking } from "@/lib/i18n";
 import { useReadingProgress } from "@/hooks/useReadingProgress";
 import SurpriseVerseModal from "@/components/modals/SurpriseVerseModal";
 import { SelectableChip } from "@/components/ui/SelectableChip";
@@ -104,6 +106,7 @@ function ChapterProgressBar({
 export default function HomeScreen() {
   const { colors } = useAppTheme();
   const { language } = useContentLanguage();
+  const { t } = useTranslation();
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const [showSurpriseVerseModal, setShowSurpriseVerseModal] = useState(false);
@@ -234,11 +237,11 @@ export default function HomeScreen() {
         activePath.completedDayIds.length > 0;
       if (hasProgress) {
         Alert.alert(
-          "Switch reading path?",
-          "Your progress on the current path will be lost.",
+          t("home.switchPathTitle"),
+          t("home.switchPathBody"),
           [
-            { text: "Cancel", style: "cancel" },
-            { text: "Switch", style: "destructive", onPress: () => { startPath(); } },
+            { text: t("common.cancel"), style: "cancel" },
+            { text: t("home.switchPathConfirm"), style: "destructive", onPress: () => { startPath(); } },
           ]
         );
         return;
@@ -251,7 +254,7 @@ export default function HomeScreen() {
       }
       await startPath();
     },
-    [router, activePath]
+    [router, activePath, t]
   );
 
   const handleShareStreak = useCallback(async () => {
@@ -260,13 +263,13 @@ export default function HomeScreen() {
     try {
       haptics.light();
       const uri = await captureShareCardRef(streakShareRef);
-      await shareImage(uri);
+      await shareImage(uri, language);
     } catch (e) {
       console.error("Streak share failed", e);
     } finally {
       setSharingStreak(false);
     }
-  }, [sharingStreak]);
+  }, [sharingStreak, language]);
 
   const dismissNudge = useCallback(async () => {
     await dismissWidgetNudge();
@@ -299,7 +302,7 @@ export default function HomeScreen() {
           <Pressable
             onPressIn={() => haptics.light()}
             accessibilityRole="button"
-            accessibilityLabel={`Chapter ${chapter.id}, ${chapterName}`}
+            accessibilityLabel={t("home.chapterA11y", { chapter: chapter.id, name: chapterName })}
             style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
           >
             <View
@@ -346,7 +349,7 @@ export default function HomeScreen() {
                     />
                   ) : (
                     <Text style={[styles.chapterTilePct, { color: colors.textMuted, textAlign: "left" }]}>
-                      {chapter.verses} verses
+                      {t("common.versesN", { count: chapter.verses })}
                     </Text>
                   )}
                 </View>
@@ -358,7 +361,7 @@ export default function HomeScreen() {
         </Link>
       );
     },
-    [colors, getChapterProgress, language]
+    [colors, getChapterProgress, language, t]
   );
 
   const ListHeader = useCallback(
@@ -366,7 +369,7 @@ export default function HomeScreen() {
       <View style={styles.header}>
         {streakAtRisk && (
           <Text style={[styles.atRisk, { color: colors.textMuted }]}>
-            Streak ends at midnight — one verse keeps it alive
+            {t("home.atRisk")}
           </Text>
         )}
 
@@ -376,9 +379,19 @@ export default function HomeScreen() {
             entering={FadeInUp.delay(80).duration(500)}
             style={[styles.hero, { backgroundColor: colors.surface }]}
           >
-            <Text style={[styles.heroEyebrow, { color: colors.brandText }]}>Today</Text>
+            <Text
+              style={[
+                styles.heroEyebrow,
+                { color: colors.brandText, letterSpacing: tracking(language, 1.2) },
+              ]}
+            >
+              {t("home.today")}
+            </Text>
             <Text style={[styles.heroRef, { color: colors.text }]}>
-              Chapter {todaysVerse.chapter} · Verse {todaysVerse.verse_number}
+              {t("common.chapterVerseN", {
+                chapter: todaysVerse.chapter,
+                verse: todaysVerse.verse_number,
+              })}
             </Text>
             <Text style={[styles.heroPreview, { color: colors.textMuted }]} numberOfLines={3}>
               {todayPreview}
@@ -391,7 +404,7 @@ export default function HomeScreen() {
                 color={goalDone ? colors.success : colors.textMuted}
               />
               <Text style={[styles.heroStatusText, { color: colors.textMuted }]}>
-                {goalDone ? "Read today" : "Not read yet today"}
+                {goalDone ? t("home.readToday") : t("home.notReadToday")}
               </Text>
             </View>
 
@@ -404,7 +417,7 @@ export default function HomeScreen() {
               style={[styles.heroCta, { backgroundColor: colors.brandText }]}
             >
               <Text style={[styles.heroCtaText, { color: colors.onPrimary }]}>
-                Read Today’s Verse
+                {t("home.readTodaysVerse")}
               </Text>
             </Pressable>
           </Animated.View>
@@ -426,11 +439,11 @@ export default function HomeScreen() {
                 onPress={() => router.push(ROUTES.verse(lastReadVerseId))}
                 style={styles.actionHalf}
                 accessibilityRole="button"
-                accessibilityLabel="Continue reading"
+                accessibilityLabel={t("home.continueReading")}
               >
                 <Ionicons name="book-outline" size={18} color={colors.brandText} />
                 <Text style={[styles.actionLinkText, { color: colors.text }]}>
-                  Continue reading
+                  {t("home.continueReading")}
                 </Text>
               </Pressable>
               <View style={[styles.actionDivider, { backgroundColor: colors.outline + "55" }]} />
@@ -441,10 +454,12 @@ export default function HomeScreen() {
             onPress={openSurpriseVerseModal}
             style={styles.actionHalf}
             accessibilityRole="button"
-            accessibilityLabel="Surprise verse"
+            accessibilityLabel={t("home.surpriseA11y")}
           >
             <Ionicons name="gift-outline" size={18} color={colors.brandText} />
-            <Text style={[styles.actionLinkText, { color: colors.text }]}>Surprise</Text>
+            <Text style={[styles.actionLinkText, { color: colors.text }]}>
+              {t("home.surprise")}
+            </Text>
           </Pressable>
         </View>
 
@@ -455,9 +470,13 @@ export default function HomeScreen() {
             style={styles.pathRow}
           >
             <Text style={[styles.pathText, { color: colors.textMuted }]} numberOfLines={1}>
-              Path · Day {Math.min(pathMeta.done + (pathMeta.next ? 1 : 0), pathMeta.total)} of{" "}
-              {pathMeta.total}
-              {pathMeta.nextTitle ? ` · ${pathMeta.nextTitle}` : " · Complete"}
+              {t("home.pathProgress", {
+                day: Math.min(pathMeta.done + (pathMeta.next ? 1 : 0), pathMeta.total),
+                total: pathMeta.total,
+              })}
+              {pathMeta.nextTitle
+                ? ` · ${pathMeta.nextTitle}`
+                : ` · ${t("home.pathComplete")}`}
             </Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </Pressable>
@@ -465,7 +484,7 @@ export default function HomeScreen() {
 
         {/* Chapters section */}
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Chapters</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("home.chapters")}</Text>
           <Pressable
             onPress={() => setPathPickerOpen(true)}
             hitSlop={8}
@@ -475,7 +494,7 @@ export default function HomeScreen() {
               {totalProgress}%
             </Text>
             <Text style={[styles.pathsLink, { color: colors.brandText }]}>
-              Guided paths ›
+              {t("home.guidedPaths")} ›
             </Text>
           </Pressable>
         </View>
@@ -483,9 +502,9 @@ export default function HomeScreen() {
         {hasAnyProgress && (
         <View style={styles.filterRow}>
           {[
-            { id: "all", label: "All" },
-            { id: "continue", label: "Continue" },
-            { id: "completed", label: "Completed" },
+            { id: "all", label: t("home.filterAll") },
+            { id: "continue", label: t("home.filterContinue") },
+            { id: "completed", label: t("home.filterCompleted") },
           ].map((f) => (
             <SelectableChip
               key={f.id}
@@ -515,7 +534,7 @@ export default function HomeScreen() {
           <View style={styles.widgetTip}>
             <Pressable style={{ flex: 1 }} onPress={() => setWidgetHelpOpen(true)}>
               <Text style={[styles.widgetTipText, { color: colors.textMuted }]}>
-                Tip: add Daily Verse to your home screen
+                {t("home.widgetTip")}
               </Text>
             </Pressable>
             <Pressable onPress={dismissNudge} hitSlop={10}>
@@ -530,6 +549,7 @@ export default function HomeScreen() {
       streakAtRisk,
       todaysVerse,
       todayPreview,
+      language,
       goalDone,
       lastReadVerseId,
       pathMeta,
@@ -540,6 +560,7 @@ export default function HomeScreen() {
       router,
       openSurpriseVerseModal,
       dismissNudge,
+      t,
     ]
   );
 
@@ -583,14 +604,16 @@ export default function HomeScreen() {
               borderColor: colors.primary + "28",
             },
           ]}
-          accessibilityLabel="Open reading calendar. Long press to share streak."
+          accessibilityLabel={t("home.streakA11y")}
         >
           <Ionicons name="flame" size={14} color={colors.brandText} />
           <Animated.Text
             style={[styles.streakText, { color: colors.brandText }, streakPopStyle]}
           >
             {getStreakLabel(streak.currentStreak)}
-            {streak.longestStreak > 0 ? ` · Best ${streak.longestStreak}` : ""}
+            {streak.longestStreak > 0
+              ? ` · ${t("home.bestStreak", { count: streak.longestStreak })}`
+              : ""}
           </Animated.Text>
         </Pressable>
       </Animated.View>
@@ -606,8 +629,8 @@ export default function HomeScreen() {
             <Ionicons name="book-outline" size={28} color={colors.textMuted} />
             <Text style={[styles.emptyFilterText, { color: colors.textMuted }]}>
               {activeFilter === "continue"
-                ? "No chapters in progress yet — open any chapter to begin"
-                : "No completed chapters yet — your journey starts with one verse"}
+                ? t("home.emptyInProgress")
+                : t("home.emptyCompleted")}
             </Text>
           </View>
         }

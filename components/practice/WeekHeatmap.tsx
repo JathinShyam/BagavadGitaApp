@@ -9,11 +9,11 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useTranslation } from "@/hooks/useTranslation";
+import { WEEKDAY_INITIALS } from "@/lib/i18n";
 import { addDaysToDateKey, getLocalDateKey } from "@/lib/date-keys";
 import { Duration } from "@/theme/motion";
 import type { ReadingActivity } from "@/types";
-
-const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
 
 type Props = {
   activity: ReadingActivity;
@@ -68,16 +68,19 @@ function HeatCell({
  * Seven-day reading strip, rendered inside the practice calendar sheet.
  * Cells fill toward gold as the day's verse count grows.
  */
-export function WeekHeatmap({ activity, title = "This week", cellSize = 28 }: Props) {
+export function WeekHeatmap({ activity, title, cellSize = 28 }: Props) {
   const { colors } = useAppTheme();
+  const { t, language } = useTranslation();
   const today = getLocalDateKey();
+  const weekdays = WEEKDAY_INITIALS[language];
+  const heading = title === undefined ? t("calendar.thisWeek") : title;
 
   const week = Array.from({ length: 7 }, (_, i) => {
     const key = addDaysToDateKey(today, i - 6);
     const [y, m, d] = key.split("-").map(Number);
     return {
       key,
-      label: WEEKDAYS[new Date(y, m - 1, d).getDay()],
+      label: weekdays[new Date(y, m - 1, d).getDay()],
       count: activity[key] ?? 0,
       isToday: key === today,
     };
@@ -85,8 +88,8 @@ export function WeekHeatmap({ activity, title = "This week", cellSize = 28 }: Pr
 
   return (
     <View style={styles.wrap}>
-      {title ? (
-        <Text style={[styles.title, { color: colors.textMuted }]}>{title}</Text>
+      {heading ? (
+        <Text style={[styles.title, { color: colors.textMuted }]}>{heading}</Text>
       ) : null}
       <View style={styles.row}>
         {week.map((day) => (

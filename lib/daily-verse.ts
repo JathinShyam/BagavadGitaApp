@@ -7,6 +7,7 @@
 
 import { ALL_VERSES } from "@/data/verses/verse-catalog";
 import { DEFAULT_CONTENT_LANGUAGE, type ContentLanguage } from "@/constants/languages";
+import { translate } from "@/lib/i18n";
 import { toNotificationVerse } from "@/lib/verse-content";
 import type { VerseForNotification } from "@/types";
 
@@ -21,7 +22,7 @@ const MS_PER_DAY = 86_400_000;
 /** Local midnight normalised to UTC, so DST shifts never change the counter. */
 const EPOCH_UTC = Date.UTC(2020, 0, 1);
 
-/** Captivating title for daily verse notifications. */
+/** English title for daily verse notifications (see `translate` for other locales). */
 export const DAILY_VERSE_NOTIFICATION_TITLE = "Your daily verse awaits ✨";
 
 /**
@@ -71,21 +72,24 @@ export function truncate(text: string, maxLen: number): string {
 }
 
 /**
- * Title and body for a notification (English, short).
- * Uses a constant captivating title; body shows verse preview.
+ * Title and body for a notification in the reader's language.
+ * Body shows the verse preview, truncated to stay readable in the tray.
  */
-export function getDailyVerseNotificationContent(verse: VerseForNotification): {
+export function getDailyVerseNotificationContent(
+  verse: VerseForNotification,
+  language: ContentLanguage = DEFAULT_CONTENT_LANGUAGE
+): {
   title: string;
   body: string;
   verseId: string;
 } {
-  const title = DAILY_VERSE_NOTIFICATION_TITLE;
+  const title = translate(language, "notifications.dailyTitle");
   const rawBody =
     verse.meaning ??
     (verse.sloka ? verse.sloka.replace(/\n/g, " ").replace(/\s+/g, " ").trim() : "");
   const body = rawBody
     ? truncate(rawBody, MAX_BODY_LENGTH)
-    : "Open the app to read the verse.";
+    : translate(language, "notifications.openApp");
 
   return { title, body, verseId: verse.id };
 }

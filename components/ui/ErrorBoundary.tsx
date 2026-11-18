@@ -1,8 +1,11 @@
 // components/ErrorBoundary.tsx
 
-import React, { Component, ErrorInfo, ReactNode } from "react";
+import React, { Component, ErrorInfo, ReactNode, useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { DEFAULT_CONTENT_LANGUAGE, type ContentLanguage } from "@/constants/languages";
+import { getStoredContentLanguage } from "@/lib/chapter-content";
+import { createTranslator } from "@/lib/i18n";
 
 interface Props {
   children: ReactNode;
@@ -57,13 +60,20 @@ function ErrorFallback({
 }) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  // The boundary sits above LanguageProvider (a crash there must still render),
+  // so read the saved language directly instead of using context.
+  const [language, setLanguage] = useState<ContentLanguage>(DEFAULT_CONTENT_LANGUAGE);
+  useEffect(() => {
+    getStoredContentLanguage().then(setLanguage).catch(() => {});
+  }, []);
+  const t = useMemo(() => createTranslator(language), [language]);
   const bg = isDark ? "#1a1a1a" : "#f5f5f5";
   const text = isDark ? "#e0e0e0" : "#333";
   const muted = isDark ? "#888" : "#666";
 
   return (
     <View style={[styles.container, { backgroundColor: bg }]}>
-      <Text style={[styles.title, { color: text }]}>Something went wrong</Text>
+      <Text style={[styles.title, { color: text }]}>{t("error.title")}</Text>
       <Text style={[styles.message, { color: muted }]} numberOfLines={3}>
         {error.message}
       </Text>
@@ -73,10 +83,10 @@ function ErrorFallback({
           styles.button,
           { opacity: pressed ? 0.8 : 1, backgroundColor: isDark ? "#333" : "#ddd" },
         ]}
-        accessibilityLabel="Try again"
+        accessibilityLabel={t("error.retryA11y")}
         accessibilityRole="button"
       >
-        <Text style={[styles.buttonText, { color: text }]}>Try again</Text>
+        <Text style={[styles.buttonText, { color: text }]}>{t("common.retry")}</Text>
       </Pressable>
     </View>
   );

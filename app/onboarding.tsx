@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
   View,
   StyleSheet,
@@ -30,6 +30,8 @@ import { ROUTES } from "@/constants/routes";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
 import { CONTENT_LANGUAGES, getAppTitle } from "@/constants/languages";
 import { useContentLanguage } from "@/context/language-context";
+import { useTranslation } from "@/hooks/useTranslation";
+import { getLanguageLabel, tracking, type Translator } from "@/lib/i18n";
 import {
   requestNotificationPermissions,
   scheduleNextDailyVerseNotification,
@@ -86,50 +88,47 @@ interface OnboardingSlide {
   kind?: "standard" | "language" | "reminder";
 }
 
-const slides: OnboardingSlide[] = [
-  {
-    id: "1",
-    icon: "book",
-    title: "Welcome to",
-    subtitle: "Bhagavad Gita",
-    description:
-      "Explore the timeless wisdom of the Bhagavad Gita, the sacred dialogue between Lord Krishna and Arjuna on the battlefield of Kurukshetra. Read it in:",
-    kind: "language",
-  },
-  {
-    id: "2",
-    icon: "library",
-    title: "18 Chapters",
-    subtitle: "700 Verses",
-    description:
-      "Browse all 18 chapters in English, Telugu, Hindi or Tamil, with word-by-word meanings and detailed commentaries to deepen your understanding.",
-  },
-  {
-    id: "3",
-    icon: "bookmark",
-    title: "Save & Bookmark",
-    subtitle: "Your Favorites",
-    description:
-      "Double-tap any verse to bookmark it. Long-press to copy or share it. Swipe left or right to navigate between verses effortlessly.",
-  },
-  {
-    id: "4",
-    icon: "headset",
-    title: "Listen & Learn",
-    subtitle: "Audio Recitations",
-    description:
-      "Listen to authentic Sanskrit recitations of each verse. Follow along with the text and immerse yourself in the divine sounds.",
-  },
-  {
-    id: "5",
-    icon: "notifications",
-    title: "Daily reminder?",
-    subtitle: "A verse each morning",
-    description:
-      "Get today’s verse and a short preview at a time that works for you. You can change this anytime in Settings.",
-    kind: "reminder",
-  },
-];
+function getSlides(t: Translator): OnboardingSlide[] {
+  return [
+    {
+      id: "1",
+      icon: "book",
+      title: t("onboarding.welcomeTitle"),
+      subtitle: t("onboarding.welcomeSubtitle"),
+      description: t("onboarding.welcomeBody"),
+      kind: "language",
+    },
+    {
+      id: "2",
+      icon: "library",
+      title: t("onboarding.chaptersTitle"),
+      subtitle: t("onboarding.chaptersSubtitle"),
+      description: t("onboarding.chaptersBody"),
+    },
+    {
+      id: "3",
+      icon: "bookmark",
+      title: t("onboarding.saveTitle"),
+      subtitle: t("onboarding.saveSubtitle"),
+      description: t("onboarding.saveBody"),
+    },
+    {
+      id: "4",
+      icon: "headset",
+      title: t("onboarding.listenTitle"),
+      subtitle: t("onboarding.listenSubtitle"),
+      description: t("onboarding.listenBody"),
+    },
+    {
+      id: "5",
+      icon: "notifications",
+      title: t("onboarding.reminderTitle"),
+      subtitle: t("onboarding.reminderSubtitle"),
+      description: t("onboarding.reminderBody"),
+      kind: "reminder",
+    },
+  ];
+}
 
 function formatChipLabel(time: string): string {
   const [h, m] = time.split(":").map(Number);
@@ -141,6 +140,8 @@ function formatChipLabel(time: string): string {
 export default function OnboardingScreen() {
   const { colors } = useAppTheme();
   const { language, setLanguage } = useContentLanguage();
+  const { t } = useTranslation();
+  const slides = useMemo(() => getSlides(t), [t]);
   const insets = useSafeAreaInsets();
   const [currentIndex, setCurrentIndex] = useState(0);
   // Horizontal lists don't stretch items to full height on web; size slides
@@ -220,7 +221,12 @@ export default function OnboardingScreen() {
         </View>
 
         <View style={styles.textContainer}>
-          <Text style={[styles.title, { color: colors.textMuted }]}>
+          <Text
+            style={[
+              styles.title,
+              { color: colors.textMuted, letterSpacing: tracking(language, 0.8) },
+            ]}
+          >
             {item.title}
           </Text>
           <Text style={[styles.subtitle, { color: colors.brandText }]}>
@@ -243,7 +249,7 @@ export default function OnboardingScreen() {
                     setLanguage(opt.code);
                   }}
                   accessibilityRole="radio"
-                  accessibilityLabel={opt.label}
+                  accessibilityLabel={getLanguageLabel(opt.code, language)}
                   containerStyle={styles.timeChip}
                   labelStyle={styles.timeChipText}
                   palette={{
@@ -313,7 +319,9 @@ export default function OnboardingScreen() {
         style={[styles.skipContainer, { top: Math.max(insets.top, 12) + 8 }]}
       >
         <Pressable onPressIn={haptics.light} onPress={skipOnboarding} style={styles.skipButton}>
-          <Text style={[styles.skipText, { color: colors.textMuted }]}>Skip</Text>
+          <Text style={[styles.skipText, { color: colors.textMuted }]}>
+            {t("onboarding.skip")}
+          </Text>
         </Pressable>
       </Animated.View>
 
@@ -346,7 +354,9 @@ export default function OnboardingScreen() {
               style={[styles.actionButton, { backgroundColor: colors.brandText }]}
             >
               <Text style={[styles.actionButtonText, { color: colors.onPrimary }]}>
-                {enablingReminder ? "Enabling…" : "Enable reminders"}
+                {enablingReminder
+                  ? t("onboarding.enabling")
+                  : t("onboarding.enableReminders")}
               </Text>
               <Ionicons
                 name="checkmark"
@@ -357,7 +367,7 @@ export default function OnboardingScreen() {
             </Pressable>
             <Pressable onPressIn={haptics.light} onPress={skipReminderAndFinish} style={styles.secondaryAction}>
               <Text style={[styles.secondaryActionText, { color: colors.textMuted }]}>
-                Not now
+                {t("onboarding.notNow")}
               </Text>
             </Pressable>
           </View>
@@ -368,7 +378,7 @@ export default function OnboardingScreen() {
             style={[styles.actionButton, { backgroundColor: colors.brandText }]}
           >
             <Text style={[styles.actionButtonText, { color: colors.onPrimary }]}>
-              Next
+              {t("onboarding.next")}
             </Text>
             <Ionicons
               name="arrow-forward"
@@ -419,7 +429,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontWeight: "500",
-    letterSpacing: 0.8,
     marginBottom: 6,
     textAlign: "center",
   },

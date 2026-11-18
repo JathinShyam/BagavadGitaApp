@@ -17,25 +17,18 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { Type } from "@/theme/design-tokens";
 import { Duration, Spring } from "@/theme/motion";
 import type { StreakMilestone } from "@/constants/milestones";
+import { useTranslation } from "@/hooks/useTranslation";
+import type { TranslationKey } from "@/lib/i18n";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const MILESTONE_COPY: Record<
   StreakMilestone,
-  { title: string; body: string }
+  { title: TranslationKey; body: TranslationKey }
 > = {
-  7: {
-    title: "7 days of practice",
-    body: "A full week of showing up. The Gita is becoming part of your rhythm.",
-  },
-  21: {
-    title: "21-day habit",
-    body: "Three weeks of returning to wisdom. This is how character is shaped.",
-  },
-  108: {
-    title: "108 days",
-    body: "A sacred count completed. Your dedication honors the path itself.",
-  },
+  7: { title: "milestone.7.title", body: "milestone.7.body" },
+  21: { title: "milestone.21.title", body: "milestone.21.body" },
+  108: { title: "milestone.108.title", body: "milestone.108.body" },
 };
 
 type Props = {
@@ -47,6 +40,7 @@ type Props = {
 
 export default function MilestoneModal({ visible, days, onClose, onShare }: Props) {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
   const reducedMotion = useReducedMotion();
   const [rendered, setRendered] = useState(visible);
   const scale = useSharedValue(0.8);
@@ -104,22 +98,26 @@ export default function MilestoneModal({ visible, days, onClose, onShare }: Prop
             <Ionicons name="flame" size={36} color={colors.brandText} />
           </View>
           <Text style={[styles.days, { color: colors.brandText }]}>{days}</Text>
-          <Text style={[styles.title, { color: colors.text }]}>{copy.title}</Text>
-          <Text style={[styles.body, { color: colors.textMuted }]}>{copy.body}</Text>
+          <Text style={[styles.title, { color: colors.text }]}>{t(copy.title)}</Text>
+          <Text style={[styles.body, { color: colors.textMuted }]}>{t(copy.body)}</Text>
           <View style={styles.actions}>
             {onShare && (
               <Pressable
                 onPress={onShare}
                 style={[styles.secondary, { borderColor: colors.outline }]}
               >
-                <Text style={{ color: colors.text, fontWeight: "700" }}>Share</Text>
+                <Text style={{ color: colors.text, fontWeight: "700" }}>
+                  {t("milestone.share")}
+                </Text>
               </Pressable>
             )}
             <Pressable
               onPress={onClose}
               style={[styles.primary, { backgroundColor: colors.brandText }]}
             >
-              <Text style={{ color: colors.onPrimary, fontWeight: "700" }}>Continue</Text>
+              <Text style={{ color: colors.onPrimary, fontWeight: "700" }}>
+                {t("milestone.continue")}
+              </Text>
             </Pressable>
           </View>
         </Animated.View>

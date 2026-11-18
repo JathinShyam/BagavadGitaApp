@@ -10,6 +10,9 @@ import { haptics } from "@/lib/haptics";
 import { savedScreenStyles } from "@/theme/screen-styles";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useContentLanguage } from "@/context/language-context";
+import { useTranslation } from "@/hooks/useTranslation";
+import { getAppTitle } from "@/constants/languages";
+import { tracking, type Translator } from "@/lib/i18n";
 import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonVerseCard } from "@/components/ui/SkeletonLoader";
 import { useMinimumLoading } from "@/hooks/useMinimumLoading";
@@ -37,8 +40,11 @@ interface SavedVerse {
   lastOpenedAt?: string | null;
 }
 
-function formatVerseRef(verse: SavedVerse): string {
-  return `Chapter ${verse.chapter} · Verse ${verse.verse_number}`;
+function formatVerseRef(verse: SavedVerse, t: Translator): string {
+  return t("common.chapterVerseN", {
+    chapter: verse.chapter,
+    verse: verse.verse_number,
+  });
 }
 
 function savedVerseSloka(item: SavedVerse, language: Parameters<typeof getVerseSloka>[1]): string {
@@ -56,6 +62,7 @@ function savedVerseMeaning(item: SavedVerse, language: Parameters<typeof getVers
 export default function SavedVersesScreen() {
   const { colors, isDark } = useAppTheme();
   const { language } = useContentLanguage();
+  const { t } = useTranslation();
   const router = useRouter();
   const [savedVerses, setSavedVerses] = useState<SavedVerse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -134,7 +141,12 @@ export default function SavedVersesScreen() {
           await shareVerseCard(
             shareCardRef,
             shareTarget.id,
-            `Bhagavad Gita · Chapter ${shareTarget.chapter}, Verse ${shareTarget.verse_number}`
+            t("share.caption", {
+              app: getAppTitle(language),
+              chapter: shareTarget.chapter,
+              verse: shareTarget.verse_number,
+            }),
+            language
           );
         } catch (error) {
           console.error("Verse share failed:", error);
@@ -148,7 +160,7 @@ export default function SavedVersesScreen() {
       cancelled = true;
       cancelAnimationFrame(frame);
     };
-  }, [shareTarget]);
+  }, [shareTarget, t, language]);
 
   const renderVerse = useCallback(
     ({ item }: { item: SavedVerse }) => (
@@ -157,7 +169,10 @@ export default function SavedVersesScreen() {
         onPress={() => openSavedVerse(item)}
         style={({ pressed }) => [{ opacity: pressed ? 0.92 : 1 }]}
         accessibilityRole="button"
-        accessibilityLabel={`Open ${formatVerseRef(item)}`}
+        accessibilityLabel={t("saved.openA11y", {
+          chapter: item.chapter,
+          verse: item.verse_number,
+        })}
       >
         <GoldCard compact style={styles.card}>
           <View style={styles.cardTop}>
@@ -172,8 +187,14 @@ export default function SavedVersesScreen() {
             >
               <Ionicons name="book-outline" size={14} color={colors.brandText} />
             </View>
-            <Text style={[styles.verseRef, { color: colors.text }]} numberOfLines={1}>
-              {formatVerseRef(item)}
+            <Text
+              style={[
+                styles.verseRef,
+                { color: colors.text, letterSpacing: tracking(language, 0.1) },
+              ]}
+              numberOfLines={1}
+            >
+              {formatVerseRef(item, t)}
             </Text>
             <Ionicons name="bookmark" size={18} color={colors.brandText} />
           </View>
@@ -195,7 +216,9 @@ export default function SavedVersesScreen() {
 
           {savedVerseMeaning(item, language) ? (
             <Text style={[styles.meaning, { color: colors.textMuted }]} numberOfLines={2}>
-              <Text style={{ color: colors.brandText, fontWeight: "700" }}>Meaning: </Text>
+              <Text style={{ color: colors.brandText, fontWeight: "700" }}>
+                {t("saved.meaning")}{" "}
+              </Text>
               {savedVerseMeaning(item, language)}
             </Text>
           ) : null}
@@ -209,10 +232,12 @@ export default function SavedVersesScreen() {
               }}
               hitSlop={8}
               style={styles.footerAction}
-              accessibilityLabel="Remove from saved"
+              accessibilityLabel={t("saved.removeA11y")}
             >
               <Ionicons name="bookmark-outline" size={16} color={colors.brandText} />
-              <Text style={[styles.footerActionText, { color: colors.brandText }]}>Unsave</Text>
+              <Text style={[styles.footerActionText, { color: colors.brandText }]}>
+                {t("saved.unsave")}
+              </Text>
             </Pressable>
             <Pressable
               onPressIn={haptics.light}
@@ -222,20 +247,27 @@ export default function SavedVersesScreen() {
               }}
               hitSlop={8}
               style={styles.footerAction}
-              accessibilityLabel={`Share ${formatVerseRef(item)}`}
+              accessibilityLabel={t("saved.shareA11y", {
+                chapter: item.chapter,
+                verse: item.verse_number,
+              })}
             >
               <Ionicons name="share-outline" size={16} color={colors.brandText} />
-              <Text style={[styles.footerActionText, { color: colors.brandText }]}>Share</Text>
+              <Text style={[styles.footerActionText, { color: colors.brandText }]}>
+                {t("common.share")}
+              </Text>
             </Pressable>
             <View style={styles.footerAction}>
-              <Text style={[styles.footerActionText, { color: colors.brandText }]}>View Verse</Text>
+              <Text style={[styles.footerActionText, { color: colors.brandText }]}>
+                {t("saved.viewVerse")}
+              </Text>
               <Ionicons name="chevron-forward" size={14} color={colors.brandText} />
             </View>
           </View>
         </GoldCard>
       </Pressable>
     ),
-    [colors, openSavedVerse, removeVerse, shareSavedVerse, language]
+    [colors, openSavedVerse, removeVerse, shareSavedVerse, language, t]
   );
 
   if (showSkeleton) {
@@ -245,7 +277,7 @@ export default function SavedVersesScreen() {
         edges={["top"]}
       >
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.brandText }]}>Saved</Text>
+          <Text style={[styles.title, { color: colors.brandText }]}>{t("saved.title")}</Text>
         </View>
         <View style={savedScreenStyles.listContainer}>
           {[1, 2, 3].map((i) => (
@@ -269,7 +301,7 @@ export default function SavedVersesScreen() {
         />
         <Text style={[styles.title, { color: colors.brandText }]}>Saved</Text>
         <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-          Verses you want to return to
+          {t("saved.subtitle")}
         </Text>
       </View>
       {savedVerses.length > 0 ? (
@@ -283,9 +315,9 @@ export default function SavedVersesScreen() {
       ) : (
         <EmptyState
           icon="bookmark-outline"
-          title="No saved verses yet"
-          subtitle="Tap the bookmark on any verse (or double-tap the verse) to keep it here"
-          actionLabel="Read today's verse"
+          title={t("saved.emptyTitle")}
+          subtitle={t("saved.emptySubtitle")}
+          actionLabel={t("saved.readTodaysVerse")}
           onAction={() => {
             const today = getVerseForDate(new Date(), language);
             router.push(today ? ROUTES.verse(today.id) : ROUTES.mainTabs);
@@ -296,8 +328,8 @@ export default function SavedVersesScreen() {
       {shareTarget ? (
         <ShareCardView
           ref={shareCardRef}
-          title={`Chapter ${shareTarget.chapter}`}
-          subtitle={`Verse ${shareTarget.verse_number}`}
+          title={t("verse.chapterCaption", { chapter: shareTarget.chapter })}
+          subtitle={t("verse.verseCaption", { verse: shareTarget.verse_number })}
           sloka={savedVerseSloka(shareTarget, language)}
           meaning={savedVerseMeaning(shareTarget, language)}
           link={DEEP_LINKS.verse(shareTarget.id)}

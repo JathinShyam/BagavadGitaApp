@@ -17,9 +17,11 @@ import { useMemo, useState } from "react";
 import { haptics } from "@/lib/haptics";
 import { SelectableChip } from "@/components/ui/SelectableChip";
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useTranslation } from "@/hooks/useTranslation";
+import { tracking } from "@/lib/i18n";
 import { useContentLanguage } from "@/context/language-context";
 import { useReadingProgress } from "@/hooks/useReadingProgress";
-import { CATEGORIES } from "@/data/explore-categories";
+import { CATEGORIES, getCategoryName } from "@/data/explore-categories";
 import { getVerseById } from "@/data/verses/verse-catalog";
 import { homeScreenStyles } from "@/theme/screen-styles";
 import { ROUTES } from "@/constants/routes";
@@ -43,6 +45,7 @@ const TILE_RADIUS = Radius.sm;
 export default function ExploreScreen() {
   const { colors, isDark } = useAppTheme();
   const { language } = useContentLanguage();
+  const { t } = useTranslation();
   const router = useRouter();
   const { isVerseRead } = useReadingProgress();
   const [selectedMoodId, setSelectedMoodId] = useState<string>("anger");
@@ -99,7 +102,7 @@ export default function ExploreScreen() {
                   <Ionicons name={item.icon as any} size={28} color="#FFFFFF" />
                 )}
                 <Text style={styles.tileName} numberOfLines={2}>
-                  {item.name}
+                  {getCategoryName(item, language)}
                 </Text>
               </View>
             </View>
@@ -111,9 +114,11 @@ export default function ExploreScreen() {
 
   const ListHeader = (
     <View>
-      <Text style={[styles.moodHeading, { color: colors.brandText }]}>How do you feel?</Text>
+      <Text style={[styles.moodHeading, { color: colors.brandText }]}>
+        {t("explore.moodHeading")}
+      </Text>
       <Text style={[styles.moodSub, { color: colors.textMuted }]}>
-        One verse for this moment
+        {t("explore.moodSub")}
       </Text>
       <ScrollView
         horizontal
@@ -123,7 +128,7 @@ export default function ExploreScreen() {
         {CATEGORIES.map((cat) => (
           <SelectableChip
             key={cat.id}
-            label={cat.name}
+            label={getCategoryName(cat, language)}
             selected={selectedMoodId === cat.id}
             onPressIn={haptics.light}
             onPress={() => {
@@ -153,11 +158,19 @@ export default function ExploreScreen() {
               resizeMode="contain"
             />
             <View style={styles.featuredBody}>
-              <Text style={[styles.featuredLabel, { color: colors.brandText }]}>
-                For {selectedMood.name}
+              <Text
+                style={[
+                  styles.featuredLabel,
+                  { color: colors.brandText, letterSpacing: tracking(language, 0.2) },
+                ]}
+              >
+                {t("explore.forMood", { mood: getCategoryName(selectedMood, language) })}
               </Text>
               <Text style={[styles.featuredRef, { color: colors.text }]}>
-                Chapter {featuredVerse.chapter} · Verse {featuredVerse.verse_number}
+                {t("common.chapterVerseN", {
+                  chapter: featuredVerse.chapter,
+                  verse: featuredVerse.verse_number,
+                })}
               </Text>
               {/* Meaning only: someone picking a feeling wants the words they can
                   use now; the sloka is one tap away on the verse screen. */}
@@ -177,7 +190,7 @@ export default function ExploreScreen() {
             >
               <Ionicons name="book-outline" size={16} color={colors.onPrimary} />
               <Text style={{ color: colors.onPrimary, fontWeight: "700", fontSize: 15 }}>
-                Read
+                {t("explore.read")}
               </Text>
             </Pressable>
             <Pressable
@@ -185,7 +198,7 @@ export default function ExploreScreen() {
               style={styles.featuredLink}
             >
               <Text style={[styles.featuredLinkText, { color: colors.brandText }]}>
-                All {selectedMood.verses.length} verses
+                {t("explore.allVerses", { count: selectedMood.verses.length })}
               </Text>
               <Ionicons name="chevron-forward" size={14} color={colors.brandText} />
             </Pressable>
@@ -193,7 +206,9 @@ export default function ExploreScreen() {
         </GoldCard>
       )}
 
-      <Text style={[styles.topicsHeading, { color: colors.text }]}>Browse all topics</Text>
+      <Text style={[styles.topicsHeading, { color: colors.text }]}>
+        {t("explore.browseAll")}
+      </Text>
     </View>
   );
 
@@ -209,9 +224,9 @@ export default function ExploreScreen() {
           opacity={isDark ? 0.6 : 0.82}
           tint={false}
         />
-        <Text style={[styles.title, { color: colors.brandText }]}>Explore</Text>
+        <Text style={[styles.title, { color: colors.brandText }]}>{t("explore.title")}</Text>
         <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-          Find wisdom for where you are
+          {t("explore.subtitle")}
         </Text>
       </View>
       <FlatList

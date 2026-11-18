@@ -3,20 +3,23 @@ import { StyleSheet, View } from "react-native";
 import { Text } from "react-native-paper";
 
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useTranslation } from "@/hooks/useTranslation";
+import { ROUTES } from "@/constants/routes";
 
 export default function NotFoundScreen() {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
 
   return (
     <>
-      <Stack.Screen options={{ title: "Oops!" }} />
+      <Stack.Screen options={{ title: t("notFound.title") }} />
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <Text variant="headlineMedium" style={{ color: colors.text }}>
-          This screen doesn&apos;t exist.
+          {t("notFound.body")}
         </Text>
-        <Link href="/" style={styles.link}>
+        <Link href={ROUTES.home} style={styles.link}>
           <Text variant="bodyLarge" style={{ color: colors.brandText }}>
-            Go to home screen!
+            {t("notFound.goHome")}
           </Text>
         </Link>
       </View>

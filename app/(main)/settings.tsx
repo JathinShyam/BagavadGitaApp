@@ -24,6 +24,8 @@ import { Spacing, Radius } from "@/theme/design-tokens";
 import { useTheme } from "@/context/theme-context";
 import { useContentLanguage } from "@/context/language-context";
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useTranslation } from "@/hooks/useTranslation";
+import { getLanguageLabel, INTL_LOCALES, tracking } from "@/lib/i18n";
 import { useReadingProgress } from "@/hooks/useReadingProgress";
 import {
   getStoredPreferences,
@@ -103,6 +105,7 @@ export default function SettingsScreen() {
   const { theme, toggleTheme } = useTheme();
   const { colors } = useAppTheme();
   const { language, languageOption, setLanguage } = useContentLanguage();
+  const { t } = useTranslation();
   const { resetAllProgress } = useReadingProgress();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [notificationTime, setNotificationTime] = useState("08:00");
@@ -127,8 +130,11 @@ export default function SettingsScreen() {
 
   const formatDisplayTime = useCallback((time: string) => {
     const d = parseTimeToDate(time);
-    return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-  }, [parseTimeToDate]);
+    return d.toLocaleTimeString(INTL_LOCALES[language], {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  }, [parseTimeToDate, language]);
 
   const loadNotificationPreference = useCallback(async () => {
     const { enabled, time } = await getStoredPreferences();
@@ -172,8 +178,8 @@ export default function SettingsScreen() {
       const granted = await requestNotificationPermissions();
       if (!granted) {
         Alert.alert(
-          "Notifications disabled",
-          "Enable notifications in system settings to receive daily verse reminders."
+          t("settings.notificationsDisabledTitle"),
+          t("settings.notificationsDisabledBody")
         );
         return;
       }
@@ -184,8 +190,8 @@ export default function SettingsScreen() {
         haptics.success();
       } catch {
         Alert.alert(
-          "Could not enable",
-          "Something went wrong. Please try again."
+          t("settings.couldNotEnableTitle"),
+          t("settings.couldNotEnableBody")
         );
       }
     } else {
@@ -195,12 +201,12 @@ export default function SettingsScreen() {
         await cancelDailyVerseNotifications();
       } catch {
         Alert.alert(
-          "Could not disable",
-          "Something went wrong. Please try again."
+          t("settings.couldNotDisableTitle"),
+          t("settings.couldNotDisableBody")
         );
       }
     }
-  }, [notificationsEnabled, notificationTime]);
+  }, [notificationsEnabled, notificationTime, t]);
 
   const handleThemeToggle = () => {
     toggleTheme();
@@ -262,17 +268,17 @@ export default function SettingsScreen() {
   const handleResetProgress = () => {
     haptics.heavy();
     Alert.alert(
-      "Reset Reading Progress",
-      "This will reset all chapter progress, reading streak, and last read position to zero. This action cannot be undone.",
+      t("settings.resetTitle"),
+      t("settings.resetBody"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Reset Everything",
+          text: t("settings.resetConfirm"),
           style: "destructive",
           onPress: async () => {
             await resetAllProgress();
             haptics.success();
-            Alert.alert("Done", "All reading progress has been reset.");
+            Alert.alert(t("settings.resetDoneTitle"), t("settings.resetDoneBody"));
           },
         },
       ]
@@ -292,21 +298,28 @@ export default function SettingsScreen() {
           entering={FadeInUp.delay(0).springify()}
           style={styles.brandHeader}
         >
-          <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
+          <Text style={[styles.title, { color: colors.text, letterSpacing: tracking(language, 0.5) }]}>
+            {t("settings.title")}
+          </Text>
           <OrnamentalDivider source={ORNAMENTS.settingsDivider} height={28} />
         </Animated.View>
 
-        <Text style={[styles.sectionTitle, { color: colors.brandText }]}>
-          Appearance
+        <Text
+          style={[
+            styles.sectionTitle,
+            { color: colors.brandText, letterSpacing: tracking(language, 0.2) },
+          ]}
+        >
+          {t("settings.appearance")}
         </Text>
         <GoldCard style={styles.sectionCard}>
           <SettingItem
-            title="Dark mode"
+            title={t("settings.darkMode")}
             icon="moon-outline"
             colors={colors}
             rightElement={
               <IOSToggle
-                accessibilityLabel="Dark mode"
+                accessibilityLabel={t("settings.darkMode")}
                 value={theme === "dark"}
                 onValueChange={handleThemeToggle}
                 activeColor={colors.brandText}
@@ -315,7 +328,7 @@ export default function SettingsScreen() {
             delay={100}
           />
           <SettingItem
-            title="Content language"
+            title={t("settings.contentLanguage")}
             icon="language-outline"
             colors={colors}
             isLast
@@ -323,7 +336,7 @@ export default function SettingsScreen() {
             rightElement={
               <View style={styles.timeRow}>
                 <Text style={[styles.timeValue, { color: colors.brandText }]}>
-                  {languageOption.label}
+                  {languageOption.nativeLabel}
                 </Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
               </View>
@@ -332,8 +345,15 @@ export default function SettingsScreen() {
           />
         </GoldCard>
 
-        <Text style={[styles.sectionTitle, { color: colors.brandText }]}>
-          {Platform.OS === "web" ? "Audio" : "Audio & Notifications"}
+        <Text
+          style={[
+            styles.sectionTitle,
+            { color: colors.brandText, letterSpacing: tracking(language, 0.2) },
+          ]}
+        >
+          {Platform.OS === "web"
+            ? t("settings.audio")
+            : t("settings.audioNotifications")}
         </Text>
         <GoldCard style={styles.sectionCard}>
           {/* Daily reminders are device notifications — the web build can't
@@ -341,12 +361,12 @@ export default function SettingsScreen() {
           {Platform.OS !== "web" && (
             <>
           <SettingItem
-            title="Notifications"
+            title={t("settings.notifications")}
             icon="notifications-outline"
             colors={colors}
             rightElement={
               <IOSToggle
-                accessibilityLabel="Notifications"
+                accessibilityLabel={t("settings.notifications")}
                 value={notificationsEnabled}
                 onValueChange={handleNotificationsToggle}
                 disabled={notificationsLoading}
@@ -356,7 +376,7 @@ export default function SettingsScreen() {
             delay={200}
           />
           <SettingItem
-            title="Notification time"
+            title={t("settings.notificationTime")}
             icon="time-outline"
             colors={colors}
             onPress={openTimePicker}
@@ -373,13 +393,13 @@ export default function SettingsScreen() {
             </>
           )}
           <SettingItem
-            title="Auto-play Audio"
+            title={t("settings.autoPlayAudio")}
             icon="volume-high-outline"
             colors={colors}
             isLast
             rightElement={
               <IOSToggle
-                accessibilityLabel="Auto-play audio"
+                accessibilityLabel={t("settings.autoPlayAudio")}
                 value={autoPlayAudio}
                 onValueChange={handleAutoPlayToggle}
                 activeColor={colors.brandText}
@@ -389,12 +409,17 @@ export default function SettingsScreen() {
           />
         </GoldCard>
 
-        <Text style={[styles.sectionTitle, { color: colors.brandText }]}>
-          Data
+        <Text
+          style={[
+            styles.sectionTitle,
+            { color: colors.brandText, letterSpacing: tracking(language, 0.2) },
+          ]}
+        >
+          {t("settings.data")}
         </Text>
         <GoldCard style={styles.sectionCard}>
           <SettingItem
-            title="Reset Reading Progress"
+            title={t("settings.resetProgress")}
             icon="refresh-circle"
             colors={colors}
             isLast
@@ -410,12 +435,17 @@ export default function SettingsScreen() {
           />
         </GoldCard>
 
-        <Text style={[styles.sectionTitle, { color: colors.brandText }]}>
-          About
+        <Text
+          style={[
+            styles.sectionTitle,
+            { color: colors.brandText, letterSpacing: tracking(language, 0.2) },
+          ]}
+        >
+          {t("settings.about")}
         </Text>
         <GoldCard style={styles.sectionCard}>
           <SettingItem
-            title="Version"
+            title={t("settings.version")}
             icon="information-circle"
             colors={colors}
             rightElement={
@@ -426,7 +456,7 @@ export default function SettingsScreen() {
             delay={400}
           />
           <SettingItem
-            title="Privacy Policy"
+            title={t("settings.privacy")}
             icon="shield-checkmark-outline"
             colors={colors}
             onPress={openPrivacyPolicy}
@@ -440,7 +470,7 @@ export default function SettingsScreen() {
             delay={500}
           />
           <SettingItem
-            title="Terms of Service"
+            title={t("settings.terms")}
             icon="document-text-outline"
             colors={colors}
             isLast
@@ -464,19 +494,13 @@ export default function SettingsScreen() {
             Bhagavad Gita
           </Text>
           <Text style={[styles.aboutDescription, { color: colors.text }]}>
-            The Bhagavad Gita is a 700-verse Hindu scripture that is part of the
-            epic Mahabharata. It is a sacred text of the Hindu religion and is
-            considered one of the most important philosophical classics of the
-            world.
+            {t("settings.aboutBody1")}
           </Text>
           <Text style={[styles.aboutDescription, { color: colors.text }]}>
-            Read every verse with its sloka, word meanings, meaning and
-            commentary in English, Telugu, Hindi or Tamil. Change the language
-            anytime in Appearance. Where a translation isn’t available yet, the
-            Telugu text is shown.
+            {t("settings.aboutBody2")}
           </Text>
           <Text style={[styles.aboutFooter, { color: colors.textMuted }]}>
-            Made for spiritual seekers
+            {t("settings.aboutFooter")}
           </Text>
         </Animated.View>
       </ScrollView>
@@ -490,10 +514,10 @@ export default function SettingsScreen() {
         <View style={styles.modalBackdrop}>
           <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>
-              Content language
+              {t("settings.languageModalTitle")}
             </Text>
             <Text style={[styles.modalSubtitle, { color: colors.textMuted }]}>
-              Scripture text for verses, notifications, and widgets
+              {t("settings.languageModalSubtitle")}
             </Text>
             {CONTENT_LANGUAGES.map((opt, idx) => {
               const selected = opt.code === language;
@@ -513,7 +537,7 @@ export default function SettingsScreen() {
                 >
                   <View>
                     <Text style={[styles.settingTitle, { color: colors.text }]}>
-                      {opt.label}
+                      {getLanguageLabel(opt.code, language)}
                     </Text>
                     <Text style={[styles.settingSubtitle, { color: colors.textMuted }]}>
                       {opt.nativeLabel}
@@ -533,7 +557,7 @@ export default function SettingsScreen() {
                 onPress={() => setShowLanguagePicker(false)}
               >
                 <Text style={[styles.modalButtonText, { color: colors.onPrimary }]}>
-                  Done
+                  {t("common.done")}
                 </Text>
               </Pressable>
             </View>
@@ -555,10 +579,15 @@ export default function SettingsScreen() {
             ]}
           >
             <Text style={[styles.modalTitle, { color: colors.text }]}>
-              Choose notification time
+              {t("settings.chooseTime")}
             </Text>
             <Text style={[styles.modalSubtitle, { color: colors.textMuted }]}>
-              Daily reminder at {draftTime.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+              {t("settings.reminderAt", {
+                time: draftTime.toLocaleTimeString(INTL_LOCALES[language], {
+                  hour: "numeric",
+                  minute: "2-digit",
+                }),
+              })}
             </Text>
 
             {Platform.OS !== "web" && (
@@ -577,7 +606,7 @@ export default function SettingsScreen() {
                 onPress={() => setShowTimePicker(false)}
               >
                 <Text style={[styles.modalButtonText, { color: colors.textMuted }]}>
-                  Cancel
+                  {t("common.cancel")}
                 </Text>
               </Pressable>
               <Pressable
@@ -586,7 +615,7 @@ export default function SettingsScreen() {
                 onPress={saveNotificationTime}
               >
                 <Text style={[styles.modalButtonText, { color: colors.onPrimary }]}>
-                  Save
+                  {t("common.save")}
                 </Text>
               </Pressable>
             </View>
@@ -613,7 +642,6 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: "PlayfairDisplay_700Bold",
     fontSize: 34,
-    letterSpacing: 0.5,
     textAlign: "center",
   },
   subtitle: {
@@ -630,7 +658,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: "PlayfairDisplay_700Bold",
     fontSize: 18,
-    letterSpacing: 0.2,
     marginBottom: Spacing.sm,
     marginTop: Spacing.xs,
   },

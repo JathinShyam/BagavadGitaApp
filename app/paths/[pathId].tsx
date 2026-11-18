@@ -19,6 +19,8 @@ import { useAppTheme } from "@/hooks/useAppTheme";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { Duration, Ease } from "@/theme/motion";
 import { useContentLanguage } from "@/context/language-context";
+import { useTranslation } from "@/hooks/useTranslation";
+import { tracking } from "@/lib/i18n";
 import { ROUTES } from "@/constants/routes";
 import { getRouteParam } from "@/lib/route-params";
 import {
@@ -139,6 +141,7 @@ export default function PathDetailScreen() {
   const path = getReadingPathById(id);
   const { colors } = useAppTheme();
   const { language } = useContentLanguage();
+  const { t } = useTranslation();
   const router = useRouter();
   const { showToast } = useToast();
   const [active, setActive] = useState<ActiveReadingPath | null>(null);
@@ -171,8 +174,8 @@ export default function PathDetailScreen() {
   if (!path) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-        <Stack.Screen options={{ title: "Path" }} />
-        <Text style={{ color: colors.text, padding: 24 }}>Path not found.</Text>
+        <Stack.Screen options={{ title: t("paths.fallbackTitle") }} />
+        <Text style={{ color: colors.text, padding: 24 }}>{t("paths.notFound")}</Text>
       </SafeAreaView>
     );
   }
@@ -181,14 +184,14 @@ export default function PathDetailScreen() {
     haptics.medium();
     const next = await setActivePath(path.id);
     setActive(next);
-    showToast("Path started", "success", "map");
+    showToast(t("paths.startedToast"), "success", "map");
   };
 
   const abandonPath = () => {
-    Alert.alert("Leave this path?", "You can start again anytime.", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("paths.leaveTitle"), t("paths.leaveBody"), [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "Leave",
+        text: t("paths.leaveConfirm"),
         style: "destructive",
         onPress: async () => {
           await clearActivePath();
@@ -230,13 +233,15 @@ export default function PathDetailScreen() {
         <Text style={[styles.desc, { color: colors.textMuted }]}>{pathDescription}</Text>
 
         <Text style={[styles.meta, { color: colors.textMuted }]}>
-          {path.days.length} days
-          {isThisActive ? ` · ${doneCount} complete` : ""}
+          {t("common.daysN", { count: path.days.length })}
+          {isThisActive
+            ? ` · ${t("paths.completeCount", { count: doneCount })}`
+            : ""}
         </Text>
 
         {completed && (
           <Text style={[styles.completeBanner, { color: colors.success }]}>
-            Path complete — beautiful work.
+            {t("paths.completedBanner")}
           </Text>
         )}
 
@@ -247,7 +252,7 @@ export default function PathDetailScreen() {
             style={[styles.primaryCta, { backgroundColor: colors.brandText }]}
           >
             <Text style={[styles.primaryCtaText, { color: colors.onPrimary }]}>
-              Start this path
+              {t("paths.start")}
             </Text>
           </Pressable>
         )}
@@ -260,19 +265,29 @@ export default function PathDetailScreen() {
             }}
             style={[styles.primaryCta, { backgroundColor: colors.brandText }]}
           >
-            <Text style={[styles.nextEyebrow, { color: colors.onPrimary + "CC" }]}>
-              Up next
+            <Text
+              style={[
+                styles.nextEyebrow,
+                { color: colors.onPrimary + "CC", letterSpacing: tracking(language, 1.2) },
+              ]}
+            >
+              {t("paths.upNext")}
             </Text>
             <Text style={[styles.primaryCtaText, { color: colors.onPrimary }]}>
-              Day {nextDay.day}: {getPathDayTitle(nextDay, language)}
+              {t("paths.dayTitle", {
+                day: nextDay.day,
+                title: getPathDayTitle(nextDay, language),
+              })}
             </Text>
             <Text style={[styles.continueHint, { color: colors.onPrimary + "CC" }]}>
-              Continue reading →
+              {t("paths.continue")}
             </Text>
           </Pressable>
         )}
 
-        <Text style={[styles.daysHeading, { color: colors.text }]}>Days</Text>
+        <Text style={[styles.daysHeading, { color: colors.text }]}>
+          {t("paths.daysHeading")}
+        </Text>
 
         {path.days.map((day, index) => {
           const done = isThisActive && !!active?.completedDayIds.includes(day.id);
@@ -310,16 +325,23 @@ export default function PathDetailScreen() {
                   <Text
                     style={[
                       styles.dayNum,
-                      { color: isNext || done ? colors.brandText : colors.textMuted },
+                      {
+                        color: isNext || done ? colors.brandText : colors.textMuted,
+                        letterSpacing: tracking(language, 0.4),
+                      },
                     ]}
                   >
-                    Day {day.day}
+                    {t("common.dayN", { day: day.day })}
                   </Text>
                   {done && (
-                    <Text style={[styles.doneLabel, { color: colors.success }]}>Done</Text>
+                    <Text style={[styles.doneLabel, { color: colors.success }]}>
+                      {t("paths.done")}
+                    </Text>
                   )}
                   {isNext && (
-                    <Text style={[styles.doneLabel, { color: colors.brandText }]}>Now</Text>
+                    <Text style={[styles.doneLabel, { color: colors.brandText }]}>
+                      {t("paths.now")}
+                    </Text>
                   )}
                 </View>
                 <Text style={[styles.dayTitle, { color: colors.text }]}>
@@ -334,7 +356,7 @@ export default function PathDetailScreen() {
                     hitSlop={4}
                   >
                     <Text style={{ color: colors.textMuted, fontSize: 14 }}>
-                      Verse {vid}
+                      {t("paths.verseN", { ref: vid })}
                     </Text>
                     <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
                   </Pressable>
@@ -346,7 +368,9 @@ export default function PathDetailScreen() {
 
         {isThisActive && (
           <Pressable onPress={abandonPath} style={styles.leaveBtn}>
-            <Text style={{ color: colors.danger, fontWeight: "600" }}>Leave path</Text>
+            <Text style={{ color: colors.danger, fontWeight: "600" }}>
+              {t("paths.leave")}
+            </Text>
           </Pressable>
         )}
       </ScrollView>
@@ -383,7 +407,6 @@ const styles = StyleSheet.create({
   nextEyebrow: {
     fontSize: 11,
     fontWeight: "700",
-    letterSpacing: 1.2,
     textTransform: "uppercase",
     marginBottom: 6,
   },
@@ -446,7 +469,6 @@ const styles = StyleSheet.create({
   dayNum: {
     fontSize: 12,
     fontWeight: "700",
-    letterSpacing: 0.4,
     textTransform: "uppercase",
   },
   doneLabel: {

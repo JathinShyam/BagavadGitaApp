@@ -1068,3 +1068,48 @@ replays a wave of fading tiles. 3. Toggling the theme recolours in place.
 **Blocked**    Frame timing on a low-end Android device is unmeasured; the
 remaining hardcoded durations are the Surprise shuffle frames and confetti
 ranges, recorded in BUG-027.
+
+## [41] 2026-11-18 — The chrome learns the reader's language (Feature 1)
+**Move**       Content has been translated since BUG-002; the shell around it
+never was. A Telugu reader picked తెలుగు, got a Telugu *śloka* and a Telugu
+meaning, then read "Select the day you want to revisit", "Alert", "Skip" and
+a tab bar saying Home / Explore / Saved / Settings. Every second surface —
+the share card footer, the notification title, the widget eyebrow — was
+hardcoded English.
+**Plan**       One flat English dictionary as the type source of truth, three
+typed sibling tables, and a hook bound to the existing content-language
+context so no screen holds its own language state.
+**Decisions**  1. `lib/i18n.ts`: `en` is `as const`, `TranslationKey =
+keyof typeof en`, so a missing or extra key is a compile error, not a
+runtime `undefined`. `te` / `hi` / `ta` are `Record<TranslationKey, string>`.
+2. `translate(language, key, params)` does `{name}` interpolation and falls
+back to English for a blank string; `createTranslator(language)` for
+non-React callers; `useTranslation()` returns `{ t, language }` from
+`useContentLanguage()`.
+3. Tracking stays Latin-only via `tracking(language, value)` (BUG-026), which
+strips the static `letterSpacing` from every localized style so Indic
+conjuncts survive. Tamil "வசனம்", Telugu "శ్లోకం", Hindi "श्लोक".
+4. Explore topics carry `names: Partial<Record<ContentLanguage, string>>`
+with `getCategoryName()`; `name` stays the English fallback, so the existing
+category-ID test keeps working untouched.
+5. `shareImage(uri, language?)` / `shareVerseCard(..., language?)` take the
+language instead of a pre-built string, so the OS share-sheet title localizes
+from plain function callers; same for notification title/body and the Android
+channel name/description, which read `getStoredContentLanguage()`.
+6. `ErrorBoundary` deliberately stays above `LanguageProvider` — a crash in
+the provider must still render — so `ErrorFallback` reads the saved language
+itself and builds a translator with `useMemo`.
+**Ship**       30 files: `lib/i18n.ts` (256 keys × 4 languages),
+`hooks/useTranslation.ts`, `__tests__/i18n.test.ts`, `data/explore-categories.ts`,
+`constants/languages.ts`, plus every tab/screen/modal/share card/audio player
+and the OS-facing `lib/daily-verse*.ts` / `lib/widget-data.ts`. Brand title in
+`app/+html.tsx` stays "Gita Jyoti · Bhagavad Gita" on purpose.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 15 suites / 81 tests ✅
+**Observe**    1. Tab bar, Home, Explore, Saved and Settings all read in the
+chosen language, including alerts and toasts. 2. The share card and the
+share-sheet title match the card's language. 3. A notification scheduled today
+arrives titled in Telugu/Hindi/Tamil, with the verse preview in that script.
+**Blocked**    No emulator on this machine, so no visual check of long
+Telugu/Hindi/Tamil labels against the four-tab bar or the share cards.
+Translations are first-pass drafts and need a native-speaker review before
+release.

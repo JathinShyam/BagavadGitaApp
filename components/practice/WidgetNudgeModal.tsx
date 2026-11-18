@@ -4,6 +4,7 @@ import { Text } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useTranslation } from "@/hooks/useTranslation";
 
 type Props = {
   visible: boolean;
@@ -12,6 +13,7 @@ type Props = {
 
 export function WidgetNudgeModal({ visible, onClose }: Props) {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -21,7 +23,9 @@ export function WidgetNudgeModal({ visible, onClose }: Props) {
           onPress={(e) => e.stopPropagation()}
         >
           <Ionicons name="phone-portrait-outline" size={36} color={colors.brandText} />
-          <Text style={[styles.title, { color: colors.brandText }]}>Daily verse on your home screen</Text>
+          <Text style={[styles.title, { color: colors.brandText }]}>
+            {t("widgetNudge.title")}
+          </Text>
           <Text style={[styles.body, { color: colors.textMuted }]}>
             Long-press your home screen → Widgets → Bhagavad Gita → Daily Verse. Open the app once
             so it can sync, then the widget shows today’s verse and updates each day — tap to read.
@@ -30,7 +34,9 @@ export function WidgetNudgeModal({ visible, onClose }: Props) {
             onPress={onClose}
             style={[styles.btn, { backgroundColor: colors.brandText }]}
           >
-            <Text style={{ color: colors.onPrimary, fontWeight: "700" }}>Got it</Text>
+            <Text style={{ color: colors.onPrimary, fontWeight: "700" }}>
+              {t("widgetNudge.gotIt")}
+            </Text>
           </Pressable>
         </Pressable>
       </Pressable>

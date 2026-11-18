@@ -19,6 +19,8 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { Duration, Spring } from "@/theme/motion";
 import { getAppTitle } from "@/constants/languages";
 import { useContentLanguage } from "@/context/language-context";
+import { useTranslation } from "@/hooks/useTranslation";
+import { tracking } from "@/lib/i18n";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -33,6 +35,7 @@ type Props = {
 export function LaunchIntro({ onFinish }: Props) {
   const { colors, isDark } = useAppTheme();
   const { language } = useContentLanguage();
+  const { t } = useTranslation();
   const reducedMotion = useReducedMotion();
 
   const overlayOpacity = useSharedValue(1);
@@ -201,8 +204,13 @@ export function LaunchIntro({ onFinish }: Props) {
         </Animated.View>
 
         <Animated.View style={subtitleStyle}>
-          <Text style={[styles.english, { color: colors.textMuted }]}>
-            Wisdom for the path
+          <Text
+            style={[
+              styles.english,
+              { color: colors.textMuted, letterSpacing: tracking(language, 2) },
+            ]}
+          >
+            {t("launchIntro.subtitle")}
           </Text>
         </Animated.View>
       </View>
@@ -259,7 +267,6 @@ const styles = StyleSheet.create({
   },
   english: {
     fontSize: 14,
-    letterSpacing: 2,
     textTransform: "uppercase",
   },
   orb: {

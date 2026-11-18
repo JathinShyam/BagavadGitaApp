@@ -3,6 +3,9 @@ import { View, StyleSheet } from "react-native";
 import { Text } from "react-native-paper";
 import { LinearGradient } from "expo-linear-gradient";
 
+import { useTranslation } from "@/hooks/useTranslation";
+import { getAppTitle } from "@/constants/languages";
+
 type Props = {
   title: string;
   subtitle: string;
@@ -13,30 +16,32 @@ type Props = {
 };
 
 export function ShareCard({ title, subtitle, sloka, meaning, link }: Props) {
+  const { t, language } = useTranslation();
+
   return (
     <LinearGradient colors={["#1B5E20", "#0D1B2A"]} style={styles.card}>
       <View style={styles.header}>
-        <Text style={styles.appName}>Bhagavad Gita</Text>
+        <Text style={styles.appName}>{getAppTitle(language)}</Text>
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.subtitle}>{subtitle}</Text>
       </View>
 
       {!!sloka && (
         <View style={styles.block}>
-          <Text style={styles.blockTitle}>Sloka</Text>
+          <Text style={styles.blockTitle}>{t("shareCard.sloka")}</Text>
           <Text style={styles.blockBody}>{sloka}</Text>
         </View>
       )}
 
       {!!meaning && (
         <View style={styles.block}>
-          <Text style={styles.blockTitle}>Meaning</Text>
+          <Text style={styles.blockTitle}>{t("shareCard.meaning")}</Text>
           <Text style={styles.blockBody}>{meaning}</Text>
         </View>
       )}
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Read more in the app</Text>
+        <Text style={styles.footerText}>{t("shareCard.readMore")}</Text>
         {!!link && <Text style={styles.footerLink}>{link}</Text>}
       </View>
     </LinearGradient>

@@ -24,6 +24,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { verseScreenStyles } from "@/theme/screen-styles";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const IS_WEB = Platform.OS === "web";
 
@@ -57,6 +58,7 @@ function VerseAudioPlayerInner({
   outlineColor,
   autoPlay = false,
 }: VerseAudioPlayerProps) {
+  const { t } = useTranslation();
   const [resolvedUri, setResolvedUri] = useState<string | null>(null);
   const [resolveError, setResolveError] = useState(false);
   const [loadingShown, setLoadingShown] = useState(true);
@@ -448,7 +450,7 @@ function VerseAudioPlayerInner({
         <ActivityIndicator size="small" color={primaryColor} />
         <TextInput
           editable={false}
-          value="Loading audio…"
+          value={t("audio.loading")}
           style={[verseScreenStyles.audioTime, { color: textMutedColor, marginLeft: 12 }]}
         />
       </View>
@@ -461,7 +463,7 @@ function VerseAudioPlayerInner({
         <Ionicons name="alert-circle-outline" size={24} color={textMutedColor} />
         <TextInput
           editable={false}
-          value="Audio unavailable"
+          value={t("audio.unavailable")}
           style={[verseScreenStyles.audioTime, { color: textMutedColor, marginLeft: 8 }]}
         />
       </View>
@@ -474,7 +476,7 @@ function VerseAudioPlayerInner({
         <ActivityIndicator size="small" color={primaryColor} />
         <TextInput
           editable={false}
-          value="Loading audio…"
+          value={t("audio.loading")}
           style={[verseScreenStyles.audioTime, { color: textMutedColor, marginLeft: 12 }]}
         />
       </View>
@@ -491,7 +493,7 @@ function VerseAudioPlayerInner({
           verseScreenStyles.audioPlayBtn,
           { backgroundColor: primaryColor, opacity: resolvedUri ? 1 : 0.6 },
         ]}
-        accessibilityLabel={isPlaying ? "Pause audio" : "Play audio"}
+        accessibilityLabel={isPlaying ? t("audio.pauseA11y") : t("audio.playA11y")}
         accessibilityRole="button"
       >
         <Ionicons
@@ -525,7 +527,7 @@ function VerseAudioPlayerInner({
           onValueChange={handleSliderValueChange}
           onSlidingComplete={handleSlidingComplete}
           minimumTrackTintColor={primaryColor}
-          accessibilityLabel="Audio progress"
+          accessibilityLabel={t("audio.progressA11y")}
           accessibilityRole="adjustable"
           maximumTrackTintColor={outlineColor + "66"}
           thumbTintColor={primaryColor}
@@ -541,7 +543,7 @@ function VerseAudioPlayerInner({
           onValueChange={handleSliderValueChange}
           onSlidingComplete={handleSlidingComplete}
           minimumTrackTintColor={primaryColor}
-          accessibilityLabel="Audio progress"
+          accessibilityLabel={t("audio.progressA11y")}
           accessibilityRole="adjustable"
           maximumTrackTintColor={outlineColor + "66"}
           thumbTintColor={primaryColor}
@@ -566,7 +568,7 @@ function VerseAudioPlayerInner({
         onPress={handleMuteToggle}
         hitSlop={10}
         style={verseScreenStyles.audioMuteBtn}
-        accessibilityLabel={muted ? "Unmute" : "Mute"}
+        accessibilityLabel={muted ? t("audio.unmuteA11y") : t("audio.muteA11y")}
         accessibilityRole="button"
       >
         <Ionicons

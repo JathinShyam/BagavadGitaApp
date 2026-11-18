@@ -7,6 +7,8 @@ import { Platform, Share, View, type ViewStyle } from "react-native";
 import { ShareCard } from "@/components/verse/ShareCard";
 import { StreakShareCard } from "@/components/verse/StreakShareCard";
 import { DEEP_LINKS } from "@/constants/routes";
+import { translate } from "@/lib/i18n";
+import { DEFAULT_CONTENT_LANGUAGE, type ContentLanguage } from "@/constants/languages";
 
 /**
  * Cards are laid out at full size but placed outside the viewport, then captured
@@ -28,12 +30,15 @@ export async function captureShareCardRef(viewRef: any): Promise<string> {
   return target;
 }
 
-export async function shareImage(uri: string): Promise<void> {
+export async function shareImage(
+  uri: string,
+  language: ContentLanguage = DEFAULT_CONTENT_LANGUAGE
+): Promise<void> {
   const available = await Sharing.isAvailableAsync();
   if (!available) return;
   await Sharing.shareAsync(uri, {
     mimeType: "image/png",
-    dialogTitle: "Share verse",
+    dialogTitle: translate(language, "share.dialogTitle"),
     UTI: "public.png",
   });
 }
@@ -51,7 +56,8 @@ export async function shareImage(uri: string): Promise<void> {
 export async function shareVerseCard(
   viewRef: React.RefObject<View | null>,
   verseId: string,
-  caption: string
+  caption: string,
+  language: ContentLanguage = DEFAULT_CONTENT_LANGUAGE
 ): Promise<boolean> {
   const view = viewRef.current;
   if (!view) return false;
@@ -65,7 +71,7 @@ export async function shareVerseCard(
   }
 
   if (!(await Sharing.isAvailableAsync())) return false;
-  await shareImage(uri);
+  await shareImage(uri, language);
   return true;
 }
 

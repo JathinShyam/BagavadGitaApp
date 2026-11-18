@@ -1,6 +1,6 @@
 /**
- * Content languages for scripture text (sloka, meaning, commentary)
- * and a few branded labels (e.g. home title). Most UI chrome stays English.
+ * Content languages for scripture text (sloka, meaning, commentary),
+ * UI chrome (via `lib/i18n.ts`) and a few branded labels (e.g. home title).
  */
 export const CONTENT_LANGUAGE_CODES = ["te", "en", "hi", "ta"] as const;
 

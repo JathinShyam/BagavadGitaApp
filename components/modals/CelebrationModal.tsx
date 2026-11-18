@@ -16,6 +16,7 @@ import { haptics } from "@/lib/haptics";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { Type } from "@/theme/design-tokens";
+import { useTranslation } from "@/hooks/useTranslation";
 import { Duration, Spring } from "@/theme/motion";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -129,6 +130,7 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
 }) => {
   const { colors } = useAppTheme();
   const reducedMotion = useReducedMotion();
+  const { t } = useTranslation();
   const [rendered, setRendered] = useState(visible);
   const backdropOpacity = useSharedValue(0);
   const contentScale = useSharedValue(0.5);
@@ -234,20 +236,19 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
         </Animated.View>
 
         <Text style={[styles.title, { color: colors.brandText }]}>
-          Congratulations!
+          {t("celebration.title")}
         </Text>
 
         <Text style={[styles.subtitle, { color: colors.text }]}>
-          You&apos;ve completed
+          {t("celebration.subtitle")}
         </Text>
 
         <Text style={[styles.chapterText, { color: colors.text }]}>
-          Chapter {chapterNumber}
+          {t("common.chapterN", { chapter: chapterNumber })}
         </Text>
 
         <Text style={[styles.message, { color: colors.textMuted }]}>
-          Your dedication to spiritual wisdom is inspiring. Keep exploring the
-          timeless teachings of the Bhagavad Gita.
+          {t("celebration.message")}
         </Text>
 
         <Pressable
@@ -255,7 +256,7 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
           style={[styles.button, { backgroundColor: colors.brandText }]}
         >
           <Text style={[styles.buttonText, { color: colors.onPrimary }]}>
-            Continue Learning
+            {t("celebration.continue")}
           </Text>
         </Pressable>
       </Animated.View>

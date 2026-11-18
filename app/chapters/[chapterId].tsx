@@ -18,6 +18,7 @@ import type { Verse } from "@/types";
 
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useContentLanguage } from "@/context/language-context";
+import { useTranslation } from "@/hooks/useTranslation";
 import { useReadingProgress } from "@/hooks/useReadingProgress";
 import { ROUTES } from "@/constants/routes";
 import { chapterScreenStyles } from "@/theme/screen-styles";
@@ -41,6 +42,7 @@ export default function ChapterDetailScreen() {
   const { chapterId } = useLocalSearchParams<{ chapterId: string }>();
   const { colors } = useAppTheme();
   const { language } = useContentLanguage();
+  const { t } = useTranslation();
   const router = useRouter();
   const chapter = getChapterById(getRouteParam(chapterId));
   const chapterTitle = chapter ? getChapterTitle(chapter.id, language) : "";
@@ -122,7 +124,7 @@ export default function ChapterDetailScreen() {
         preview={getVerseListPreview(item, language)}
         read={read}
         onPress={() => router.push(ROUTES.verseFromChapter(chapter.id, item.verse_number))}
-        accessibilityLabel={`Open verse ${item.verse_number}`}
+        accessibilityLabel={t("chapter.openVerseA11y", { verse: item.verse_number })}
       />
     );
   };
@@ -130,7 +132,7 @@ export default function ChapterDetailScreen() {
   if (!chapter) {
     return (
       <SafeAreaView style={chapterScreenStyles.container}>
-        <Text>Chapter not found</Text>
+        <Text>{t("chapter.notFound")}</Text>
       </SafeAreaView>
     );
   }
@@ -142,7 +144,7 @@ export default function ChapterDetailScreen() {
     >
       <Stack.Screen
         options={{
-          headerTitle: `Chapter ${chapter.id}`,
+          headerTitle: t("chapter.header", { chapter: chapter.id }),
           headerShown: true,
           headerStyle: {
             backgroundColor: colors.background,
@@ -219,7 +221,9 @@ export default function ChapterDetailScreen() {
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={
-                  isContextExpanded ? "Collapse chapter description" : "Expand chapter description"
+                  isContextExpanded
+                    ? t("chapter.collapseDescA11y")
+                    : t("chapter.expandDescA11y")
                 }
               >
                 <Text
@@ -230,7 +234,7 @@ export default function ChapterDetailScreen() {
                 </Text>
                 <View style={chapterPageStyles.contextActions}>
                   <Text style={[chapterPageStyles.contextActionText, { color: colors.brandText }]}>
-                    {isContextExpanded ? "Show less" : "Read full context"}
+                    {isContextExpanded ? t("chapter.showLess") : t("chapter.readFullContext")}
                   </Text>
                   <Ionicons
                     name={isContextExpanded ? "chevron-up" : "chevron-down"}
@@ -246,7 +250,7 @@ export default function ChapterDetailScreen() {
                   style={[chapterPageStyles.contextActions, { marginTop: 8 }]}
                 >
                   <Text style={[chapterPageStyles.contextActionText, { color: colors.textMuted }]}>
-                    Jump to verses
+                    {t("chapter.jumpToVerses")}
                   </Text>
                   <Ionicons name="arrow-down" size={14} color={colors.textMuted} />
                 </Pressable>
@@ -267,8 +271,11 @@ export default function ChapterDetailScreen() {
                     ]}
                   >
                     {chapterDone
-                      ? "Chapter complete"
-                      : `${coveredVerses} of ${totalVerses} verses read`}
+                      ? t("chapter.complete")
+                      : t("chapter.versesRead", {
+                          covered: coveredVerses,
+                          total: totalVerses,
+                        })}
                   </Text>
                 </View>
                 {chapterDone && (
@@ -318,7 +325,7 @@ export default function ChapterDetailScreen() {
             )}
 
             <Text style={[chapterPageStyles.versesHeading, { color: colors.text }]}>
-              Verses
+              {t("chapter.verses")}
             </Text>
           </View>
         }

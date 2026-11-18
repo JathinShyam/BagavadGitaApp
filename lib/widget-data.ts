@@ -4,6 +4,7 @@ import { addDaysToDateKey, getLocalDateKey } from "@/lib/date-keys";
 import { getVerseForDate } from "@/lib/daily-verse";
 import { getStoredContentLanguage } from "@/lib/chapter-content";
 import { DEFAULT_CONTENT_LANGUAGE, type ContentLanguage } from "@/constants/languages";
+import { INTL_LOCALES, translate, WEEKDAY_SHORT } from "@/lib/i18n";
 
 export type WidgetDayPayload = {
   dateKey: string;
@@ -50,18 +51,23 @@ export function buildWidgetSyncPayload(
     const slokaRaw = (verse.sloka ?? "").replace(/\n/g, " ").trim();
     const meaningRaw = (verse.meaning ?? "").replace(/\n/g, " ").trim();
 
-    const weekday = new Date(y, m - 1, d).toLocaleDateString(undefined, {
-      weekday: "short",
-    });
+    const weekday =
+      WEEKDAY_SHORT[language][new Date(y, m - 1, d).getDay()] ??
+      new Date(y, m - 1, d).toLocaleDateString(INTL_LOCALES[language], {
+        weekday: "short",
+      });
 
     days.push({
       dateKey: key,
       verseId: verse.id,
-      eyebrow: i === 0 ? "Today" : weekday,
-      title: `Chapter ${verse.chapter} · Verse ${verse.verse_number}`,
+      eyebrow: i === 0 ? translate(language, "home.today") : weekday,
+      title: translate(language, "common.chapterVerseN", {
+        chapter: verse.chapter,
+        verse: verse.verse_number,
+      }),
       sloka: truncate(slokaRaw, MAX_SLOKA),
       meaning: truncate(
-        meaningRaw || "Open the app to read the full meaning.",
+        meaningRaw || translate(language, "notifications.openApp"),
         MAX_MEANING
       ),
     });
