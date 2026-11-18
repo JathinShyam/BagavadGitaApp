@@ -6,6 +6,11 @@ import { CHAPTER_VERSE_COUNTS } from "@/constants/chapter-verse-counts";
 import { DAILY_VERSE_GOAL } from "@/constants/milestones";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
 import { addDaysToDateKey, getLocalDateKey } from "@/lib/date-keys";
+import {
+  DEFAULT_REMINDER_TIME,
+  getAtRiskMoment,
+} from "@/lib/streak-at-risk";
+import { cancelStreakAtRiskNotification } from "@/lib/daily-verse-notifications";
 import { computeNextStreak, creditDayAsRead, reconcileStreak } from "@/lib/streak";
 import {
   EMPTY_FREEZES,
@@ -102,6 +107,8 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
     lastReadDate: null,
   });
   const [freezes, setFreezes] = useState<StreakFreezeState>(EMPTY_FREEZES);
+  // The reader's own reminder time sets when the flame starts to worry.
+  const [atRiskMoment, setAtRiskMoment] = useState(getAtRiskMoment(DEFAULT_REMINDER_TIME));
   const [lastReadVerse, setLastReadVerseState] = useState<LastReadVerse>({
     verseId: null,
     updatedAt: null,
@@ -119,14 +126,25 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
 
   const loadProgress = useCallback(async () => {
     try {
-      const [storedProgress, storedStreak, storedLastRead, storedActivity, storedFreezes] =
-        await Promise.all([
-          AsyncStorage.getItem(STORAGE_KEYS.READING_PROGRESS),
-          AsyncStorage.getItem(STORAGE_KEYS.READING_STREAK),
-          AsyncStorage.getItem(STORAGE_KEYS.LAST_READ_VERSE),
-          AsyncStorage.getItem(STORAGE_KEYS.READING_ACTIVITY),
-          loadStreakFreezes(),
-        ]);
+      const [
+        storedProgress,
+        storedStreak,
+        storedLastRead,
+        storedActivity,
+        storedFreezes,
+        storedReminderTime,
+      ] = await Promise.all([
+        AsyncStorage.getItem(STORAGE_KEYS.READING_PROGRESS),
+        AsyncStorage.getItem(STORAGE_KEYS.READING_STREAK),
+        AsyncStorage.getItem(STORAGE_KEYS.LAST_READ_VERSE),
+        AsyncStorage.getItem(STORAGE_KEYS.READING_ACTIVITY),
+        loadStreakFreezes(),
+        AsyncStorage.getItem(STORAGE_KEYS.DAILY_VERSE_NOTIFICATION_TIME),
+      ]);
+
+      setAtRiskMoment(
+        getAtRiskMoment(storedReminderTime ?? DEFAULT_REMINDER_TIME)
+      );
 
       if (storedProgress) {
         setProgress(JSON.parse(storedProgress));
@@ -283,6 +301,9 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
         setActivity(nextActivity);
         await saveActivity(nextActivity);
       }
+      // Reading now makes tonight's nudge untrue.
+      cancelStreakAtRiskNotification().catch(() => {});
+
       const dailyGoalJustCompleted =
         (currentActivity[todayKey] ?? 0) < DAILY_VERSE_GOAL &&
         (nextActivity[todayKey] ?? 0) >= DAILY_VERSE_GOAL;
@@ -477,8 +498,11 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
     if (!streak.lastReadDate || streak.currentStreak <= 0) return false;
     const yesterday = addDaysToDateKey(today, -1);
     if (streak.lastReadDate !== yesterday) return false;
-    return new Date().getHours() >= 18;
-  }, [activity, streak]);
+
+    const now = new Date();
+    const minutesNow = now.getHours() * 60 + now.getMinutes();
+    return minutesNow >= atRiskMoment.hour * 60 + atRiskMoment.minute;
+  }, [activity, streak, atRiskMoment]);
 
   const value: ReadingProgressContextValue = {
     progress,

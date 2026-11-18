@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { STORAGE_KEYS } from "@/constants/storage-keys";
+import { addDaysToDateKey, getLocalDateKey } from "@/lib/date-keys";
 
 const mockScheduled: { identifier?: string; content: unknown }[] = [];
 const mockCancelled: string[] = [];
@@ -64,6 +65,7 @@ jest.mock("@react-native-async-storage/async-storage", () => {
 import {
   cancelDailyVerseNotifications,
   scheduleNextDailyVerseNotification,
+  scheduleStreakAtRiskNotification,
   setStoredPreferences,
 } from "@/lib/daily-verse-notifications";
 
@@ -96,5 +98,96 @@ describe("daily verse notification schedule (BUG-020)", () => {
     await scheduleNextDailyVerseNotification();
 
     expect(mockScheduled).toHaveLength(0);
+  });
+});
+
+describe("streak-at-risk nudge (spec §2.7)", () => {
+  const yesterday = () => addDaysToDateKey(getLocalDateKey(), -1);
+  const atRiskRequests = () =>
+    mockScheduled.filter((request) =>
+      (request.identifier ?? "").startsWith("streak-at-risk")
+    );
+
+  beforeEach(async () => {
+    mockScheduled.length = 0;
+    mockCancelled.length = 0;
+    await AsyncStorage.multiRemove(Object.values(STORAGE_KEYS));
+    await setStoredPreferences(true, "08:00");
+  });
+
+  it("schedules tonight's nudge for a live streak that has not read", async () => {
+    await AsyncStorage.setItem(
+      STORAGE_KEYS.READING_STREAK,
+      JSON.stringify({
+        currentStreak: 12,
+        longestStreak: 12,
+        lastReadDate: yesterday(),
+      })
+    );
+
+    const atNine = new Date();
+    atNine.setHours(9, 0, 0, 0);
+    await scheduleStreakAtRiskNotification(atNine);
+
+    const [request] = atRiskRequests();
+    expect(request).toBeDefined();
+    expect((request.content as { title: string }).title).toBe(
+      "Your 12-day streak ends at midnight"
+    );
+  });
+
+  it("stays quiet once the day is read", async () => {
+    await AsyncStorage.setItem(
+      STORAGE_KEYS.READING_STREAK,
+      JSON.stringify({
+        currentStreak: 12,
+        longestStreak: 12,
+        lastReadDate: getLocalDateKey(),
+      })
+    );
+    await AsyncStorage.setItem(
+      STORAGE_KEYS.READING_ACTIVITY,
+      JSON.stringify({ [getLocalDateKey()]: 1 })
+    );
+
+    const atNine = new Date();
+    atNine.setHours(9, 0, 0, 0);
+    await scheduleStreakAtRiskNotification(atNine);
+
+    expect(atRiskRequests()).toHaveLength(0);
+  });
+
+  it("never nudges a streak that was last read before yesterday", async () => {
+    await AsyncStorage.setItem(
+      STORAGE_KEYS.READING_STREAK,
+      JSON.stringify({
+        currentStreak: 12,
+        longestStreak: 12,
+        lastReadDate: addDaysToDateKey(getLocalDateKey(), -2),
+      })
+    );
+
+    const atNine = new Date();
+    atNine.setHours(9, 0, 0, 0);
+    await scheduleStreakAtRiskNotification(atNine);
+
+    expect(atRiskRequests()).toHaveLength(0);
+  });
+
+  it("does not schedule a moment that has already passed", async () => {
+    await AsyncStorage.setItem(
+      STORAGE_KEYS.READING_STREAK,
+      JSON.stringify({
+        currentStreak: 12,
+        longestStreak: 12,
+        lastReadDate: yesterday(),
+      })
+    );
+
+    const lateEvening = new Date();
+    lateEvening.setHours(22, 0, 0, 0);
+    await scheduleStreakAtRiskNotification(lateEvening);
+
+    expect(atRiskRequests()).toHaveLength(0);
   });
 });

@@ -9,6 +9,12 @@ import {
 import { STORAGE_KEYS } from "@/constants/storage-keys";
 import { addDaysToDateKey, getLocalDateKey } from "@/lib/date-keys";
 
+// The provider cancels tonight's streak nudge on read; keep the native
+// notification module out of the unit tests.
+jest.mock("@/lib/notification-availability", () => ({
+  shouldLoadExpoNotifications: () => false,
+}));
+
 jest.mock("@react-native-async-storage/async-storage", () => {
   const store = new Map<string, string>();
   return {

@@ -49,6 +49,8 @@ const en = {
   "notifications.openApp": "Open the app to read the verse.",
   "notifications.channelName": "Daily Verse",
   "notifications.channelDescription": "Daily Bhagavad Gita verse reminder",
+  "notifications.atRiskTitle": "Your {count}-day streak ends at midnight",
+  "notifications.atRiskBody": "One verse keeps it alive.",
 
   "home.today": "Today",
   "home.atRisk": "Streak ends at midnight — one verse keeps it alive",
@@ -356,6 +358,8 @@ const te: Record<TranslationKey, string> = {
   "notifications.openApp": "శ్లోకం చదవడానికి యాప్ను తెరవండి.",
   "notifications.channelName": "రోజు శ్లోకం",
   "notifications.channelDescription": "రోజువారీ భగవద్గీత శ్లోక రిమైండర్",
+  "notifications.atRiskTitle": "మీ {count} రోజుల స్ట్రీక్ అర్ధరాత్రితో ముగుస్తుంది",
+  "notifications.atRiskBody": "ఒక శ్లోకం దాన్ని కాపాడుతుంది.",
 
   "home.today": "ఈరోజు",
   "home.atRisk": "అర్ధరాత్రితో స్ట్రీక్ ముగుస్తుంది — ఒక శ్లోకం దాన్ని కాపాడుతుంది",
@@ -660,6 +664,8 @@ const hi: Record<TranslationKey, string> = {
   "notifications.openApp": "श्लोक पढ़ने के लिए ऐप खोलें।",
   "notifications.channelName": "दैनिक श्लोक",
   "notifications.channelDescription": "दैनिक भगवद्गीता श्लोक अनुस्मारक",
+  "notifications.atRiskTitle": "आपकी {count} दिन की स्ट्रीक आधी रात को खत्म हो रही है",
+  "notifications.atRiskBody": "एक श्लोक उसे बचा लेगा।",
 
   "home.today": "आज",
   "home.atRisk": "स्ट्रीक आधी रात को खत्म होगी — एक श्लोक उसे बचाएगा",
@@ -964,6 +970,8 @@ const ta: Record<TranslationKey, string> = {
   "notifications.openApp": "வசனத்தைப் படிக்க செயலியைத் திறக்கவும்.",
   "notifications.channelName": "தினசரி வசனம்",
   "notifications.channelDescription": "தினசரி பகவத் கீதை வசன நினைவூட்டல்",
+  "notifications.atRiskTitle": "உங்கள் {count} நாள் தொடர் நள்ளிரவில் முடிகிறது",
+  "notifications.atRiskBody": "ஒரு வசனம் அதைக் காப்பாற்றும்.",
 
   "home.today": "இன்று",
   "home.atRisk": "நள்ளிரவில் தொடர் முடியும் — ஒரு வசனம் அதைத் தக்கவைக்கும்",

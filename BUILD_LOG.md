@@ -1222,3 +1222,37 @@ disappears.
 **Blocked**    The freeze is silent at the moment it is spent — no toast, no
 modal. On device, confirm the rail's blue halo reads as relief rather than as
 an error state. Premium freezes (feature 7) are not wired.
+
+## [45] 2026-11-18 — The nudge that arrives before midnight (Feature 3, part 2)
+**Move**       Motion cannot reach a closed app. A reader with a live streak
+who simply forgets gets no second chance until the streak is already gone,
+and the in-app at-risk warning still fired at a hardcoded 18:00 regardless of
+the reminder time the reader chose.
+**Plan**       One local notification four hours after the reader's chosen
+reminder, cancelled the moment a verse is read, plus an at-risk moment that
+derives from the same preference.
+**Decisions**  1. `lib/streak-at-risk.ts` owns the rule: four hours after the
+reminder, floored at 18:00 and capped at 23:00. A morning reader keeps the
+familiar 18:00 window; a 16:45 reader gets 20:45; a 21:00 reader never gets
+woken at bedtime.
+2. `isStreakAtRisk()` now reads the same moment from storage instead of
+`getHours() >= 18`, so the breathing flame and the push agree on when the day
+starts to look lost.
+3. The nudge is its own family (`streak-at-risk-<date>`), scheduled inside the
+existing 30-day refresh so every call site stays one call. Old generic ids are
+covered by a prefix match.
+4. It is only scheduled for a streak that was last read *yesterday* and has
+not read today — an unreconciled stored value can never produce a nudge.
+5. Reading cancels it immediately. The copy is localized: "Your {count}-day
+streak ends at midnight / One verse keeps it alive."
+**Ship**       `lib/streak-at-risk.ts`, `lib/daily-verse-notifications.ts`,
+`context/reading-progress-context.tsx`, `lib/i18n.ts`,
+`__tests__/streak-at-risk.test.ts`, `__tests__/daily-verse-notifications.test.ts`.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 18 suites / 105 tests ✅
+**Observe**    1. The flame starts breathing at the same minute the nudge can
+arrive, and stops for good once the verse lands. 2. A reader with a late
+reminder is not nudged at 18:00. 3. Nothing is scheduled for a streak that
+already died.
+**Blocked**    Delivery timing on real Android (Doze, exact-alarm restricted)
+is unverified without a device; BUG-023 removed the exact-alarm permission, so
+this stays a best-effort window.
