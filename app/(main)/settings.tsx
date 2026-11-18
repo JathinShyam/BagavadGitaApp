@@ -42,6 +42,7 @@ import { GoldCard } from "@/components/ui/GoldCard";
 import { Duration } from "@/theme/motion";
 import { OrnamentalDivider, ORNAMENTS } from "@/components/ui/OrnamentalDivider";
 import { IOSToggle } from "@/components/ui/IOSToggle";
+import { FREEZE_CAP } from "@/lib/streak-freeze";
 
 
 interface SettingItemProps {
@@ -106,7 +107,7 @@ export default function SettingsScreen() {
   const { colors } = useAppTheme();
   const { language, languageOption, setLanguage } = useContentLanguage();
   const { t } = useTranslation();
-  const { resetAllProgress } = useReadingProgress();
+  const { resetAllProgress, freezes } = useReadingProgress();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [notificationTime, setNotificationTime] = useState("08:00");
   const [autoPlayAudio, setAutoPlayAudio] = useState(false);
@@ -406,6 +407,33 @@ export default function SettingsScreen() {
               />
             }
             delay={300}
+          />
+        </GoldCard>
+
+        <Text
+          style={[
+            styles.sectionTitle,
+            { color: colors.brandText, letterSpacing: tracking(language, 0.2) },
+          ]}
+        >
+          {t("settings.practice")}
+        </Text>
+        <GoldCard style={styles.sectionCard}>
+          <SettingItem
+            title={t("settings.lotusFreezes")}
+            subtitle={t("settings.lotusFreezesBody")}
+            icon="flower-outline"
+            colors={colors}
+            isLast
+            rightElement={
+              <Text style={[styles.timeValue, { color: colors.streakFrozen }]}>
+                {t("settings.lotusFreezesCount", {
+                  count: freezes.balance,
+                  cap: FREEZE_CAP,
+                })}
+              </Text>
+            }
+            delay={330}
           />
         </GoldCard>
 

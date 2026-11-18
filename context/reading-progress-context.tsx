@@ -7,11 +7,19 @@ import { DAILY_VERSE_GOAL } from "@/constants/milestones";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
 import { addDaysToDateKey, getLocalDateKey } from "@/lib/date-keys";
 import { computeNextStreak, creditDayAsRead, reconcileStreak } from "@/lib/streak";
+import {
+  EMPTY_FREEZES,
+  awardFreezeIfEarned,
+  loadStreakFreezes,
+  protectMissedDays,
+  saveStreakFreezes,
+} from "@/lib/streak-freeze";
 import type {
   LastReadVerse,
   ReadingActivity,
   ReadingProgress,
   ReadingStreak,
+  StreakFreezeState,
 } from "@/types";
 
 /**
@@ -72,6 +80,8 @@ interface ReadingProgressContextValue {
   resetAllProgress: () => Promise<void>;
   CHAPTER_VERSES: { [key: number]: number };
   streak: ReadingStreak;
+  /** Lotus freezes in hand plus the days they have covered. */
+  freezes: StreakFreezeState;
   lastReadVerseId: string | null;
   setLastReadVerse: (verseId: string) => Promise<void>;
   getVersesReadOnDate: (dateKey: string) => number;
@@ -91,6 +101,7 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
     longestStreak: 0,
     lastReadDate: null,
   });
+  const [freezes, setFreezes] = useState<StreakFreezeState>(EMPTY_FREEZES);
   const [lastReadVerse, setLastReadVerseState] = useState<LastReadVerse>({
     verseId: null,
     updatedAt: null,
@@ -100,18 +111,21 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
   const progressRef = useRef(progress);
   const activityRef = useRef(activity);
   const streakRef = useRef(streak);
+  const freezesRef = useRef(freezes);
   progressRef.current = progress;
   activityRef.current = activity;
   streakRef.current = streak;
+  freezesRef.current = freezes;
 
   const loadProgress = useCallback(async () => {
     try {
-      const [storedProgress, storedStreak, storedLastRead, storedActivity] =
+      const [storedProgress, storedStreak, storedLastRead, storedActivity, storedFreezes] =
         await Promise.all([
           AsyncStorage.getItem(STORAGE_KEYS.READING_PROGRESS),
           AsyncStorage.getItem(STORAGE_KEYS.READING_STREAK),
           AsyncStorage.getItem(STORAGE_KEYS.LAST_READ_VERSE),
           AsyncStorage.getItem(STORAGE_KEYS.READING_ACTIVITY),
+          loadStreakFreezes(),
         ]);
 
       if (storedProgress) {
@@ -126,12 +140,25 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
             lastReadDate: parsed.lastReadDate ?? null,
           };
           // A streak cannot survive a missed day, but the stored value can —
-          // reconcile before showing it (BUG-019).
-          const reconciled = reconcileStreak(loaded, getLocalDateKey());
+          // reconcile before showing it (BUG-019). A lotus freeze covers a
+          // missed day first, so a saved streak never looks broken.
+          const today = getLocalDateKey();
+          const protectedStreak = protectMissedDays(loaded, today, storedFreezes);
+          const reconciled = reconcileStreak(protectedStreak.streak, today);
           streakRef.current = reconciled;
           setStreak(reconciled);
           if (reconciled !== loaded) {
             await AsyncStorage.setItem(STORAGE_KEYS.READING_STREAK, JSON.stringify(reconciled));
+          }
+
+          const nextFreezes = awardFreezeIfEarned(
+            protectedStreak.freezes,
+            reconciled.currentStreak
+          );
+          freezesRef.current = nextFreezes;
+          setFreezes(nextFreezes);
+          if (nextFreezes !== storedFreezes) {
+            await saveStreakFreezes(nextFreezes);
           }
         } catch {}
       }
@@ -148,6 +175,10 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
         try {
           setActivity(JSON.parse(storedActivity));
         } catch {}
+      }
+      if (!storedStreak) {
+        freezesRef.current = storedFreezes;
+        setFreezes(storedFreezes);
       }
     } catch (error) {
       console.error("Error loading reading progress:", error);
@@ -183,11 +214,24 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
    */
   const reconcileStreakForToday = useCallback(() => {
     const current = streakRef.current;
-    const next = reconcileStreak(current, getLocalDateKey());
-    if (next === current) return;
-    streakRef.current = next;
-    setStreak(next);
-    saveStreak(next);
+    const today = getLocalDateKey();
+    const protectedStreak = protectMissedDays(current, today, freezesRef.current);
+    const next = reconcileStreak(protectedStreak.streak, today);
+    const nextFreezes = awardFreezeIfEarned(
+      protectedStreak.freezes,
+      next.currentStreak
+    );
+
+    if (next !== current) {
+      streakRef.current = next;
+      setStreak(next);
+      saveStreak(next);
+    }
+    if (nextFreezes !== freezesRef.current) {
+      freezesRef.current = nextFreezes;
+      setFreezes(nextFreezes);
+      saveStreakFreezes(nextFreezes);
+    }
   }, [saveStreak]);
 
   useEffect(() => {
@@ -249,6 +293,18 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
         streakRef.current = nextStreak;
         setStreak(nextStreak);
         await saveStreak(nextStreak);
+      }
+
+      // Every seventh day of a live streak puts another lotus in hand.
+      const currentFreezes = freezesRef.current;
+      const nextFreezes = awardFreezeIfEarned(
+        currentFreezes,
+        nextStreak.currentStreak
+      );
+      if (nextFreezes !== currentFreezes) {
+        freezesRef.current = nextFreezes;
+        setFreezes(nextFreezes);
+        await saveStreakFreezes(nextFreezes);
       }
 
       if (alreadyRead) {
@@ -369,9 +425,11 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
     progressRef.current = {};
     activityRef.current = {};
     streakRef.current = emptyStreak;
+    freezesRef.current = EMPTY_FREEZES;
     setProgress({});
     setActivity({});
     setStreak(emptyStreak);
+    setFreezes(EMPTY_FREEZES);
     setLastReadVerseState(emptyLastRead);
     try {
       await AsyncStorage.multiRemove([
@@ -379,6 +437,7 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
         STORAGE_KEYS.READING_STREAK,
         STORAGE_KEYS.READING_ACTIVITY,
         STORAGE_KEYS.LAST_READ_VERSE,
+        STORAGE_KEYS.STREAK_FREEZES,
       ]);
     } catch (error) {
       console.error("Error resetting reading progress:", error);
@@ -435,6 +494,7 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
     resetAllProgress,
     CHAPTER_VERSES,
     streak,
+    freezes,
     lastReadVerseId: lastReadVerse.verseId,
     setLastReadVerse,
     getVersesReadOnDate,

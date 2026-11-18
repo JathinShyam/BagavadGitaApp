@@ -27,6 +27,8 @@ type Props = {
   activity: ReadingActivity;
   streakDays: number;
   longestStreak: number;
+  /** Days a lotus freeze covered, drawn cool instead of gold. */
+  protectedDates?: Record<string, true>;
   onClose: () => void;
 };
 
@@ -70,6 +72,7 @@ export function PracticeCalendarModal({
   activity,
   streakDays,
   longestStreak,
+  protectedDates,
   onClose,
 }: Props) {
   const { colors } = useAppTheme();
@@ -146,7 +149,9 @@ export function PracticeCalendarModal({
                 <View key={cell.key} style={styles.monthCell}>
                   {cell.count > 0 ? (
                     <ChariotWheelMark
-                      primary={colors.primary}
+                      primary={
+                        protectedDates?.[cell.key] ? colors.streakFrozen : colors.primary
+                      }
                       onPrimary={colors.onPrimary}
                       spin={spin}
                     />

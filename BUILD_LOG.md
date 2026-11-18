@@ -1187,3 +1187,38 @@ page. 2. The seventh day turns the lotus before the milestone appears.
 wants 14/21/30/50/100/108, which means new copy and new stored-seen keys.
 Left as written up in the spec rather than half-migrated; the ribbon already
 covers the cold-start days the ladder was meant to fix.
+
+## [44] 2026-11-18 — The lotus mark: a freeze that saves the streak (Feature 3, part 1)
+**Move**       Missing one day erased a twelve-day streak with no recourse.
+That is the single most expensive moment in a habit app — the reader loses
+weeks of work to one late night and has no reason to come back.
+**Plan**       Earn a lotus freeze every seven days of a live streak, cap two,
+and let a freeze cover exactly one missed calendar day.
+**Decisions**  1. `lib/streak-freeze.ts` holds the maths as pure functions:
+`awardFreezeIfEarned` (one per seven-day block, threshold resets when a streak
+ends), `protectMissedDays` (walks the gap one day at a time).
+2. Freezes are only spent when the balance can bridge the *entire* gap. A
+partial spend that still ends the streak would burn a freeze for nothing.
+3. Consumption rewrites `lastReadDate` to yesterday, so every existing streak
+rule keeps working unchanged — the next read is simply "yesterday + 1".
+4. The provider now owns the freeze state next to the streak, applies it on
+load and on foreground, awards after every read (including re-reads), and
+clears it with "Reset progress".
+5. Visuals: a blue lotus badge with a count beside the flame in the rail, a
+cool halo on the flame for the day a freeze was spent (600ms, `streakFrozen`),
+and the protected day drawn in cool blue instead of gold in the calendar.
+6. Settings gets a Practice section: "Lotus freezes · 1 of 2" with one line
+explaining the rule. No new tab, no badge chasing.
+**Ship**       `lib/streak-freeze.ts`, `types/reading-progress.ts`,
+`constants/storage-keys.ts`, `context/reading-progress-context.tsx`,
+`components/home/StreakRail.tsx`, `components/practice/PracticeCalendarModal.tsx`,
+`app/(main)/index.tsx`, `app/(main)/settings.tsx`, `lib/i18n.ts`,
+`__tests__/streak-freeze.test.ts`, `__tests__/reading-progress-reread.test.tsx`.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 17 suites / 97 tests ✅
+**Observe**    1. A streak read yesterday survives a missed day and the flame
+stays warm. 2. The calendar shows the saved day in blue, so the mechanic is
+visible rather than magic. 3. Spending the last freeze is legible: the badge
+disappears.
+**Blocked**    The freeze is silent at the moment it is spent — no toast, no
+modal. On device, confirm the rail's blue halo reads as relief rather than as
+an error state. Premium freezes (feature 7) are not wired.

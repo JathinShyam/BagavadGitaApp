@@ -31,6 +31,8 @@ import type { ReadingActivity } from "@/types";
  * as the week goes, with a gold ring that reads as a small sun opening.
  */
 
+const LOTUS_ICON = require("../../assets/images/lotus-simple.png");
+
 const DOT = 6;
 const DOT_GAP = 4;
 const COUNT_HEIGHT = 20;
@@ -42,6 +44,10 @@ type Props = {
   streakDays: number;
   longestStreak: number;
   atRisk: boolean;
+  /** Lotus freezes in hand. */
+  freezeBalance: number;
+  /** A freeze covered a missed day in the last 24h — the flame gets a cool halo. */
+  protectedRecently: boolean;
   /** False while another screen is on top — the at-risk breath stops. */
   active?: boolean;
   onPress: () => void;
@@ -205,6 +211,7 @@ function StreakFlame({
   color,
   increment,
   active,
+  protectedRecently,
   reducedMotion,
 }: {
   state: FlameState;
@@ -212,14 +219,26 @@ function StreakFlame({
   /** Bumps by one each time the count grows. */
   increment: number;
   active: boolean;
+  protectedRecently: boolean;
   reducedMotion: boolean;
 }) {
+  const { colors } = useAppTheme();
   const scale = useSharedValue(1);
   const offset = useSharedValue(0);
   const opacity = useSharedValue(1);
   const ringScale = useSharedValue(1);
   const ringOpacity = useSharedValue(0);
   const previousState = useRef<FlameState>(state);
+
+  // A freeze was spent: the flame cools toward blue over 600ms and holds the
+  // halo for the day it protected.
+  const haloOpacity = useSharedValue(protectedRecently ? 0.4 : 0);
+  useEffect(() => {
+    haloOpacity.value = withTiming(protectedRecently ? 0.4 : 0, {
+      duration: Duration.ritual,
+      easing: Ease.decelerate,
+    });
+  }, [protectedRecently, haloOpacity]);
 
   // Streak ended while the screen was open: the flame drops and dims. Leaving
   // the broken state fades it back. Only `state` touches opacity, so the drop
@@ -294,6 +313,7 @@ function StreakFlame({
     transform: [{ translateY: offset.value }, { scale: scale.value }],
     opacity: opacity.value,
   }));
+  const haloStyle = useAnimatedStyle(() => ({ opacity: haloOpacity.value }));
   const ringStyle = useAnimatedStyle(() => ({
     transform: [{ scale: ringScale.value }],
     opacity: ringOpacity.value,
@@ -301,6 +321,10 @@ function StreakFlame({
 
   return (
     <View style={styles.flameStage}>
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.halo, { backgroundColor: colors.streakFrozen }, haloStyle]}
+      />
       <Animated.View
         pointerEvents="none"
         style={[styles.flameRing, { borderColor: color }, ringStyle]}
@@ -317,6 +341,8 @@ export function StreakRail({
   streakDays,
   longestStreak,
   atRisk,
+  freezeBalance,
+  protectedRecently,
   active = true,
   onPress,
   onLongPress,
@@ -388,6 +414,7 @@ export function StreakRail({
       accessibilityLabel={t("home.streakA11y", {
         count: streakDays,
         days: weekRead,
+        freezes: freezeBalance,
       })}
       accessibilityHint={t("home.streakHint")}
     >
@@ -397,6 +424,7 @@ export function StreakRail({
           color={tone}
           increment={increment}
           active={active}
+          protectedRecently={protectedRecently}
           reducedMotion={reducedMotion}
         />
         <StreakCount
@@ -404,6 +432,18 @@ export function StreakRail({
           color={tone}
           reducedMotion={reducedMotion}
         />
+        {freezeBalance > 0 && (
+          <View style={styles.freezeBadge}>
+            <Animated.Image
+              source={LOTUS_ICON}
+              style={[styles.freezeLotus, { tintColor: colors.streakFrozen }]}
+              resizeMode="contain"
+            />
+            <Animated.Text style={[styles.freezeCount, { color: colors.streakFrozen }]}>
+              {freezeBalance}
+            </Animated.Text>
+          </View>
+        )}
       </View>
 
       <View
@@ -442,6 +482,27 @@ const styles = StyleSheet.create({
     height: 18,
     alignItems: "center",
     justifyContent: "center",
+  },
+  halo: {
+    position: "absolute",
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+  },
+  freezeBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    marginLeft: 2,
+  },
+  freezeLotus: {
+    width: 14,
+    height: 14,
+  },
+  freezeCount: {
+    fontSize: 12,
+    fontWeight: "700",
+    fontVariant: ["tabular-nums"],
   },
   flameRing: {
     position: "absolute",

@@ -41,6 +41,7 @@ import {
   getVerseForDate,
 } from "@/lib/daily-verse";
 import { getAppTitle } from "@/constants/languages";
+import { addDaysToDateKey, getLocalDateKey } from "@/lib/date-keys";
 import { useContentLanguage } from "@/context/language-context";
 import {
   getActivePath,
@@ -165,6 +166,7 @@ export default function HomeScreen() {
     streak,
     lastReadVerseId,
     activity,
+    freezes,
     isDailyGoalComplete,
     isStreakAtRisk,
   } = useReadingProgress();
@@ -178,6 +180,14 @@ export default function HomeScreen() {
     : "";
   const goalDone = isDailyGoalComplete();
   const streakAtRisk = isStreakAtRisk();
+  // A freeze spent in the last day cools the flame and shows the halo.
+  const protectedRecently = useMemo(() => {
+    const today = getLocalDateKey();
+    return Boolean(
+      freezes.protectedDates[today] ||
+        freezes.protectedDates[addDaysToDateKey(today, -1)]
+    );
+  }, [freezes.protectedDates]);
   const totalProgress = getTotalProgress();
 
   const pathMeta = useMemo(() => {
@@ -576,6 +586,8 @@ export default function HomeScreen() {
           streakDays={streak.currentStreak}
           longestStreak={streak.longestStreak}
           atRisk={streakAtRisk}
+          freezeBalance={freezes.balance}
+          protectedRecently={protectedRecently}
           active={screenFocused}
           onPress={() => setCalendarOpen(true)}
           onLongPress={handleShareStreak}
@@ -624,6 +636,7 @@ export default function HomeScreen() {
         streakDays={streak.currentStreak}
         longestStreak={streak.longestStreak}
         activity={activity}
+        protectedDates={freezes.protectedDates}
         onClose={() => setCalendarOpen(false)}
       />
       <WidgetNudgeModal

@@ -12,6 +12,7 @@ export const STORAGE_KEYS = {
   READING_STREAK: "readingStreak",
   LAST_READ_VERSE: "lastReadVerse",
   READING_ACTIVITY: "readingActivity",
+  STREAK_FREEZES: "streakFreezes",
   VERSE_NOTES: "verseNotes",
   ACTIVE_PATH: "activeReadingPath",
   WIDGET_NUDGE_DISMISSED: "widgetNudgeDismissedUntil",

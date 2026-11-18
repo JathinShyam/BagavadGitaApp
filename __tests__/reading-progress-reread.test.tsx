@@ -119,3 +119,70 @@ describe("reconciling a stored streak on load (BUG-019)", () => {
     expect(result.current.streak.currentStreak).toBe(12);
   });
 });
+
+describe("lotus freeze (spec §2.6)", () => {
+  beforeEach(async () => {
+    await AsyncStorage.multiRemove(Object.values(STORAGE_KEYS));
+  });
+
+  it("spends a freeze to save a one-day gap on load", async () => {
+    const today = getLocalDateKey();
+    const missed = addDaysToDateKey(today, -1);
+    await AsyncStorage.setItem(
+      STORAGE_KEYS.READING_STREAK,
+      JSON.stringify({
+        currentStreak: 12,
+        longestStreak: 12,
+        lastReadDate: addDaysToDateKey(today, -2),
+      })
+    );
+    await AsyncStorage.setItem(
+      STORAGE_KEYS.STREAK_FREEZES,
+      JSON.stringify({ balance: 1, awardedAt: 7, protectedDates: {} })
+    );
+
+    const { result } = await renderProgress();
+
+    expect(result.current.streak.currentStreak).toBe(12);
+    expect(result.current.streak.lastReadDate).toBe(missed);
+    expect(result.current.freezes.balance).toBe(0);
+    expect(result.current.freezes.protectedDates[missed]).toBe(true);
+  });
+
+  it("lets the streak die when no freeze is in hand", async () => {
+    const today = getLocalDateKey();
+    await AsyncStorage.setItem(
+      STORAGE_KEYS.READING_STREAK,
+      JSON.stringify({
+        currentStreak: 12,
+        longestStreak: 12,
+        lastReadDate: addDaysToDateKey(today, -2),
+      })
+    );
+
+    const { result } = await renderProgress();
+
+    expect(result.current.streak.currentStreak).toBe(0);
+    expect(result.current.freezes.balance).toBe(0);
+  });
+
+  it("awards a freeze when the streak reaches seven days", async () => {
+    const today = getLocalDateKey();
+    await AsyncStorage.setItem(
+      STORAGE_KEYS.READING_STREAK,
+      JSON.stringify({
+        currentStreak: 6,
+        longestStreak: 6,
+        lastReadDate: addDaysToDateKey(today, -1),
+      })
+    );
+
+    const { result } = await renderProgress();
+    await act(async () => {
+      await result.current.markVerseAsRead(2, "47");
+    });
+
+    expect(result.current.streak.currentStreak).toBe(7);
+    expect(result.current.freezes.balance).toBe(1);
+  });
+});
