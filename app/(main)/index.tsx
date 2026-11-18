@@ -8,28 +8,40 @@ import {
   Platform,
   Alert,
 } from "react-native";
-import Animated, { FadeIn, FadeInUp } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeInUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { Text } from "react-native-paper";
 import { Link, useRouter, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as Haptics from "expo-haptics";
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { Ionicons } from "@expo/vector-icons";
 
+import { haptics } from "@/lib/haptics";
 import { homeScreenStyles } from "@/theme/screen-styles";
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useTranslation } from "@/hooks/useTranslation";
+import { tracking } from "@/lib/i18n";
 import { useReadingProgress } from "@/hooks/useReadingProgress";
 import SurpriseVerseModal from "@/components/modals/SurpriseVerseModal";
+import { SelectableChip } from "@/components/ui/SelectableChip";
 import { PathPickerModal } from "@/components/practice/PathPickerModal";
 import { PracticeCalendarModal } from "@/components/practice/PracticeCalendarModal";
+import { StreakRail } from "@/components/home/StreakRail";
 import { WidgetNudgeModal } from "@/components/practice/WidgetNudgeModal";
 import { ROUTES } from "@/constants/routes";
+import { Duration, Ease } from "@/theme/motion";
 import { CHAPTER_SUMMARIES, getChapterName, type ChapterSummary } from "@/constants/chapter-summaries";
 import {
   getDailyVerseNotificationContent,
   getVerseForDate,
 } from "@/lib/daily-verse";
 import { getAppTitle } from "@/constants/languages";
+import { addDaysToDateKey, getLocalDateKey } from "@/lib/date-keys";
 import { useContentLanguage } from "@/context/language-context";
 import {
   getActivePath,
@@ -49,13 +61,47 @@ import type { ReadingPath } from "@/data/reading-paths";
 
 const LOTUS_ICON = require("../../assets/images/lotus-simple.png");
 
-function getStreakLabel(days: number): string {
-  return days <= 0 ? "0" : `${days}`;
+/** Chapter progress rail — scaleX so no layout pass runs per frame. */
+function ChapterProgressBar({
+  progress,
+  trackColor,
+  fillColor,
+  labelColor,
+}: {
+  progress: number;
+  trackColor: string;
+  fillColor: string;
+  labelColor: string;
+}) {
+  const fill = useSharedValue(0);
+
+  useEffect(() => {
+    fill.value = withTiming(Math.max(0, Math.min(100, progress)) / 100, {
+      duration: Duration.slow,
+      easing: Ease.standard,
+    });
+  }, [progress, fill]);
+
+  const fillStyle = useAnimatedStyle(() => ({
+    transform: [{ scaleX: fill.value }],
+  }));
+
+  return (
+    <View style={styles.chapterTileProgressRow}>
+      <View style={[styles.chapterTileTrack, { backgroundColor: trackColor }]}>
+        <Animated.View
+          style={[styles.chapterTileFill, { backgroundColor: fillColor }, fillStyle]}
+        />
+      </View>
+      <Text style={[styles.chapterTilePct, { color: labelColor }]}>{progress}%</Text>
+    </View>
+  );
 }
 
 export default function HomeScreen() {
   const { colors } = useAppTheme();
   const { language } = useContentLanguage();
+  const { t } = useTranslation();
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const [showSurpriseVerseModal, setShowSurpriseVerseModal] = useState(false);
@@ -85,7 +131,7 @@ export default function HomeScreen() {
   const onRefresh = useCallback(() => {
     if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     setRefreshing(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    haptics.medium();
     refreshPracticeState().catch(() => {});
     refreshTimerRef.current = setTimeout(() => {
       setRefreshing(false);
@@ -100,7 +146,6 @@ export default function HomeScreen() {
 
   const openSurpriseVerseModal = useCallback(() => {
     if (shuffleModalTimerRef.current) clearTimeout(shuffleModalTimerRef.current);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     shuffleModalTimerRef.current = setTimeout(() => {
       setShowSurpriseVerseModal(true);
       shuffleModalTimerRef.current = null;
@@ -121,9 +166,13 @@ export default function HomeScreen() {
     streak,
     lastReadVerseId,
     activity,
+    freezes,
     isDailyGoalComplete,
     isStreakAtRisk,
   } = useReadingProgress();
+
+  // The rail stops its at-risk breath while another screen is on top.
+  const [screenFocused, setScreenFocused] = useState(true);
 
   const todaysVerse = useMemo(() => getVerseForDate(new Date(), language), [language]);
   const todayPreview = todaysVerse
@@ -131,6 +180,14 @@ export default function HomeScreen() {
     : "";
   const goalDone = isDailyGoalComplete();
   const streakAtRisk = isStreakAtRisk();
+  // A freeze spent in the last day cools the flame and shows the halo.
+  const protectedRecently = useMemo(() => {
+    const today = getLocalDateKey();
+    return Boolean(
+      freezes.protectedDates[today] ||
+        freezes.protectedDates[addDaysToDateKey(today, -1)]
+    );
+  }, [freezes.protectedDates]);
   const totalProgress = getTotalProgress();
 
   const pathMeta = useMemo(() => {
@@ -149,7 +206,9 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      setScreenFocused(true);
       refreshPracticeState();
+      return () => setScreenFocused(false);
     }, [refreshPracticeState])
   );
 
@@ -169,11 +228,11 @@ export default function HomeScreen() {
         activePath.completedDayIds.length > 0;
       if (hasProgress) {
         Alert.alert(
-          "Switch reading path?",
-          "Your progress on the current path will be lost.",
+          t("home.switchPathTitle"),
+          t("home.switchPathBody"),
           [
-            { text: "Cancel", style: "cancel" },
-            { text: "Switch", style: "destructive", onPress: () => { startPath(); } },
+            { text: t("common.cancel"), style: "cancel" },
+            { text: t("home.switchPathConfirm"), style: "destructive", onPress: () => { startPath(); } },
           ]
         );
         return;
@@ -186,22 +245,22 @@ export default function HomeScreen() {
       }
       await startPath();
     },
-    [router, activePath]
+    [router, activePath, t]
   );
 
   const handleShareStreak = useCallback(async () => {
     if (sharingStreak) return;
     setSharingStreak(true);
     try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      haptics.light();
       const uri = await captureShareCardRef(streakShareRef);
-      await shareImage(uri);
+      await shareImage(uri, language);
     } catch (e) {
       console.error("Streak share failed", e);
     } finally {
       setSharingStreak(false);
     }
-  }, [sharingStreak]);
+  }, [sharingStreak, language]);
 
   const dismissNudge = useCallback(async () => {
     await dismissWidgetNudge();
@@ -232,13 +291,12 @@ export default function HomeScreen() {
       return (
         <Link href={ROUTES.chapter(chapter.id)} asChild>
           <Pressable
-            onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+            onPressIn={() => haptics.light()}
             accessibilityRole="button"
-            accessibilityLabel={`Chapter ${chapter.id}, ${chapterName}`}
+            accessibilityLabel={t("home.chapterA11y", { chapter: chapter.id, name: chapterName })}
             style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
           >
-            <Animated.View
-              entering={FadeInUp.delay(Math.min(index, 12) * 35).springify()}
+            <View
               style={[
                 styles.chapterTile,
                 {
@@ -274,42 +332,27 @@ export default function HomeScreen() {
                   {/* An empty 0% bar on every chapter is day-one noise — show the
                       verse count until the reader starts the chapter. */}
                   {progress > 0 ? (
-                    <View style={styles.chapterTileProgressRow}>
-                      <View
-                        style={[
-                          styles.chapterTileTrack,
-                          { backgroundColor: colors.outline + "28" },
-                        ]}
-                      >
-                        <View
-                          style={[
-                            styles.chapterTileFill,
-                            {
-                              width: `${Math.max(0, Math.min(100, progress))}%`,
-                              backgroundColor: colors.primary,
-                            },
-                          ]}
-                        />
-                      </View>
-                      <Text style={[styles.chapterTilePct, { color: colors.textMuted }]}>
-                        {progress}%
-                      </Text>
-                    </View>
+                    <ChapterProgressBar
+                      progress={progress}
+                      trackColor={colors.outline + "28"}
+                      fillColor={colors.primary}
+                      labelColor={colors.textMuted}
+                    />
                   ) : (
                     <Text style={[styles.chapterTilePct, { color: colors.textMuted, textAlign: "left" }]}>
-                      {chapter.verses} verses
+                      {t("common.versesN", { count: chapter.verses })}
                     </Text>
                   )}
                 </View>
 
-                <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+                <Ionicons name="chevron-forward" size={18} color={colors.brandText} />
               </View>
-            </Animated.View>
+            </View>
           </Pressable>
         </Link>
       );
     },
-    [colors, getChapterProgress, language]
+    [colors, getChapterProgress, language, t]
   );
 
   const ListHeader = useCallback(
@@ -317,7 +360,7 @@ export default function HomeScreen() {
       <View style={styles.header}>
         {streakAtRisk && (
           <Text style={[styles.atRisk, { color: colors.textMuted }]}>
-            Streak ends at midnight — one verse keeps it alive
+            {t("home.atRisk")}
           </Text>
         )}
 
@@ -327,9 +370,19 @@ export default function HomeScreen() {
             entering={FadeInUp.delay(80).duration(500)}
             style={[styles.hero, { backgroundColor: colors.surface }]}
           >
-            <Text style={[styles.heroEyebrow, { color: colors.primary }]}>Today</Text>
+            <Text
+              style={[
+                styles.heroEyebrow,
+                { color: colors.brandText, letterSpacing: tracking(language, 1.2) },
+              ]}
+            >
+              {t("home.today")}
+            </Text>
             <Text style={[styles.heroRef, { color: colors.text }]}>
-              Chapter {todaysVerse.chapter} · Verse {todaysVerse.verse_number}
+              {t("common.chapterVerseN", {
+                chapter: todaysVerse.chapter,
+                verse: todaysVerse.verse_number,
+              })}
             </Text>
             <Text style={[styles.heroPreview, { color: colors.textMuted }]} numberOfLines={3}>
               {todayPreview}
@@ -342,19 +395,20 @@ export default function HomeScreen() {
                 color={goalDone ? colors.success : colors.textMuted}
               />
               <Text style={[styles.heroStatusText, { color: colors.textMuted }]}>
-                {goalDone ? "Read today" : "Not read yet today"}
+                {goalDone ? t("home.readToday") : t("home.notReadToday")}
               </Text>
             </View>
 
             <Pressable
+              onPressIn={haptics.light}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                haptics.medium();
                 router.push(ROUTES.verse(todaysVerse.id));
               }}
-              style={[styles.heroCta, { backgroundColor: colors.primary }]}
+              style={[styles.heroCta, { backgroundColor: colors.brandText }]}
             >
               <Text style={[styles.heroCtaText, { color: colors.onPrimary }]}>
-                Read Today’s Verse
+                {t("home.readTodaysVerse")}
               </Text>
             </Pressable>
           </Animated.View>
@@ -376,24 +430,27 @@ export default function HomeScreen() {
                 onPress={() => router.push(ROUTES.verse(lastReadVerseId))}
                 style={styles.actionHalf}
                 accessibilityRole="button"
-                accessibilityLabel="Continue reading"
+                accessibilityLabel={t("home.continueReading")}
               >
-                <Ionicons name="book-outline" size={18} color={colors.primary} />
+                <Ionicons name="book-outline" size={18} color={colors.brandText} />
                 <Text style={[styles.actionLinkText, { color: colors.text }]}>
-                  Continue reading
+                  {t("home.continueReading")}
                 </Text>
               </Pressable>
               <View style={[styles.actionDivider, { backgroundColor: colors.outline + "55" }]} />
             </>
           ) : null}
           <Pressable
+            onPressIn={haptics.light}
             onPress={openSurpriseVerseModal}
             style={styles.actionHalf}
             accessibilityRole="button"
-            accessibilityLabel="Surprise verse"
+            accessibilityLabel={t("home.surpriseA11y")}
           >
-            <Ionicons name="gift-outline" size={18} color={colors.primary} />
-            <Text style={[styles.actionLinkText, { color: colors.text }]}>Surprise</Text>
+            <Ionicons name="gift-outline" size={18} color={colors.brandText} />
+            <Text style={[styles.actionLinkText, { color: colors.text }]}>
+              {t("home.surprise")}
+            </Text>
           </Pressable>
         </View>
 
@@ -404,9 +461,13 @@ export default function HomeScreen() {
             style={styles.pathRow}
           >
             <Text style={[styles.pathText, { color: colors.textMuted }]} numberOfLines={1}>
-              Path · Day {Math.min(pathMeta.done + (pathMeta.next ? 1 : 0), pathMeta.total)} of{" "}
-              {pathMeta.total}
-              {pathMeta.nextTitle ? ` · ${pathMeta.nextTitle}` : " · Complete"}
+              {t("home.pathProgress", {
+                day: Math.min(pathMeta.done + (pathMeta.next ? 1 : 0), pathMeta.total),
+                total: pathMeta.total,
+              })}
+              {pathMeta.nextTitle
+                ? ` · ${pathMeta.nextTitle}`
+                : ` · ${t("home.pathComplete")}`}
             </Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </Pressable>
@@ -414,17 +475,17 @@ export default function HomeScreen() {
 
         {/* Chapters section */}
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Chapters</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("home.chapters")}</Text>
           <Pressable
             onPress={() => setPathPickerOpen(true)}
             hitSlop={8}
             style={styles.pathsLinkRow}
           >
-            <Text style={[styles.sectionMeta, { color: colors.primary }]}>
+            <Text style={[styles.sectionMeta, { color: colors.brandText }]}>
               {totalProgress}%
             </Text>
-            <Text style={[styles.pathsLink, { color: colors.primary }]}>
-              Guided paths ›
+            <Text style={[styles.pathsLink, { color: colors.brandText }]}>
+              {t("home.guidedPaths")} ›
             </Text>
           </Pressable>
         </View>
@@ -432,39 +493,31 @@ export default function HomeScreen() {
         {hasAnyProgress && (
         <View style={styles.filterRow}>
           {[
-            { id: "all", label: "All" },
-            { id: "continue", label: "Continue" },
-            { id: "completed", label: "Completed" },
-          ].map((f) => {
-            const selected = activeFilter === f.id;
-            return (
-              <Pressable
-                key={f.id}
-                onPress={() => setActiveFilter(f.id as typeof activeFilter)}
-                style={[
-                  styles.filterChip,
-                  selected
-                    ? {
-                        backgroundColor: colors.primary,
-                        borderColor: colors.primary,
-                      }
-                    : {
-                        backgroundColor: "transparent",
-                        borderColor: colors.primary + "66",
-                      },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.filterChipText,
-                    { color: selected ? colors.onPrimary : colors.primary },
-                  ]}
-                >
-                  {f.label}
-                </Text>
-              </Pressable>
-            );
-          })}
+            { id: "all", label: t("home.filterAll") },
+            { id: "continue", label: t("home.filterContinue") },
+            { id: "completed", label: t("home.filterCompleted") },
+          ].map((f) => (
+            <SelectableChip
+              key={f.id}
+              label={f.label}
+              selected={activeFilter === f.id}
+              onPressIn={haptics.light}
+              onPress={() => {
+                haptics.selection();
+                setActiveFilter(f.id as typeof activeFilter);
+              }}
+              containerStyle={styles.filterChip}
+              labelStyle={styles.filterChipText}
+              palette={{
+                idleBackground: colors.background,
+                activeBackground: colors.brandText,
+                idleBorder: colors.primary + "66",
+                activeBorder: colors.primary,
+                idleText: colors.brandText,
+                activeText: colors.onPrimary,
+              }}
+            />
+          ))}
         </View>
         )}
 
@@ -472,7 +525,7 @@ export default function HomeScreen() {
           <View style={styles.widgetTip}>
             <Pressable style={{ flex: 1 }} onPress={() => setWidgetHelpOpen(true)}>
               <Text style={[styles.widgetTipText, { color: colors.textMuted }]}>
-                Tip: add Daily Verse to your home screen
+                {t("home.widgetTip")}
               </Text>
             </Pressable>
             <Pressable onPress={dismissNudge} hitSlop={10}>
@@ -487,6 +540,7 @@ export default function HomeScreen() {
       streakAtRisk,
       todaysVerse,
       todayPreview,
+      language,
       goalDone,
       lastReadVerseId,
       pathMeta,
@@ -497,6 +551,7 @@ export default function HomeScreen() {
       router,
       openSurpriseVerseModal,
       dismissNudge,
+      t,
     ]
   );
 
@@ -513,38 +568,32 @@ export default function HomeScreen() {
         style={[styles.fixedBrandBar, { backgroundColor: colors.background }]}
       >
         <Text
-          style={[styles.brand, { color: colors.primary }]}
+          style={[
+            styles.brand,
+            {
+              color: colors.brandText,
+              // Tracking is a Latin-only tool; it breaks Indic conjuncts.
+              letterSpacing: language === "en" ? 0.5 : 0,
+            },
+          ]}
           numberOfLines={1}
           adjustsFontSizeToFit
         >
           {getAppTitle(language)}
         </Text>
-        <Pressable
-          onPress={() => {
-            Haptics.selectionAsync();
-            setCalendarOpen(true);
-          }}
+        <StreakRail
+          activity={activity}
+          streakDays={streak.currentStreak}
+          longestStreak={streak.longestStreak}
+          atRisk={streakAtRisk}
+          freezeBalance={freezes.balance}
+          protectedRecently={protectedRecently}
+          active={screenFocused}
+          onPress={() => setCalendarOpen(true)}
           onLongPress={handleShareStreak}
-          style={[
-            styles.streakChip,
-            {
-              backgroundColor: colors.primary + "14",
-              borderColor: colors.primary + "28",
-            },
-          ]}
-          accessibilityLabel="Open reading calendar. Long press to share streak."
-        >
-          <Ionicons name="flame" size={14} color={colors.primary} />
-          <Text style={[styles.streakText, { color: colors.primary }]}>
-            {getStreakLabel(streak.currentStreak)}
-            {streak.longestStreak > 0 ? ` · Best ${streak.longestStreak}` : ""}
-          </Text>
-        </Pressable>
+        />
       </Animated.View>
       <FlatList
-        // Rows are `entering`-animated views that keep their first-render
-        // colours; remount the list when the palette changes (BUG-011).
-        key={`chapters-${colors.background}`}
         data={filteredChapters}
         renderItem={renderChapterTile}
         keyExtractor={(item) => String(item.id)}
@@ -556,8 +605,8 @@ export default function HomeScreen() {
             <Ionicons name="book-outline" size={28} color={colors.textMuted} />
             <Text style={[styles.emptyFilterText, { color: colors.textMuted }]}>
               {activeFilter === "continue"
-                ? "No chapters in progress yet — open any chapter to begin"
-                : "No completed chapters yet — your journey starts with one verse"}
+                ? t("home.emptyInProgress")
+                : t("home.emptyCompleted")}
             </Text>
           </View>
         }
@@ -584,20 +633,22 @@ export default function HomeScreen() {
       />
       <PracticeCalendarModal
         visible={calendarOpen}
+        streakDays={streak.currentStreak}
+        longestStreak={streak.longestStreak}
         activity={activity}
+        protectedDates={freezes.protectedDates}
         onClose={() => setCalendarOpen(false)}
       />
       <WidgetNudgeModal
         visible={widgetHelpOpen}
         onClose={() => setWidgetHelpOpen(false)}
       />
-      <View ref={streakShareRef} collapsable={false}>
-        <StreakShareCardView
-          streakDays={streak.currentStreak}
-          longestStreak={streak.longestStreak}
-          insight={todayPreview}
-        />
-      </View>
+      <StreakShareCardView
+        ref={streakShareRef}
+        streakDays={streak.currentStreak}
+        longestStreak={streak.longestStreak}
+        insight={todayPreview}
+      />
     </SafeAreaView>
   );
 }
@@ -608,33 +659,15 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   fixedBrandBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
     width: "100%",
     paddingHorizontal: 16,
     paddingTop: 24,
-    paddingBottom: 10,
+    paddingBottom: 8,
   },
   brand: {
-    flexShrink: 1,
-    marginRight: 8,
     fontFamily: "PlayfairDisplay_700Bold",
     fontSize: 32,
-    letterSpacing: 0.5,
-  },
-  streakChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  streakText: {
-    fontSize: 12,
-    fontWeight: "700",
+    marginBottom: 2,
   },
   atRisk: {
     fontSize: 12,
@@ -838,8 +871,10 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   chapterTileFill: {
+    width: "100%",
     height: "100%",
     borderRadius: 999,
+    transformOrigin: "left",
   },
   chapterTilePct: {
     fontSize: 11,

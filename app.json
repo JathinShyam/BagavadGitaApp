@@ -16,6 +16,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.bhagavadgita.ios",
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.com.bhagavadgita.ios"
+        ]
+      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }

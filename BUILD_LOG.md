@@ -619,3 +619,868 @@ Connect by the 1.0.1 upload; Android matched to 3). Android APK
 uploaded to App Store Connect ("Uploaded package is processing").
 **Note**     TestFlight still lists 1.0.1 (2); it can be expired in App Store
 Connect — it can't be submitted as 1.0 anyway.
+
+## [27] 2026-11-16 — Full audit: product, competitors, motion, typography
+**Move**       Nothing shipped. A code-and-assets audit of the whole app
+against what the store listing, the onboarding and the README *claim* it
+does, plus live App Store competitor data (24 apps, ratings + review counts
+via the iTunes Search API).
+**Findings**   25 bugs in the retention engine; 12 more in motion, type and
+colour; 8 ship-blockers.
+- **The daily verse can never come from Chapters 11–18.** `getDayOfYear`
+  (max 366) indexes a 640-entry catalogue, so the modulo never wraps.
+  257 of 640 verses (40%) are unreachable, including 18.66 and 12.13-14.
+- **Re-reading a verse never advances the streak.** The `alreadyRead`
+  early-return in `reading-progress-context.tsx` fires before the activity
+  and streak updates — so Home's "Continue reading" button can never count.
+- **Every modal's exit animation is dead code** — `if (!visible) return
+  null` unmounts before the exit `withTiming` gets a frame.
+- **Reanimated 4 changed `withSpring` defaults** to `mass: 4,
+  stiffness: 900`; 10 of 13 existing calls inherit it and land at damping
+  ratios of 0.067–0.13 (visibly wobbly).
+- **The bundle is 175 MB** (701 MP3s = 143 MB; the icon alone is 11 MB at
+  3660×3660) — over Play's 150 MB limit.
+- **Gold text fails WCAG AA** on the cream theme (3.07:1; `success` at
+  2.63:1).
+- **Letter-spacing breaks Indic conjuncts** in the sloka, the meaning and
+  the app title.
+**Shipped**   Documentation only — no app code changed.
+- `docs/reviews/app-critique.md` — product, competitor and store-readiness
+  critique with the feature-gap matrix, monetization/ASO analysis and a
+  two-week launch plan.
+- `docs/reviews/motion-and-typography-spec.md` — every animation inventoried
+  with exact durations, easings, spring configs, an 8-step type scale and a
+  contrast-verified palette.
+- `docs/reviews/README.md` — index and how it all connects.
+- `docs/bugs/BUG-015` … `BUG-027` — 13 sprint tasks in the repo's own
+  format (impact / repro / evidence / cause / task / acceptance /
+  verification), ready to hand to a sub-agent.
+- `docs/bugs/README.md` — index updated with the 13 new rows.
+- `CLAUDE.md` §"Read these, in order" — reviews added as step 4.
+- `AGENTS.md` — reviews and bugs added to the agent-docs table, with a
+  pointer to read them before touching streak / daily verse / notifications
+  / widget / bundle / motion / typography.
+- `BUILD_LOOP.md` §10 — reviews added as research inputs; a "Ship blockers"
+  table added to the Bug Backlog in fix order; 15 Feature Backlog items
+  added from the audit's gaps.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 4 suites / 11 tests ✅
+**State**      No app code changed; every finding is filed as a task. The
+gate was green before and after. Nothing was verified on device — the
+audit was static, and each bug file carries its own verification steps.
+
+## [28] 2026-11-16 — Daily verse reaches all 18 chapters (BUG-017)
+**Move**       The daily verse is the product's heartbeat — Home, the widget
+and the notification — but it was indexed by day-of-year (1–366) into a
+640-entry catalogue, so 257 verses (40%, every one in Chapters 11–18) could
+never be shown. Replaced the index with a day-since-epoch counter.
+R×I×C÷E = 5×4×3÷1 = 60.
+**Plan**       Counter in `lib/daily-verse.ts`; a regression test that walks a
+real 640-day cycle through the public API, not the raw index.
+**Decisions**  `getVerseForDate` stays the single entry point — Home, the
+widget and the notification all call it, so one change keeps them in sync
+(asserted by a test). Dropped `getDayOfYear` instead of leaving it unused.
+Wrapped the modulo so dates before the 2020 epoch resolve instead of
+returning `undefined`.
+**Ship**       `lib/daily-verse.ts`, `__tests__/daily-verse.test.ts`;
+BUG-017 doc + index.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 5 suites / 16 tests ✅
+**Verify**     Not run on device — pure selection logic. The test was run
+against the old implementation first: 4 of 5 cases fail there, so it is a
+real regression guard.
+**Backlog**    BUG-017 fixed. Task 3 of the bug (curated daily sequence with
+anchor verses) is still open — this only makes the linear walk reach
+everything.
+
+## [29] 2026-11-16 — Re-reads count, stale streaks reset (BUG-018, BUG-019)
+**Move**       The habit loop failed in both directions. A re-read returned
+before the activity and streak updates, so Home's "Continue reading" — which
+by definition opens an already-read verse — could never satisfy the daily
+goal; and the streak was only ever mutated on the write path, so a missed
+day kept showing the old number. Moved the daily credit above the early
+return and reconciled the streak against the calendar at load and on
+foreground. R×I×C÷E = 5×5×4÷2 = 50.
+**Plan**       1. Extract the maths to `lib/streak.ts` — the pure seam the
+CI test gate needs. 2. Credit the day on every read, then return early for
+chapter progress only. 3. Reconcile the stored streak before showing it.
+**Decisions**  A *new* verse increments the day's count; a *re-read* only
+ensures the day counts at all (`creditDayAsRead`). Incrementing on every
+re-read would inflate the heatmap's "verses read today" and let one verse
+manufacture volume — the streak counts days, not taps. Broken streaks keep
+`longestStreak` and `lastReadDate` so the UI can still say "your N-day
+streak ended" later.
+**Ship**       `lib/streak.ts`, `context/reading-progress-context.tsx`,
+`__tests__/streak.test.ts`, `__tests__/reading-progress-reread.test.tsx`;
+BUG-018/019 docs + index.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 7 suites / 32 tests ✅
+**Verify**     Not run on device. The provider is covered by 4 integration
+tests with a mocked AsyncStorage (re-read marks the day, second verse counts,
+stored streak older than yesterday reads as 0, yesterday stays live), which
+is what the device check would have shown.
+**Backlog**    BUG-018 fixed. BUG-019 fixed for the chip (reset on load and
+on resume); the "your streak ended" prompt and the reminder-time at-risk
+window from its acceptance criteria are still open.
+
+## [30] 2026-11-16 — CI runs the gate before every build (BUG-024)
+**Move**       CI built with JDK 11 / Node 18 and verified only that image
+extensions matched their contents — no lint, no types, no tests. A red suite
+could reach a release unnoticed. Added a blocking `quality` job that the build
+job now depends on. R×I×C÷E = 4×4×3÷1 = 48.
+**Plan**       Gate job first, build second; one-shot test script; document the
+changed gate in BUILD_LOOP §6.
+**Decisions**  1. `npm test` is now `jest` (single run) and watch moved to
+`test:watch`. 2. `expo lint` only covered `/src`, `/app` and `/components` —
+the gate was blind to `lib/` and `context/`, exactly where Phase A's fixes
+live. The script is now `expo lint . --max-warnings=0`, with `.expo/` and
+`.history/` ignored (both git-ignored, both full of generated/history files)
+and the one real warning — a deliberate lazy `require("expo-notifications")`
+that keeps Expo Go from crashing — silenced with a reason. 3. `expo-doctor`
+is advisory (`continue-on-error`): it already reports pre-existing debt (9
+patch-level packages behind, a missing `expo-asset` peer, a prebuild/app.json
+warning), and a gate that is red on day one gets switched off.
+**Ship**       `.github/workflows/android-release.yml`, `package.json`,
+`eslint.config.js`, `lib/daily-verse-notifications.ts`, `BUILD_LOOP.md` §6;
+BUG-024 doc + index.
+**Gate**       lint ✅ (whole repo, 0 warnings) · tsc ✅ (0) · jest 7 suites /
+32 tests ✅
+**Verify**     Proved the gate bites: a deliberate type error exits tsc `2`, a
+deliberate unused local exits lint `1`, and `npm test` now exits `0` instead
+of hanging. The pipeline itself was not run on GitHub — `build-loop` is local
+by policy, so this only proves the commands the workflow calls.
+**Backlog**    BUG-024 fixed. New debt to schedule: refresh the 9 patch-level
+Expo packages, add the `expo-asset` peer, and decide whether to keep the
+native folders (the app.json/prebuild warning) — that is a dependency +
+native-rebuild pass, not a CI edit.
+
+## [31] 2026-11-16 — Bundle 175 MB → 68 MB (BUG-022, partial)
+**Move**       `data/verses/audio-mapper.ts` statically requires 701 MP3s, so
+Metro embedded 143 MB of audio in every build — past Play's 150 MB base-module
+limit once images and the Hermes bundle are added. Re-encoded the audio to
+mono AAC and shrank the artwork. R×I×C÷E = 4×5×3÷2 = 30.
+**Plan**       One reproducible audio script; icon at 1024²; topic art to WebP;
+drop the unused font; measure the exported payload.
+**Decisions**  1. 20 kbps mono AAC at 24 kHz. The sources were already 64 kbps
+stereo, so the win comes from bitrate, not channels; 20 k is telephone-grade,
+which suits recited verse. `scripts/reencode-audio.sh` is now the opposite of
+what it was — it used to *raise* the bitrate to 128 k.
+2. Chapter JPGs re-compressed at q80 (only −0.7 MB) but not resized or moved to
+WebP — the art is full-bleed and this commit already rewrites 1400 files.
+3. Icon quantised to 192 colours to clear the <512 KB bar. 24-bit PNG at 1024²
+was 1.38 MB; 256 colours was 530 KB; 192 gives 439 KB with no visible banding.
+**Ship**       `scripts/reencode-audio.sh`, `data/verses/audio-mapper.ts`,
+701 MP3 → M4A, `assets/images/{icon,adaptive-icon}.png`,
+20 topic backgrounds → WebP + `constants/topic-icons.ts`, chapter JPGs,
+`assets/fonts/SpaceMono-Regular.ttf` deleted; BUG-022 doc + index.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 9 suites / 37 tests ✅
+**Verify**     All 701 M4A probe as AAC mono with a positive duration; the
+mapper references exactly those 701 files and no orphans remain; zero MP3s.
+`npx expo export --platform android` = **68 MB** (52 MB assets + 16.5 MB Hermes
+bytecode). Not installed on a device — no emulator or adb on this machine.
+**Blocked**    The "< 60 MB AAB" target is **not met** and cannot be met by
+re-encoding. Two thirds of what remains is not audio: the Hermes bundle is
+16.5 MB because `data/` is 14 MB of four-language scripture, and native
+libraries add ~15 MB on top of the 68 MB export. Reaching 60 MB needs audio
+delivered on demand (explicitly out of scope in BUG-022) or Play Asset
+Delivery. Current size is under Play's 150 MB limit, which was the shipping
+blocker; the 60 MB figure was an estimate that did not survive measurement.
+
+## [32] 2026-11-16 — Reminders survive 30 days; restricted permission gone (BUG-020/021/023)
+**Move**       The reminder window was 7 days and rebuilt only when the app
+opened, so a user who skipped a week lost the app's only re-engagement channel
+silently. The widget had the same 7-day payload and fell back to "refresh the
+app" on day 8. And the manifest declared `SCHEDULE_EXACT_ALARM`, a
+Play-restricted permission the app never requests and does not need.
+R×I×C÷E = 4×4×4÷1 = 64.
+**Plan**       Widen the rich notification window and the widget payload to 30
+days; identify every notification so cancels are scoped; move the preference
+keys into `STORAGE_KEYS`; drop the permission.
+**Decisions**  **Deviated from BUG-020 task 1 on purpose.** It asked for a
+repeating `DAILY` trigger as a floor beside the 7-day rich window. A DAILY
+trigger cannot be given a start date, so it would fire at the same minute as
+the rich notification every day — two pings for a week, which is a regression,
+not a fix. Thirty days of verse-specific one-shots meets the bug's own
+acceptance criteria (14+ days offline, verse preview intact), produces exactly
+one notification per day, and stays under iOS's 64-pending limit. The cost is
+that after 30 silent days the reminder stops; a user gone that long is past
+retention. If the operator wants an infinite floor, the honest version is a
+single generic DAILY trigger *instead of* the rich window, not both.
+Also: cancels are scoped to the `daily-verse-` identifier prefix so a future
+streak-at-risk or milestone notification cannot be silently killed; a one-time
+version marker clears the pre-update notifications, whose generated ids the
+scoped cancel cannot recognise.
+**Ship**       `constants/storage-keys.ts`, `lib/daily-verse-notifications.ts`,
+`lib/widget-data.ts`, `android/app/src/main/AndroidManifest.xml`,
+`__tests__/daily-verse-notifications.test.ts`, `__tests__/widget-data.test.ts`;
+BUG-020/021/023 docs + index.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 9 suites / 37 tests ✅
+**Verify**     Unit tests cover: 30 identified notifications scheduled, 30
+unique ids, cancel touches only `daily-verse-*` and spares another feature's
+id, nothing scheduled when disabled, widget payload spans 30 consecutive days
+with a real verse each. Not verified on a device — no adb/emulator available.
+The 14-day and 30-day clocks cannot be observed without one.
+**Backlog**    BUG-020, BUG-021 (window) and BUG-023 fixed. Still open from
+BUG-021: the `BOOT_COMPLETED` re-sync and the honest fallback copy.
+
+## [33] 2026-11-16 — Verse share loop closes (BUG-015)
+**Move**       The store listing promises image-card sharing; the card was
+rendered off-screen and the capture helper was never called. Sharing is the
+only organic growth loop this app has, and an advertised-but-absent feature is
+a review rejection risk.
+R×I×C÷E = 3×4×3÷2 = 18.
+**Plan**       Add the header action on the verse screen, a share action on
+Saved, print the deep link on the card, and make the off-screen card measurable
+so capture returns a real image.
+**Decisions**  1. Reward loop: sharing is the "share your practice" step, not a
+streak mechanic, so it lives beside bookmark/note and on Saved rather than in a
+new tab.
+2. iOS gets `Share.share({ message, url })` so the recipient receives the image
+*and* a tappable `bagavadgita://verses/<id>`. Android's Share API drops the file
+when text is present, so Android shares the image through `expo-sharing` and the
+deep link is printed on the card. Both paths still carry the link.
+3. `ShareCard` gained an optional `link` line rather than using a QR code:
+no new dependency, and the URL survives a screenshot.
+4. **The wrapper was the real bug.** `ShareCardView` was nested inside a
+`ref`'d `View` with no dimensions; an absolutely positioned child does not size
+its parent, so the captured view was 0×0. The wrappers are now the positioned
+element via `forwardRef`, which also stops the 1080×1920 streak card from
+laying out in the Home flow.
+**Ship**       `services/verse-share.tsx`, `components/verse/ShareCard.tsx`,
+`app/verses/[verseId].tsx`, `app/(main)/saved.tsx`, `app/(main)/index.tsx`,
+`__tests__/verse-share.test.ts`; BUG-015 doc + index.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 10 suites / 40 tests ✅
+**Verify**     Tests cover: no card mounted → no share, iOS payload contains
+`bagavadgita://verses/2-47` plus the PNG url, Android goes through
+`Sharing.shareAsync` with `image/png` and not `Share.share`.
+**Blocked**    No adb, emulator or iOS simulator on this machine, so the share
+sheet, the received image and the deep-link tap were not observed. Telugu,
+Hindi and Tamil conjunct rendering uses the platform font and is likewise
+unverified on device.
+
+## [34] 2026-11-16 — Long-press copies the verse (BUG-016)
+**Move**       Onboarding has always told users to long-press to copy, but no
+text was selectable and there was no clipboard code. For a book app that is a
+product defect, and the instruction is a trust defect.
+R×I×C÷E = 3×3×2÷1 = 18.
+**Plan**       Long-press the sloka for a Copy/Share sheet, make the meaning
+and commentary selectable, add `expo-clipboard`, and correct the onboarding
+sentence.
+**Decisions**  1. Long-press opens a small bottom sheet with **Copy verse** and
+**Share verse** instead of copying silently: the same gesture can then serve
+both actions, and the copy includes the reference (`2.47`) rather than only
+whatever the user selected.
+2. **Deliberate deviation:** the sloka is *not* `selectable`. A selectable
+`Text` consumes the long press for native selection on both platforms, so the
+sheet and free selection cannot share the gesture. The phase asked for both;
+the long-press copy with a reference was the behaviour users are told to
+expect, so it wins. Meaning and commentary remain `selectable` for free-form
+selection.
+3. The copy payload lives in `lib/verse-copy.ts` so the reference format is
+testable without mounting the screen.
+4. Onboarding slide 3 now reads "Long-press to copy or share it", which is
+what the gesture actually does.
+**Ship**       `lib/verse-copy.ts`, `app/verses/[verseId].tsx`,
+`app/onboarding.tsx`, `package.json` + lock (`expo-clipboard`),
+`__tests__/verse-copy.test.ts`; BUG-016 doc + index.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 11 suites / 43 tests ✅
+**Verify**     Tests cover: English payload contains the sloka and
+`Bhagavad Gita 2.47`, Telugu payload is byte-identical to the source sloka plus
+reference and still contains Telugu code points, empty verse yields an empty
+payload.
+**Blocked**    `expo-clipboard` is a native module, so an existing dev build
+must be rebuilt; the copy sheet, clipboard paste and toast were not observed on
+a device. `npm install` had to be rerun with `--legacy-peer-deps` (matching CI)
+to refresh the lockfile.
+
+## [35] 2026-11-16 — Decorative gold and text gold split (BUG-025)
+**Move**       `primary` was doing six jobs; as text it was 3.07:1 on cream and
+white on it was 3.25:1, so the app's main CTA failed WCAG AA in the theme every
+store screenshot uses.
+R×I×C÷E = 4×4×3÷2 = 24.
+**Plan**       Split decorative gold from text gold, darken the status colours,
+move every text/icon use to `brandText`, and lock the ratios with a test.
+**Decisions**  1. `brand` is the decorative gold (#B8860B / #E6B74A) and
+`brandText` is the readable gold (#8A6410 light, #E6B74A dark). `primary`
+remains as a deprecated alias of `brand` so the ~150 border/tint/ornament call
+sites did not need a risky rename; only text and meaning-bearing icons moved.
+2. Filled CTAs (Read Today, Start this path, onboarding Next, modal Save, toast
+actions) now use `brandText` as the fill: white on it is 5.37:1. Progress
+fills, ornaments, dividers, rings and confetti stay `brand`.
+3. `success` #2E7D32, `danger` #C62828 and `warning` #B26A00 follow the
+typography/colour spec. Warning is 4.0:1 — it is only used as the toast
+warning glyph, which clears the 3:1 graphic threshold; do not use it for small
+text.
+**Ship**       `theme/design-tokens.ts`, 21 app/component files (text/icon
+colours and CTA fills), `__tests__/contrast.test.ts`; BUG-025 doc + index.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 12 suites / 58 tests ✅
+**Verify**     The new test computes WCAG ratios from the real tokens: five
+light text tokens on both background and surface, the CTA label, the warning
+glyph at 3:1, and the same set in dark. It also asserts decorative `brand`
+stays *below* AA on cream, so a future "just darken primary" change cannot
+quietly merge the two jobs again.
+**Observe**    1. Gold text now reads as ink rather than glitter; the ornaments
+and rules still carry the brand, so the identity survives. 2. The CTA is
+visibly deeper, which pulls the eye to the action instead of blending into the
+cream. 3. The header icons and tab labels were the quietest failures — they
+were never checked because they are not body copy.
+**Blocked**    No emulator or simulator here, so the contrast test is the
+verification. Screenshots in both themes on device are still owed.
+
+## [36] 2026-11-17 — Indic-safe typography and the named type scale (BUG-026)
+**Move**       Positive letter-spacing was applied to the sloka, the meaning,
+the commentary and the localized app title. In Telugu/Hindi/Tamil that inserts
+gaps inside conjuncts (క్ష, क्ष, ஷ்), so the core text of a scripture app was
+rendering broken glyph groups.
+R×I×C÷E = 4×3×5÷2 = 30.
+**Plan**       Remove tracking from every style that can render localized text,
+give the sloka a script-aware font, and replace the ad-hoc sizes with the eight
+named tokens from the typography spec.
+**Decisions**  1. Tracking is now Latin-only. The Home brand bar and the launch
+title keep `letterSpacing: 0.5` when the language is English and drop to 0 for
+te/hi/ta. Captions and eyebrows stay tracked because they render fixed English.
+2. `Type` replaces the unused `Typography` export with exactly eight tokens —
+`display`, `title`, `heading`, `sloka`, `body`, `bodySm`, `label`, `caption`.
+Shared screen styles, the Saved title and the two reward modals now use them.
+3. `getScriptureFont(language)` returns Playfair Italic for English and the
+platform serif (`Georgia` on iOS, `serif` on Android) for Indic. It is applied
+to the verse sloka and the Saved sloka preview; the stylesheet keeps
+`Type.sloka`'s Latin family as the default.
+4. `PlayfairDisplay_400Regular_Italic` is loaded in `app/_layout.tsx`.
+`PlayfairDisplay_500Medium`, which the spec also mentions, stays unloaded
+because no token uses it — shipping an unused weight just adds startup work.
+5. Milestone days/title and the celebration title now use Playfair, so the
+highest-emotion screens speak in the same voice as the rest of the app.
+**Ship**       `theme/design-tokens.ts`, `theme/screen-styles.ts`,
+`lib/scripture-font.ts` (new), `app/_layout.tsx`, `app/verses/[verseId].tsx`,
+`app/(main)/index.tsx`, `app/(main)/saved.tsx`, `components/ui/LaunchIntro.tsx`,
+`components/modals/{Milestone,Celebration}Modal.tsx`,
+`__tests__/type-scale.test.ts` (new), `AGENTS.md`, `.cursor/rules/ui-theme.mdc`;
+BUG-026 doc + index.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 13 suites / 68 tests ✅
+**Verify**     The test asserts the eight tokens, the 24/38 sloka, zero
+`letterSpacing` on `teluguSlokaText`/`meaningStyle`/`commentaryText`, Playfair
+Italic for `en`, and a non-Playfair platform serif for te/hi/ta.
+**Observe**    1. The English sloka finally looks like verse rather than UI
+copy — 24px italic Playfair with 38px leading. 2. Removing tracking changes the
+Indic line lengths slightly, so the sloka now wraps a little sooner but every
+conjunct is intact. 3. The reward modals were the last place still speaking in
+Roboto; the 56px Playfair milestone number is the biggest visible win.
+**Blocked**    No emulator or simulator here, so conjunct shaping was verified
+by style inspection and unit tests, not by zooming into a rendered శ్లోకం.
+Device screenshots in te/hi/ta are still owed. The new italic font also needs a
+native rebuild before it appears in an existing dev client.
+
+## [37] 2026-11-17 — Motion gets a vocabulary, Reduce Motion gets a door (BUG-027 A)
+**Move**       Fifteen files improvised 60+ magic durations, 11 distinct springs
+and 7 easings at the call site. Reanimated 4 also raised spring defaults to
+`mass: 4, stiffness: 900`, so the existing `{ damping, stiffness }` objects had
+been landing at damping ratios of 0.07–0.3 — technically springs, visually a
+snap.
+**Plan**       Add `theme/motion.ts`, pin `mass: 1` on every spring, and give the
+OS Reduce Motion setting something to switch off.
+**Decisions**  1. Tokens are semantic: `Duration.instant|fast|base|slow|ritual|
+turn|ambient`, five `Ease` curves, four `Spring` presets. Every `withSpring`
+now takes a preset — no inline configs remain anywhere.
+2. `ReduceMotion.Always` on entering builders was rejected. Reanimated 4
+defaults to `ReduceMotion.System`, which already honours the OS setting;
+forcing Always would have disabled every entrance for every user.
+3. `useReducedMotion()` covers what Reanimated cannot infer: infinite shimmer
+and breath loops (cancelled in cleanup), confetti, sparkles, the icon spin and
+haptics.
+**Ship**       `theme/motion.ts`, `hooks/useReducedMotion.ts`, six modals/
+skeleton/launch components.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 13 suites / 68 tests ✅
+**Observe**    1. The reward modals now overshoot slightly and settle instead of
+arriving instantly. 2. Under Reduce Motion the launch intro becomes a static
+brand card that leaves in 140 ms instead of holding the screen for 2.2 s.
+**Blocked**    No device here, so the OS toggle was verified by code path, not
+by flipping Settings on hardware.
+
+## [38] 2026-11-17 — Every press answers on touch-down (BUG-027 B/C)
+**Move**       Three modals returned `null` the instant `visible` went false, so
+their exit timings never got a frame. Six animations were still driving layout
+props. 40 of 41 haptics fired on release — ~100 ms after the visual press — and
+produced unhandled promise rejections on web.
+**Plan**       Keep modals mounted through their exit, move motion off the
+layout thread, and centralise haptics.
+**Decisions**  1. Celebration/Milestone/Surprise hold a `rendered` flag, run
+their exit, then unmount on a timer equal to the exit duration.
+2. `width` → `scaleX` (chapter journey fill, launch rule, onboarding dots,
+chapter tile bar); `borderWidth` → interpolated `borderColor`; `SlideInUp` →
+`FadeInDown`; `ZoomIn` corners start at 0.92 instead of nothing.
+3. `lib/haptics.ts` is the only file that imports `expo-haptics`. It attaches
+`.catch()` once and holds one enabled flag; `app/_layout.tsx` sets it from
+`useReducedMotion()`.
+4. Two-stage feedback everywhere: Light on `onPressIn`, the confirming
+Medium/selection on release. The surprise shuffle fires every third tick.
+**Ship**       18 files incl. `lib/haptics.ts` and `__tests__/haptics.test.ts`
+(mapping, swallowed rejection, global off switch); `IOSToggle` track colour now
+tweens while the thumb springs.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 14 suites / 71 tests ✅
+**Observe**    1. Presses feel wired to the finger rather than to the release.
+2. Modal exits are visible for the first time. 3. The shuffle no longer reads
+as a continuous buzz.
+**Blocked**    Haptics cannot be felt without hardware.
+
+## [39] 2026-11-17 — The static ornaments move (BUG-027 D)
+**Move**       The app's signature ornament — an eight-spoke chariot wheel — was
+eight fixed rotations. The path rail, chapter progress bar, chip groups and
+the Settings stagger all swapped state instantly. `SettingItem` had taken a
+`delay` prop from eight call sites and never read it.
+**Plan**       Give each static surface one honest transition, with no new
+infinite loops and no layout props.
+**Decisions**  1. `components/ui/SelectableChip` serves all four chip groups:
+colour cross-fade over `Duration.base` plus a 0.97 pop on selection.
+2. One shared angle drives every wheel in the calendar 360° over 900 ms
+(`Duration.turn`, `Ease.decelerate`), reset on close, skipped under Reduce
+Motion.
+3. Timeline connectors scale down from the top with a 40 ms per-day delay; the
+"Now" dot breathes once per loop, cancelled on unmount.
+4. `ReadingHeatmap` could not be embedded in the calendar (it owned the modal),
+so its strip became `WeekHeatmap`, and the orphan wrapper is gone.
+**Ship**       `components/ui/SelectableChip.tsx`,
+`components/practice/WeekHeatmap.tsx` (new), calendar, paths, Home, Explore,
+onboarding, Settings; `theme/motion.ts` gains `Duration.turn`.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 14 suites / 71 tests ✅
+**Observe**    1. The wheel turn is the most on-brand motion in the app — a
+turned wheel is a day turning. 2. Chips finally read as controls, not labels.
+3. Settings now arrives in a staggered column instead of all at once.
+**Blocked**    No device; the 900 ms turn and chip pops are unverified on a
+slow Android GPU.
+
+## [40] 2026-11-17 — Rows stop animating when nobody is looking (BUG-027 E)
+**Move**       The verse screen's 480 ms skeleton was fake — every verse is
+already in memory — and its `SkeletonVerseDetail` added two infinite loops to
+the eleven shimmer loops. Saved flashed twelve shimmer loops for an
+AsyncStorage read. FlatList rows replayed index-derived entrances on every
+remount, and Home remounted all eighteen tiles on a theme toggle because the
+list was keyed on the background colour.
+**Plan**       Delete fake waits, gate real ones, and remove per-row entrance.
+**Decisions**  1. Delete the verse timer, its loading branch and
+`SkeletonVerseDetail`.
+2. `useMinimumLoading(loading, { delay: 150, minimum: 400 })` keeps skeletons
+off fast reads and up long enough to read; Saved only skeletons its first load.
+3. Remove `entering` from Home tiles and onboarding slides; remove the list's
+`key`, since the colour bug it worked around was the entrance animation itself.
+**Ship**       `hooks/useMinimumLoading.ts` (new), verse screen, Saved,
+`components/ui/SkeletonLoader.tsx`, Home, onboarding.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 14 suites / 71 tests ✅
+**Observe**    1. Opening a verse is instant. 2. Scrolling Home no longer
+replays a wave of fading tiles. 3. Toggling the theme recolours in place.
+**Blocked**    Frame timing on a low-end Android device is unmeasured; the
+remaining hardcoded durations are the Surprise shuffle frames and confetti
+ranges, recorded in BUG-027.
+
+## [41] 2026-11-18 — The chrome learns the reader's language (Feature 1)
+**Move**       Content has been translated since BUG-002; the shell around it
+never was. A Telugu reader picked తెలుగు, got a Telugu *śloka* and a Telugu
+meaning, then read "Select the day you want to revisit", "Alert", "Skip" and
+a tab bar saying Home / Explore / Saved / Settings. Every second surface —
+the share card footer, the notification title, the widget eyebrow — was
+hardcoded English.
+**Plan**       One flat English dictionary as the type source of truth, three
+typed sibling tables, and a hook bound to the existing content-language
+context so no screen holds its own language state.
+**Decisions**  1. `lib/i18n.ts`: `en` is `as const`, `TranslationKey =
+keyof typeof en`, so a missing or extra key is a compile error, not a
+runtime `undefined`. `te` / `hi` / `ta` are `Record<TranslationKey, string>`.
+2. `translate(language, key, params)` does `{name}` interpolation and falls
+back to English for a blank string; `createTranslator(language)` for
+non-React callers; `useTranslation()` returns `{ t, language }` from
+`useContentLanguage()`.
+3. Tracking stays Latin-only via `tracking(language, value)` (BUG-026), which
+strips the static `letterSpacing` from every localized style so Indic
+conjuncts survive. Tamil "வசனம்", Telugu "శ్లోకం", Hindi "श्लोक".
+4. Explore topics carry `names: Partial<Record<ContentLanguage, string>>`
+with `getCategoryName()`; `name` stays the English fallback, so the existing
+category-ID test keeps working untouched.
+5. `shareImage(uri, language?)` / `shareVerseCard(..., language?)` take the
+language instead of a pre-built string, so the OS share-sheet title localizes
+from plain function callers; same for notification title/body and the Android
+channel name/description, which read `getStoredContentLanguage()`.
+6. `ErrorBoundary` deliberately stays above `LanguageProvider` — a crash in
+the provider must still render — so `ErrorFallback` reads the saved language
+itself and builds a translator with `useMemo`.
+**Ship**       30 files: `lib/i18n.ts` (256 keys × 4 languages),
+`hooks/useTranslation.ts`, `__tests__/i18n.test.ts`, `data/explore-categories.ts`,
+`constants/languages.ts`, plus every tab/screen/modal/share card/audio player
+and the OS-facing `lib/daily-verse*.ts` / `lib/widget-data.ts`. Brand title in
+`app/+html.tsx` stays "Gita Jyoti · Bhagavad Gita" on purpose.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 15 suites / 81 tests ✅
+**Observe**    1. Tab bar, Home, Explore, Saved and Settings all read in the
+chosen language, including alerts and toasts. 2. The share card and the
+share-sheet title match the card's language. 3. A notification scheduled today
+arrives titled in Telugu/Hindi/Tamil, with the verse preview in that script.
+**Blocked**    No emulator on this machine, so no visual check of long
+Telugu/Hindi/Tamil labels against the four-tab bar or the share cards.
+Translations are first-pass drafts and need a native-speaker review before
+release.
+
+## [42] 2026-11-18 — The streak becomes a row of seven dots (Feature 2, part 1)
+**Move**       The streak lived in a small pill in the corner: a flame, a
+number and the best-ever count, all in 12px. Nothing showed *this week*, and a
+reader had to open the calendar to see whether they were one day or six days
+into a run. There was also no state beyond "a number": an expiring streak and
+a live one looked identical, and a broken streak kept the same warm flame.
+**Plan**       Replace the pill with a persistent rail under the brand bar:
+flame + count on the left, the current week as seven dots on the right, one
+tap to the calendar. Give the flame four honest states.
+**Decisions**  1. `components/home/StreakRail.tsx`: Playfair 600 at 15px for
+the count (no tracking), 6px dots with a 4px gap, today's dot ringed at 40%
+— all from the spec, all from palette tokens rather than literals.
+2. Week maths moved to `lib/streak.ts` as `getStreakWeek()` so it can be
+tested without mounting Ionicons; Sunday-first to match the calendar sheet.
+3. Dot fill: 0.4 → 1 on `Spring.snappy`, a gold ring opening to 2.4× over
+420ms, one light impact. The fill usually lands while Home is behind the verse
+screen, so `useFocusEffect` diffs the week on return and pulses the dot that
+was actually earned — no animation plays off-screen.
+4. Flame states: idle (static), increment (bouncy 1.18 → 1 + ring +
+success haptic), atRisk (900ms ± 6% breath, stopped when Home blurs), broken
+(muted `streakBroken`, 4px drop and 0.6 opacity on the transition only). A
+flame with no streak behind it is grey, not orange.
+5. The count rolls in from below with the old one leaving upward, inside a
+fixed 20px box — zero layout shift; straight swap under Reduce Motion.
+6. Effect order is deliberate: opacity is touched only by the state
+transition, scale only by the breath, and the increment runs last so saving
+the day wins the shared value instead of being cancelled by the breath's
+exit.
+7. The best-ever count moved into the calendar sheet as one line, so the rail
+stays slim and nothing is lost.
+**Ship**       `components/home/StreakRail.tsx`, `lib/streak.ts`,
+`theme/design-tokens.ts` (four `streak*` tokens per palette),
+`components/practice/PracticeCalendarModal.tsx`, `app/(main)/index.tsx`,
+`lib/i18n.ts` + `__tests__/streak-rail.test.ts`.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 16 suites / 85 tests ✅
+**Observe**    1. The week is readable at a glance without opening anything.
+2. An expiring streak breathes warm red and stops breathing the moment you
+leave Home. 3. A finished read animates one dot, not the whole row.
+**Blocked**    No simulator here, so the rail's optical weight against the
+32px brand title is unverified. The at-risk threshold is still the 18:00
+hardcode; feature 3 replaces it with the reader's reminder time.
+
+## [43] 2026-11-18 — The receipt arrives where the reading happens (Feature 2, part 2)
+**Move**       Completing the day had no receipt on the verse screen — the
+thing the reader actually did. The only rewards were full-screen modals for a
+chapter end or a 7/21/108 streak, so days 1–6 of a new habit got nothing at
+all. That is the window where the habit is won or lost.
+**Plan**       One inline gold ribbon on the verse screen when the daily goal
+lands, and a strict order when several rewards are due.
+**Decisions**  1. `components/practice/DayCompleteRibbon.tsx`: 320ms in,
+1400 hold, 240 out, absolutely placed under the header so the verse never
+moves. A modal would interrupt the one thing the reader is doing — a verse is
+not a lesson that has ended.
+2. Content is "Day N complete" (the streak length after this read), a lotus
+and a flame, on the theme's own gold gradient with `#1B1302` ink (5.6:1 on
+the lightest stop in either theme).
+3. Haptics escalate with the ladder's spirit: light for the first days,
+medium from day 3, and the lotus turns once from day 7 — drawn once, never a
+loop. Day 1–6 now get a real reward without a modal.
+4. Reduce Motion keeps the fade and drops the slide and the turn.
+5. Reward order is ribbon → 400ms → chapter celebration → (close) → milestone.
+Previously a chapter-finishing read with a milestone stacked two modals; the
+milestone is now held in state and opened by the celebration's close handler.
+**Ship**       `components/practice/DayCompleteRibbon.tsx`,
+`app/verses/[verseId].tsx`, `lib/i18n.ts` (`ribbon.dayComplete` ×4).
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 16 suites / 85 tests ✅
+**Observe**    1. Finishing a day now has a receipt that does not steal the
+page. 2. The seventh day turns the lotus before the milestone appears.
+3. No two rewards ever cover each other.
+**Blocked**    The ladder's modal thresholds are still 7/21/108 — the spec
+wants 14/21/30/50/100/108, which means new copy and new stored-seen keys.
+Left as written up in the spec rather than half-migrated; the ribbon already
+covers the cold-start days the ladder was meant to fix.
+
+## [44] 2026-11-18 — The lotus mark: a freeze that saves the streak (Feature 3, part 1)
+**Move**       Missing one day erased a twelve-day streak with no recourse.
+That is the single most expensive moment in a habit app — the reader loses
+weeks of work to one late night and has no reason to come back.
+**Plan**       Earn a lotus freeze every seven days of a live streak, cap two,
+and let a freeze cover exactly one missed calendar day.
+**Decisions**  1. `lib/streak-freeze.ts` holds the maths as pure functions:
+`awardFreezeIfEarned` (one per seven-day block, threshold resets when a streak
+ends), `protectMissedDays` (walks the gap one day at a time).
+2. Freezes are only spent when the balance can bridge the *entire* gap. A
+partial spend that still ends the streak would burn a freeze for nothing.
+3. Consumption rewrites `lastReadDate` to yesterday, so every existing streak
+rule keeps working unchanged — the next read is simply "yesterday + 1".
+4. The provider now owns the freeze state next to the streak, applies it on
+load and on foreground, awards after every read (including re-reads), and
+clears it with "Reset progress".
+5. Visuals: a blue lotus badge with a count beside the flame in the rail, a
+cool halo on the flame for the day a freeze was spent (600ms, `streakFrozen`),
+and the protected day drawn in cool blue instead of gold in the calendar.
+6. Settings gets a Practice section: "Lotus freezes · 1 of 2" with one line
+explaining the rule. No new tab, no badge chasing.
+**Ship**       `lib/streak-freeze.ts`, `types/reading-progress.ts`,
+`constants/storage-keys.ts`, `context/reading-progress-context.tsx`,
+`components/home/StreakRail.tsx`, `components/practice/PracticeCalendarModal.tsx`,
+`app/(main)/index.tsx`, `app/(main)/settings.tsx`, `lib/i18n.ts`,
+`__tests__/streak-freeze.test.ts`, `__tests__/reading-progress-reread.test.tsx`.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 17 suites / 97 tests ✅
+**Observe**    1. A streak read yesterday survives a missed day and the flame
+stays warm. 2. The calendar shows the saved day in blue, so the mechanic is
+visible rather than magic. 3. Spending the last freeze is legible: the badge
+disappears.
+**Blocked**    The freeze is silent at the moment it is spent — no toast, no
+modal. On device, confirm the rail's blue halo reads as relief rather than as
+an error state. Premium freezes (feature 7) are not wired.
+
+## [45] 2026-11-18 — The nudge that arrives before midnight (Feature 3, part 2)
+**Move**       Motion cannot reach a closed app. A reader with a live streak
+who simply forgets gets no second chance until the streak is already gone,
+and the in-app at-risk warning still fired at a hardcoded 18:00 regardless of
+the reminder time the reader chose.
+**Plan**       One local notification four hours after the reader's chosen
+reminder, cancelled the moment a verse is read, plus an at-risk moment that
+derives from the same preference.
+**Decisions**  1. `lib/streak-at-risk.ts` owns the rule: four hours after the
+reminder, floored at 18:00 and capped at 23:00. A morning reader keeps the
+familiar 18:00 window; a 16:45 reader gets 20:45; a 21:00 reader never gets
+woken at bedtime.
+2. `isStreakAtRisk()` now reads the same moment from storage instead of
+`getHours() >= 18`, so the breathing flame and the push agree on when the day
+starts to look lost.
+3. The nudge is its own family (`streak-at-risk-<date>`), scheduled inside the
+existing 30-day refresh so every call site stays one call. Old generic ids are
+covered by a prefix match.
+4. It is only scheduled for a streak that was last read *yesterday* and has
+not read today — an unreconciled stored value can never produce a nudge.
+5. Reading cancels it immediately. The copy is localized: "Your {count}-day
+streak ends at midnight / One verse keeps it alive."
+**Ship**       `lib/streak-at-risk.ts`, `lib/daily-verse-notifications.ts`,
+`context/reading-progress-context.tsx`, `lib/i18n.ts`,
+`__tests__/streak-at-risk.test.ts`, `__tests__/daily-verse-notifications.test.ts`.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 18 suites / 105 tests ✅
+**Observe**    1. The flame starts breathing at the same minute the nudge can
+arrive, and stops for good once the verse lands. 2. A reader with a late
+reminder is not nudged at 18:00. 3. Nothing is scheduled for a streak that
+already died.
+**Blocked**    Delivery timing on real Android (Doze, exact-alarm restricted)
+is unverified without a device; BUG-023 removed the exact-alarm permission, so
+this stays a best-effort window.
+
+## [46] 2026-11-18 — Every verse is now reachable by a word (Feature 4)
+**Move**       The catalogue has 640 verses and no way in except scrolling.
+520 of them are never surfaced by a topic, the daily verse or a path, so a
+reader who remembers "the one about the mind being restless" has to hunt.
+Every serious competitor ships search; the brief bans a Search tab, so it
+belongs inside Explore.
+**Plan**       One lazy index over sloka + meaning + commentary in all four
+scripts, plus the curated topic names, behind a search field at the top of
+Explore.
+**Decisions**  1. `lib/verse-search.ts` owns normalisation, indexing, scoring,
+snippets and highlighting; the index builds on the first query and is
+prewarmed 600 ms after Explore mounts, so the first keystroke does not pay
+for it (build ~170 ms, query 2–14 ms in Node).
+2. Normalisation folds Latin diacritics only (`Kṛipayā` → `kripaya`), then
+NFC + punctuation collapse. Indic vowel signs are combining marks and are
+never stripped (BUG-026). Matching is word-prefix, so "anger" finds "anger"
+and "angers" but never "dangerous"; suffixing Telugu/Tamil words still match.
+3. Structural English stop words are dropped for text matching, so "dealing
+with envy" searches "envy". Topic matching keeps the raw tokens, so the same
+query still names the topic. Queries under two characters do nothing.
+4. Topic matches are a separate scoring path: a localized name (`కోపం`)
+surfaces every Anger verse even though the verse never says the word. Only
+the 20 existing curated topics exist — the brief's ~80-tag taxonomy was not
+invented, because topic content needs a cited source.
+5. References resolve directly: `2.47`, `2-47`, `16.1-3` and
+"chapter 2 verse 47" all open the verse.
+6. Results cap at 40. Text hits outrank topic-only hits; snippets are a
+word-window around the match (character slicing would split Indic clusters),
+and the matched terms render gold.
+7. The field sits in the Explore header; browsing stays untouched until the
+query is non-empty, then results replace the topic grid. Each row shows the
+reference, the topic when it contributed, the script when the snippet comes
+from another language, and three lines of context. Empty state explains what
+to try and offers "Browse topics".
+8. `useDeferredValue` keeps typing smooth; the result count and empty state
+wait for the deferred query so there is no "nothing found" flash.
+**Ship**       `lib/verse-search.ts`, `app/(main)/explore/index.tsx`,
+`lib/i18n.ts` (9 `explore.search*` keys ×4), `__tests__/verse-search.test.ts`,
+`BUILD_LOOP.md` (shipped items struck through).
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 19 suites / 121 tests ✅
+**Observe**    1. An English word, a Telugu word and a feeling all land on
+the right verses. 2. Typing a reference opens that verse first.
+3. Snippets show the matching language and are highlighted, so the result is
+explained without opening it.
+**Blocked**    No simulator, so the long localized placeholder, the topic
+chips and the field against the Krishna header art are unverified. Search
+covers the 20 curated topics, not an 80-tag taxonomy; transliterated queries
+only find what the text actually contains.
+
+## [47] 2026-11-18 — The verse leaves the app (Feature 5: iOS widget)
+**Move**       Android has had a home-screen widget since [32]. iOS had a Swift
+storage stub that was never in the app target and wrote to
+`UserDefaults.standard`, where no extension could read it. A daily-practice app
+that disappears from the home screen loses the loop that makes it a habit — and
+iOS is where most of this app's ratings live.
+**Plan**       A WidgetKit extension that reads the same 30-day payload as
+Android through a shared App Group, with small/medium and lock-screen families,
+plus the bridge work that makes the Swift module reachable at all.
+**Decisions**  1. One App Group, `group.com.bhagavadgita.ios`, declared on both
+targets and in `app.json` so prebuild keeps it. `WidgetDataModule.swift` writes
+there, flushes, then calls `WidgetCenter.reloadAllTimelines()`.
+2. `WidgetDataModule.swift` was not in the app target's Sources — it had never
+been compiled. It is now, and `WidgetDataModuleBridge.m` registers it with
+`RCT_EXTERN_MODULE`; a Swift class conforming to `RCTBridgeModule` is not
+discovered without that constructor. Without this the JS bridge would still see
+`NativeModules.WidgetDataModule` as undefined.
+3. The extension target, its embed phase, target dependency and build
+configurations were added to `project.pbxproj` by hand with stable UUIDs (no
+Xcode, Ruby or `xcodeproj` gem on this machine), then parsed back with the
+`xcode` package: both targets resolve, sources/embed/dependency are wired, and
+there are no unresolved UUIDs.
+4. The timeline holds one entry per remaining payload day at local midnight,
+then an honest refresh entry the day after the window ends (`.atEnd`). An empty
+payload retries at next midnight — not `.atEnd`, which would ask WidgetKit to
+reload immediately and loop. That gives the same 30-day promise as BUG-021's
+Android fix.
+5. Views: small = eyebrow, reference, sloka, brand; medium adds the meaning in
+a second column; accessory inline, circular and rectangular on iOS 16+ behind
+availability checks. Cream/gold in light, night/gold in dark. The serif system
+font shapes Indic text through the platform; no tracking/kerning is applied to
+scripture (BUG-026).
+6. The extension cannot read the JS dictionary, so the fallback copy and app
+title travel in the payload (`widget.refreshTitle`, `widget.refreshBody`,
+`APP_TITLES`). A widget that outlives its data still speaks the reader's
+language instead of dropping to English.
+7. Taps deep-link to `bagavadgita://verses/{id}`, or to the app root from the
+refresh state.
+8. **Live Activity deliberately deferred.** An all-day verse card is a widget,
+not a live event; Apple expects a defined start and end. The defensible event
+is the at-risk countdown (starts at the derived at-risk hour, ends at midnight),
+but that needs iOS 16.1+, ActivityKit, an opt-in toggle and a real build to
+verify. Writing that blind would ship an activity nobody can stop. Recorded
+here as the next step for that surface.
+9. Language changes now await `setLanguage` before re-syncing the widget and
+reminders (BUG-028); both helpers re-read storage and previously raced the
+write.
+**Ship**       `ios/DailyVerseWidget/` (Swift widget, Info.plist, entitlements),
+`ios/BagavadGita/WidgetDataModule.swift` (shared suite + WidgetKit reload),
+`ios/BagavadGita/WidgetDataModuleBridge.m`, `ios/BagavadGita.entitlements`,
+`ios/BagavadGita/BagavadGita.entitlements`,
+`ios/BagavadGita.xcodeproj/project.pbxproj`, `lib/widget-data.ts` (payload
+copy), `lib/i18n.ts` (2 `widget.*` keys ×4), `context/language-context.tsx`,
+`app/(main)/settings.tsx`, `__tests__/widget-data.test.ts`, `app.json`,
+`docs/bugs/BUG-028…`, `BUILD_LOOP.md`.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 19 suites / 122 tests ✅
+**Observe**    1. Add the widget from the gallery and open the app: today's
+verse appears, not a placeholder. 2. Tap it: that verse opens. 3. Move the
+device clock forward two days without opening the app: the widget rolls over;
+past day 30 it shows the refresh copy. 4. Switch to Telugu and confirm the
+widget brand/verse follow immediately. 5. Dark mode gives the night background
+and gold accents; all three lock-screen families render.
+**Blocked**    No macOS, Xcode, CocoaPods or `xcodebuild` here, so the extension
+has never been compiled or run — the project file is parse-validated, not
+build-validated. The App Group and `com.bhagavadgita.ios.DailyVerseWidget` must
+be enabled on both App IDs in the Apple Developer portal, and EAS credentials
+must cover the extension, or signing will fail. Widget fonts, long
+Telugu/Tamil labels and the lock-screen families are visually unverified.
+Live Activity is deferred as described above.
+
+## [48] 2026-11-18 — After the good part (Feature 6: rating prompt; infra deferred)
+**Move**       This category ranks on review count and the app has never asked
+for a rating. Three backlog items travel together — rating prompt, crash
+reporting and EAS Update — but only the first can ship from this machine:
+the other two need operator accounts, a DSN and a new binary. Shipping the
+prompt and writing down the rest precisely beats stalling all three.
+**Plan**       A small gate module (`lib/review-prompt.ts`) plus two triggers
+at the close of the chapter celebration and the streak milestone.
+**Decisions**  1. Two positive events and a 90-day cooldown
+(`MIN_POSITIVE_EVENTS`, `PROMPT_COOLDOWN_DAYS`). The counter and the last ask
+persist in `reviewPrompt` (`constants/storage-keys.ts`); one win is a
+coincidence, two is a habit.
+2. Events are chapter completions and streak milestones — the moments the app
+already rewards. No path-completion trigger: paths advance from the same
+reading screen, so a path day can complete under an open celebration, and a
+third trigger would stack the ask on a modal.
+3. When a milestone is queued behind the celebration, the celebration close
+records the win but does not ask (`recordWin(!pendingMilestone)`); the
+milestone close is the ask point. One reward at a time.
+4. `hasAction()` runs before `requestReview()`. TestFlight, web and a
+dismissing host view can all refuse the dialog; a refusal is not recorded, so
+the next eligible moment can still ask.
+5. The module is lazy-`require`d behind try/catch and returns early on web, the
+same pattern as notifications. Expo Go has no `expo-store-review` native
+module; importing eagerly would crash the verse screen.
+6. `expo-store-review@9.0.9` needs a native rebuild (`pod install`); until the
+dev client is rebuilt, `hasAction()` is false and nothing appears.
+7. Storage is best-effort: a failed read/write never throws, and corrupt JSON
+parses to zero wins instead of suppressing the prompt forever.
+8. **Crash reporting deferred — an account decision, not code.** Unblock with:
+a Sentry org/project + DSN, `npx expo install @sentry/react-native` (and the
+Expo config plugin), `EXPO_PUBLIC_SENTRY_DSN`, `SENTRY_AUTH_TOKEN` for source
+maps, then a native rebuild. Scrub PII (`sendDefaultPii: false`, no verse or
+note text in breadcrumbs) and update the App Privacy answer from "Data Not
+Collected" to Diagnostics → Crash Data. Recommended over Firebase because a
+scrubbed Sentry can stay close to the current "no data" posture.
+9. **Privacy-safe analytics deferred — same gate.** A D1/D7/D30 funnel needs a
+vendor (PostHog or Amplitude) and a matching privacy-policy / Play Data Safety
+update. Local-only counters cannot answer the funnel question, and uploading
+them still changes both declarations.
+10. **EAS Update deferred.** `expo-updates` cannot be added to an
+already-shipped binary. When an account/build pass is possible:
+`npx expo install expo-updates`, `eas update:configure`, set
+`updates.url` + `runtimeVersion` + a `channel` per build profile in
+`eas.json`, flip `expo.modules.updates.ENABLED` (the Android manifest currently
+hard-codes `false`), build and ship a new binary, then `eas update` works
+against it. Installing it now would add an unused native module to every
+future build and still change nothing until that binary ships.
+**Ship**       `lib/review-prompt.ts`, `constants/storage-keys.ts`
+(`REVIEW_PROMPT`), `app/verses/[verseId].tsx` (two close handlers),
+`__tests__/review-prompt.test.ts`, `package.json` + `package-lock.json`
+(`expo-store-review`), `BUILD_LOOP.md`.
+**Gate**       lint ✅ (0) · tsc ✅ (0) · jest 20 suites / 131 tests ✅
+**Observe**    1. Finish a chapter and close the celebration (then the milestone
+if one appears): on the second positive event a store-installed production
+build shows the native review dialog once. 2. Finish another chapter or
+milestone within 90 days: no dialog. 3. Repeat on TestFlight/Expo Go: no
+dialog and no crash — `hasAction()` is false there by design.
+**Blocked**    Device verification owed: the prompt needs a rebuilt dev client
+or store build, and there is no emulator or iOS toolchain on this machine.
+Crash reporting, analytics and EAS Update stay deferred with the concrete
+steps above; each needs an account, credentials or a binary this loop cannot
+produce.
+
+## [49] 2026-11-18 — The shelf, restocked (Feature 7: ASO refresh; premium deferred)
+**Move**       The store copy predates the last four features: it sells a
+library with no way to search it, never mentions the widget or the streak
+protections, and spends keyword characters repeating the subtitle. Installs
+and ratings are won on those first lines. Premium is the one growth item that
+cannot be built here — it needs products, credentials and receipt validation.
+**Plan**       Rewrite both stores' copy against what the binary actually does,
+measure every character, and write the premium prerequisites down instead of
+half-building a paywall.
+**Decisions**  1. The iOS keyword field now spends all 100 characters on
+non-duplicated intent. `daily`, `verse`, `telugu` and `hindi` are gone because
+Apple already indexes the subtitle; `search`, `offline` and `sanskrit` are in.
+Misspellings `geeta` and `bhagwad` stay — they are how people type it.
+2. Counts: keywords 100/100, Play short 78/80, promotional 143/170, full
+description 1667/4000. The description only claims shipped behaviour; the iOS
+widget line carries an explicit ship gate because the extension is still
+unverified.
+3. "All 700 verses" checked rather than assumed: 640 reading entries cover 701
+canonical verses through combined ranges (`16-1-3`), so the traditional count
+is honest. Noted in the file so the next editor does not "fix" it to 640.
+4. The new sections are search, lotus freezes / at-risk nudge, the home-screen
+widget and the four-language interface — the four things a competitor cannot
+copy from the screenshots alone.
+5. The screenshot set now leads with search and the widget; Saved drops out to
+keep the carousel at eight.
+6. **Premium stays deferred.** It needs non-consumable products in both
+consoles, a purchase SDK (`expo-in-app-purchases` is deprecated and
+unmaintained; use `react-native-iap` or RevenueCat), entitlement + Restore
+Purchases + server or RevenueCat receipt validation, and Privacy/Terms/
+declaration updates. The full checklist lives in `docs/store/listing.md`
+§ Monetization. The public Price row stays "Free, no IAP, no ads" until all
+of it exists.
+7. The rating prompt (BUILD_LOG [48]) does not change the privacy answers: the
+dialog belongs to the OS, and only a local counter is stored.
+**Ship**       `docs/store/listing.md`, `BUILD_LOOP.md`.
+**Gate**       docs-only; lint ✅ (0) · tsc ✅ (0) · jest 20 suites / 131 ✅
+**Observe**    1. Paste each field into its console and confirm the built-in
+counter matches the numbers above. 2. Search the stores for "Gita search",
+"offline Gita" and "Gita Telugu" after the next release and watch which
+keyword starts ranking. 3. Confirm the iOS widget line is removed or the
+extension is verified before submission.
+**Blocked**    Premium: store products, tax/pricing setup and purchase
+credentials are operator work. iOS widget copy depends on BUILD_LOG [47]'s
+native build and App Group approval.

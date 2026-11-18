@@ -66,7 +66,7 @@ const Toast: React.FC<ToastProps> = ({
       case "success":
         return colors.success;
       case "info":
-        return colors.primary;
+        return colors.brandText;
       case "warning":
         return colors.warning;
       case "error":

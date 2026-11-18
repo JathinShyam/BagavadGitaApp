@@ -36,3 +36,13 @@ export interface ActiveReadingPath {
 }
 
 export type MilestonesSeen = Partial<Record<"7" | "21" | "108", boolean>>;
+
+/** Lotus freezes that can cover a missed day (spec §2.6). */
+export interface StreakFreezeState {
+  /** Freezes in hand, capped at two. */
+  balance: number;
+  /** Streak length at the last award; resets when a streak ends. */
+  awardedAt: number;
+  /** YYYY-MM-DD keys a freeze has already covered. */
+  protectedDates: Record<string, true>;
+}

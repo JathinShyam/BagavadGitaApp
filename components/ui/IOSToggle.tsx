@@ -1,11 +1,15 @@
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet } from "react-native";
 import Animated, {
+  interpolateColor,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withTiming,
 } from "react-native-reanimated";
 import { useEffect } from "react";
-import * as Haptics from "expo-haptics";
+
+import { haptics } from "@/lib/haptics";
+import { Duration, Spring } from "@/theme/motion";
 
 type Props = {
   value: boolean;
@@ -33,14 +37,21 @@ export function IOSToggle({
   accessibilityLabel,
 }: Props) {
   const progress = useSharedValue(value ? 1 : 0);
+  // The thumb springs; the track eases separately so it doesn't teleport.
+  const tone = useSharedValue(value ? 1 : 0);
 
   useEffect(() => {
-    progress.value = withSpring(value ? 1 : 0, {
-      damping: 18,
-      stiffness: 220,
-      mass: 0.6,
-    });
-  }, [value, progress]);
+    progress.value = withSpring(value ? 1 : 0, Spring.snappy);
+    tone.value = withTiming(value ? 1 : 0, { duration: Duration.base });
+  }, [value, progress, tone]);
+
+  const trackStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(
+      tone.value,
+      [0, 1],
+      [inactiveColor, activeColor]
+    ),
+  }));
 
   const thumbStyle = useAnimatedStyle(() => ({
     transform: [
@@ -60,21 +71,17 @@ export function IOSToggle({
       aria-disabled={!!disabled}
       disabled={disabled}
       hitSlop={6}
+      onPressIn={haptics.light}
       onPress={() => {
         if (disabled) return;
-        Haptics.selectionAsync();
+        haptics.selection();
         onValueChange(!value);
       }}
       style={[styles.hit, disabled && { opacity: 0.45 }]}
     >
-      <View
-        style={[
-          styles.track,
-          { backgroundColor: value ? activeColor : inactiveColor },
-        ]}
-      >
+      <Animated.View style={[styles.track, trackStyle]}>
         <Animated.View style={[styles.thumb, thumbStyle]} />
-      </View>
+      </Animated.View>
     </Pressable>
   );
 }

@@ -1,5 +1,7 @@
 import { StyleSheet, Dimensions } from "react-native";
 
+import { Type } from "@/theme/design-tokens";
+
 const windowWidth = Dimensions.get("window").width;
 const cardWidth = (windowWidth - 48) / 2;
 
@@ -26,8 +28,7 @@ export const savedScreenStyles = StyleSheet.create({
     alignItems: "flex-start",
   },
   title: {
-    fontFamily: "PlayfairDisplay_700Bold",
-    fontSize: 28,
+    ...Type.title,
     marginBottom: 8,
   },
   centerContainer: {
@@ -49,27 +50,26 @@ export const savedScreenStyles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   verseLocation: {
-    fontSize: 14,
+    ...Type.label,
     marginBottom: 6,
-    fontWeight: "600",
+    // English-only chrome: "Chapter 2 · Verse 47".
     letterSpacing: 0.3,
   },
   sanskritText: {
-    fontSize: 15,
+    ...Type.bodySm,
     marginBottom: 0,
     textAlign: "left",
-    lineHeight: 22,
     fontStyle: "italic",
   },
   translationText: {
-    fontSize: 16,
+    ...Type.body,
   },
   emptyText: {
-    fontSize: 18,
+    ...Type.heading,
     marginBottom: 8,
   },
   emptySubtext: {
-    fontSize: 14,
+    ...Type.bodySm,
     textAlign: "center",
   },
 });
@@ -84,12 +84,11 @@ export const homeScreenStyles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   title: {
-    fontFamily: "PlayfairDisplay_700Bold",
-    fontSize: 30,
+    ...Type.title,
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 14,
+    ...Type.bodySm,
     marginBottom: 6,
   },
   scrollContainer: {
@@ -133,15 +132,13 @@ export const homeScreenStyles = StyleSheet.create({
     gap: 4,
   },
   richCardEyebrow: {
+    ...Type.caption,
     fontFamily: "PlayfairDisplay_700Bold",
-    fontSize: 13,
-    letterSpacing: 0.3,
   },
   richCardTitle: {
     color: "#FFFFFF",
-    fontSize: 15,
+    ...Type.bodySm,
     fontWeight: "600",
-    lineHeight: 21,
     marginBottom: 2,
   },
   richCardStatusRow: {
@@ -154,9 +151,8 @@ export const homeScreenStyles = StyleSheet.create({
   },
   richCardStatus: {
     color: "rgba(255,255,255,0.88)",
-    fontSize: 12,
+    ...Type.caption,
     fontWeight: "600",
-    letterSpacing: 0.2,
   },
   richCardCheck: {
     position: "absolute",
@@ -171,7 +167,7 @@ export const homeScreenStyles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   richCardVerseCount: {
-    fontSize: 12,
+    ...Type.caption,
     fontWeight: "700",
   },
   richCardTrackOnImage: {
@@ -193,8 +189,7 @@ export const homeScreenStyles = StyleSheet.create({
     gap: 8,
   },
   richCardMeta: {
-    fontSize: 13,
-    fontWeight: "600",
+    ...Type.label,
   },
   richCardTrack: {
     height: 3,
@@ -221,14 +216,12 @@ export const homeScreenStyles = StyleSheet.create({
     gap: 3,
   },
   chapterRowEyebrow: {
+    ...Type.caption,
     fontFamily: "PlayfairDisplay_700Bold",
-    fontSize: 13,
-    letterSpacing: 0.2,
   },
   chapterRowTitle: {
-    fontSize: 15,
+    ...Type.bodySm,
     fontWeight: "600",
-    lineHeight: 21,
   },
   chapterRowMeta: {
     marginTop: 4,
@@ -240,7 +233,8 @@ export const homeScreenStyles = StyleSheet.create({
     gap: 4,
   },
   chapterRowStatusText: {
-    fontSize: 12,
+    ...Type.caption,
+    fontWeight: "400",
   },
   chapterRowTrack: {
     height: 3,
@@ -281,7 +275,7 @@ export const homeScreenStyles = StyleSheet.create({
     justifyContent: "center",
   },
   verseCountBadgeText: {
-    fontSize: 11,
+    ...Type.caption,
     fontWeight: "700",
   },
   cardContent: {
@@ -290,17 +284,17 @@ export const homeScreenStyles = StyleSheet.create({
     paddingBottom: 6,
   },
   chapterNumber: {
-    fontSize: 11,
+    ...Type.caption,
     marginBottom: 2,
     fontWeight: "500",
   },
   sanskritName: {
-    fontSize: 13,
-    fontWeight: "bold",
+    ...Type.label,
+    fontWeight: "700",
     height: 36,
   },
   versesCount: {
-    fontSize: 12,
+    ...Type.caption,
     fontStyle: "italic",
   },
   chapterProgressContainer: {
@@ -324,7 +318,8 @@ export const homeScreenStyles = StyleSheet.create({
     alignItems: "center",
   },
   chapterProgressLabel: {
-    fontSize: 11,
+    ...Type.caption,
+    fontWeight: "400",
   },
   chapterProgressBadge: {
     paddingHorizontal: 8,
@@ -332,8 +327,7 @@ export const homeScreenStyles = StyleSheet.create({
     borderRadius: 999,
   },
   chapterProgressBadgeText: {
-    fontSize: 10,
-    fontWeight: "600",
+    ...Type.caption,
   },
 });
 
@@ -347,13 +341,12 @@ export const chapterScreenStyles = StyleSheet.create({
     paddingBottom: 2,
   },
   sanskritName: {
-    fontFamily: "PlayfairDisplay_700Bold",
-    fontSize: 24,
+    ...Type.title,
     marginBottom: 8,
     textAlign: "center",
   },
   chapterName: {
-    fontSize: 16,
+    ...Type.body,
     marginBottom: 12,
     textAlign: "center",
     fontWeight: "600",
@@ -369,8 +362,7 @@ export const chapterScreenStyles = StyleSheet.create({
     width: "auto",
   },
   descriptionText: {
-    fontSize: 15,
-    lineHeight: 24,
+    ...Type.body,
     textAlign: "left",
     fontWeight: "400",
   },
@@ -393,17 +385,14 @@ export const chapterScreenStyles = StyleSheet.create({
     marginBottom: 4,
   },
   verseNumber: {
-    fontSize: 12,
+    ...Type.caption,
     marginBottom: 6,
-    fontWeight: "700",
-    letterSpacing: 0.3,
     textTransform: "uppercase",
   },
   teluguSloka: {
-    fontSize: 16,
+    ...Type.body,
     fontStyle: "italic",
     marginBottom: 0,
-    lineHeight: 26,
     textAlign: "left",
   },
   readBadge: {
@@ -417,9 +406,8 @@ export const chapterScreenStyles = StyleSheet.create({
     marginBottom: 0,
   },
   readBadgeText: {
-    fontSize: 11,
+    ...Type.caption,
     marginLeft: 4,
-    fontWeight: "600",
   },
   continueCta: {
     flexDirection: "row",
@@ -437,16 +425,14 @@ export const chapterScreenStyles = StyleSheet.create({
     gap: 2,
   },
   continueCtaLabel: {
-    fontSize: 15,
+    ...Type.label,
     fontWeight: "700",
-    letterSpacing: 0.2,
   },
   continueCtaSubtitle: {
-    fontSize: 13,
+    ...Type.bodySm,
   },
   translation: {
-    fontSize: 16,
-    lineHeight: 24,
+    ...Type.body,
   },
 });
 
@@ -472,24 +458,22 @@ export const verseScreenStyles = StyleSheet.create({
     shadowOpacity: 0,
     borderWidth: 0,
   },
+  // Font family is applied at the render site: Playfair Italic for the Latin
+  // sloka, platform serif for Telugu/Hindi/Tamil (BUG-026).
   teluguSlokaText: {
-    fontSize: 22,
+    ...Type.sloka,
     marginBottom: 12,
     textAlign: "center",
-    lineHeight: 36,
-    letterSpacing: 0.4,
   },
   transliteration: {
-    fontSize: 16,
+    ...Type.body,
     fontStyle: "italic",
     marginBottom: 16,
     textAlign: "center",
   },
   meaningStyle: {
-    fontSize: 16,
-    lineHeight: 26,
+    ...Type.body,
     textAlign: "left",
-    letterSpacing: 0.2,
   },
   wordMeaningsContainer: {
     paddingHorizontal: 20,
@@ -503,8 +487,7 @@ export const verseScreenStyles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   sectionTitle: {
-    fontFamily: "PlayfairDisplay_700Bold",
-    fontSize: 22,
+    ...Type.heading,
     marginBottom: 12,
   },
   wordMeaningRow: {
@@ -514,11 +497,11 @@ export const verseScreenStyles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   word: {
-    fontSize: 16,
+    ...Type.body,
     flex: 1,
   },
   meaning: {
-    fontSize: 14,
+    ...Type.bodySm,
     flex: 2,
     textAlign: "right",
   },
@@ -534,13 +517,11 @@ export const verseScreenStyles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   commentaryText: {
-    fontSize: 16,
-    lineHeight: 26,
+    ...Type.body,
     textAlign: "left",
-    letterSpacing: 0.2,
   },
   errorText: {
-    fontSize: 18,
+    ...Type.heading,
     textAlign: "center",
     marginTop: 20,
   },
@@ -562,7 +543,7 @@ export const verseScreenStyles = StyleSheet.create({
     gap: 6,
   },
   navButtonText: {
-    fontSize: 14,
+    ...Type.bodySm,
     fontWeight: "700",
   },
   audioContainer: {
@@ -591,8 +572,7 @@ export const verseScreenStyles = StyleSheet.create({
     marginHorizontal: 2,
   },
   audioTime: {
-    fontSize: 12,
-    fontWeight: "600",
+    ...Type.caption,
     minWidth: 36,
     textAlign: "center",
     padding: 0,

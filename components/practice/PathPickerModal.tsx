@@ -2,10 +2,11 @@ import React from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Text } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 
+import { haptics } from "@/lib/haptics";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useContentLanguage } from "@/context/language-context";
+import { useTranslation } from "@/hooks/useTranslation";
 import {
   READING_PATHS,
   getPathDescription,
@@ -22,6 +23,7 @@ type Props = {
 export function PathPickerModal({ visible, onClose, onSelect }: Props) {
   const { colors } = useAppTheme();
   const { language } = useContentLanguage();
+  const { t } = useTranslation();
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -29,15 +31,17 @@ export function PathPickerModal({ visible, onClose, onSelect }: Props) {
         <Pressable
           style={StyleSheet.absoluteFill}
           onPress={onClose}
-          accessibilityLabel="Dismiss path picker"
+          accessibilityLabel={t("pathPicker.dismissA11y")}
         />
         <View style={[styles.sheet, { backgroundColor: colors.background }]}>
           <View style={styles.header}>
-            <Text style={[styles.title, { color: colors.text }]}>Start a reading path</Text>
+            <Text style={[styles.title, { color: colors.text }]}>
+              {t("pathPicker.title")}
+            </Text>
             <Pressable
               onPress={onClose}
               hitSlop={12}
-              accessibilityLabel="Close"
+              accessibilityLabel={t("common.close")}
               accessibilityRole="button"
             >
               <Ionicons name="close" size={24} color={colors.textMuted} />
@@ -47,8 +51,9 @@ export function PathPickerModal({ visible, onClose, onSelect }: Props) {
             {READING_PATHS.map((path) => (
               <Pressable
                 key={path.id}
+                onPressIn={haptics.light}
                 onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  haptics.medium();
                   onSelect(path);
                 }}
                 style={[
@@ -56,7 +61,7 @@ export function PathPickerModal({ visible, onClose, onSelect }: Props) {
                   { backgroundColor: colors.surface, borderColor: colors.outline },
                 ]}
               >
-                <Text style={[styles.cardTitle, { color: colors.primary }]}>
+                <Text style={[styles.cardTitle, { color: colors.brandText }]}>
                   {getPathTitle(path, language)}
                 </Text>
                 <Text style={[styles.cardBody, { color: colors.textMuted }]}>

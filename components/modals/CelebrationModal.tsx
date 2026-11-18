@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View, StyleSheet, Dimensions, Pressable } from "react-native";
 import { Text } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
@@ -12,8 +12,12 @@ import Animated, {
   withRepeat,
   Easing,
 } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
+import { haptics } from "@/lib/haptics";
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { Type } from "@/theme/design-tokens";
+import { useTranslation } from "@/hooks/useTranslation";
+import { Duration, Spring } from "@/theme/motion";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -79,7 +83,7 @@ const ConfettiParticle: React.FC<{
     );
     scale.value = withDelay(
       startDelay,
-      withSpring(1.2, { damping: 10 })
+      withSpring(1.2, Spring.bouncy)
     );
   }, [startDelay, seed, translateY, translateX, rotate, opacity, scale]);
 
@@ -125,6 +129,9 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
   onClose,
 }) => {
   const { colors } = useAppTheme();
+  const reducedMotion = useReducedMotion();
+  const { t } = useTranslation();
+  const [rendered, setRendered] = useState(visible);
   const backdropOpacity = useSharedValue(0);
   const contentScale = useSharedValue(0.5);
   const contentOpacity = useSharedValue(0);
@@ -148,22 +155,32 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
 
   useEffect(() => {
     if (visible) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      
-      backdropOpacity.value = withTiming(1, { duration: 300 });
-      contentScale.value = withSpring(1, { damping: 12, stiffness: 100 });
-      contentOpacity.value = withTiming(1, { duration: 300 });
-      starScale.value = withDelay(
-        300,
-        withSpring(1, { damping: 8, stiffness: 150 })
-      );
+      setRendered(true);
+      haptics.success();
+
+      backdropOpacity.value = withTiming(1, { duration: Duration.slow });
+      contentOpacity.value = withTiming(1, {
+        duration: reducedMotion ? Duration.fast : Duration.slow,
+      });
+      contentScale.value = reducedMotion ? 1 : withSpring(1, Spring.gentle);
+      starScale.value = reducedMotion
+        ? 1
+        : withDelay(300, withSpring(1, Spring.bouncy));
     } else {
-      backdropOpacity.value = withTiming(0, { duration: 200 });
-      contentScale.value = withTiming(0.5, { duration: 200 });
-      contentOpacity.value = withTiming(0, { duration: 200 });
-      starScale.value = withTiming(0, { duration: 200 });
+      backdropOpacity.value = withTiming(0, { duration: Duration.base });
+      contentScale.value = withTiming(reducedMotion ? 1 : 0.5, {
+        duration: Duration.base,
+      });
+      contentOpacity.value = withTiming(0, { duration: Duration.base });
+      starScale.value = withTiming(reducedMotion ? 1 : 0, {
+        duration: Duration.base,
+      });
+
+      // Keep the tree mounted until the exit has actually played (BUG-027).
+      const timer = setTimeout(() => setRendered(false), Duration.base);
+      return () => clearTimeout(timer);
     }
-  }, [visible, backdropOpacity, contentScale, contentOpacity, starScale]);
+  }, [visible, reducedMotion, backdropOpacity, contentScale, contentOpacity, starScale]);
 
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: backdropOpacity.value,
@@ -178,12 +195,13 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
     transform: [{ scale: starScale.value }],
   }));
 
-  if (!visible) return null;
+  if (!visible && !rendered) return null;
 
   return (
     <View style={styles.overlay}>
-      {/* Confetti */}
-      {confettiDelays.map((delay, i) => (
+      {/* Confetti — decorative motion, skipped under Reduce Motion. */}
+      {!reducedMotion &&
+        confettiDelays.map((delay, i) => (
         <ConfettiParticle
           key={i}
           index={i}
@@ -213,33 +231,32 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
           <View
             style={[styles.starBg, { backgroundColor: colors.primary + "20" }]}
           >
-            <Ionicons name="trophy" size={64} color={colors.primary} />
+            <Ionicons name="trophy" size={64} color={colors.brandText} />
           </View>
         </Animated.View>
 
-        <Text style={[styles.title, { color: colors.primary }]}>
-          Congratulations!
+        <Text style={[styles.title, { color: colors.brandText }]}>
+          {t("celebration.title")}
         </Text>
 
         <Text style={[styles.subtitle, { color: colors.text }]}>
-          You&apos;ve completed
+          {t("celebration.subtitle")}
         </Text>
 
         <Text style={[styles.chapterText, { color: colors.text }]}>
-          Chapter {chapterNumber}
+          {t("common.chapterN", { chapter: chapterNumber })}
         </Text>
 
         <Text style={[styles.message, { color: colors.textMuted }]}>
-          Your dedication to spiritual wisdom is inspiring. Keep exploring the
-          timeless teachings of the Bhagavad Gita.
+          {t("celebration.message")}
         </Text>
 
         <Pressable
           onPress={onClose}
-          style={[styles.button, { backgroundColor: colors.primary }]}
+          style={[styles.button, { backgroundColor: colors.brandText }]}
         >
           <Text style={[styles.buttonText, { color: colors.onPrimary }]}>
-            Continue Learning
+            {t("celebration.continue")}
           </Text>
         </Pressable>
       </Animated.View>
@@ -276,23 +293,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
+    ...Type.title,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 18,
+    ...Type.body,
     marginBottom: 4,
   },
   chapterText: {
-    fontSize: 24,
-    fontWeight: "bold",
+    ...Type.heading,
+    fontWeight: "700",
     marginBottom: 16,
   },
   message: {
-    fontSize: 15,
+    ...Type.bodySm,
     textAlign: "center",
-    lineHeight: 22,
     marginBottom: 24,
   },
   button: {
@@ -301,7 +316,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   buttonText: {
-    fontSize: 16,
+    ...Type.body,
     fontWeight: "600",
   },
   confetti: {

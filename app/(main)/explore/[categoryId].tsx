@@ -5,7 +5,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useContentLanguage } from "@/context/language-context";
-import { CATEGORIES } from "@/data/explore-categories";
+import { useTranslation } from "@/hooks/useTranslation";
+import { CATEGORIES, getCategoryName } from "@/data/explore-categories";
 import { useReadingProgress } from "@/hooks/useReadingProgress";
 import { VerseListCard } from "@/components/verse/VerseListCard";
 import { savedScreenStyles } from "@/theme/screen-styles";
@@ -23,6 +24,7 @@ export default function ExploreCategoryScreen() {
   const { categoryId } = useLocalSearchParams<{ categoryId: string }>();
   const { colors } = useAppTheme();
   const { language } = useContentLanguage();
+  const { t } = useTranslation();
   const { isVerseRead } = useReadingProgress();
   const router = useRouter();
 
@@ -31,9 +33,11 @@ export default function ExploreCategoryScreen() {
   if (!category) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-        <Stack.Screen options={{ title: "Category", headerShown: true }} />
+        <Stack.Screen
+          options={{ title: t("explore.categoryFallbackTitle"), headerShown: true }}
+        />
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 20 }}>
-          <Text style={{ color: colors.text, fontSize: 16 }}>Category not found</Text>
+          <Text style={{ color: colors.text, fontSize: 16 }}>{t("explore.notFound")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -50,11 +54,11 @@ export default function ExploreCategoryScreen() {
     return (
       <VerseListCard
         badge={verseNumber}
-        title={`Ch. ${chapter} · Verse ${verseNumber}`}
+        title={t("common.chapterVerseShortN", { chapter, verse: verseNumber })}
         preview={verseText}
         read={read}
         onPress={() => router.push(ROUTES.verse(verseId))}
-        accessibilityLabel={`Open chapter ${chapter} verse ${verseNumber}`}
+        accessibilityLabel={t("explore.openVerseA11y", { chapter, verse: verseNumber })}
       />
     );
   };
@@ -66,11 +70,11 @@ export default function ExploreCategoryScreen() {
     >
       <Stack.Screen
         options={{
-          title: category.name,
+          title: getCategoryName(category, language),
           headerShown: true,
-          headerBackTitle: "Back",
+          headerBackTitle: t("common.back"),
           headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.primary,
+          headerTintColor: colors.brandText,
           headerTitleStyle: { color: colors.text, fontFamily: "PlayfairDisplay_700Bold" },
           headerShadowVisible: false,
         }}

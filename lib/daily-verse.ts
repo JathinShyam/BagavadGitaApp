@@ -1,10 +1,13 @@
 /**
  * Daily verse selection for notifications.
- * Uses day-of-year (1–366) to pick a deterministic verse so the same day always shows the same verse.
+ * Uses a day-since-epoch counter to pick a deterministic verse: the same
+ * calendar day always shows the same verse, and the index keeps advancing past
+ * the size of a single year so every verse in the catalogue is reachable.
  */
 
 import { ALL_VERSES } from "@/data/verses/verse-catalog";
 import { DEFAULT_CONTENT_LANGUAGE, type ContentLanguage } from "@/constants/languages";
+import { translate } from "@/lib/i18n";
 import { toNotificationVerse } from "@/lib/verse-content";
 import type { VerseForNotification } from "@/types";
 
@@ -14,40 +17,48 @@ export { ALL_VERSES };
 
 const MAX_BODY_LENGTH = 120;
 
-/** Captivating title for daily verse notifications. */
+const MS_PER_DAY = 86_400_000;
+
+/** Local midnight normalised to UTC, so DST shifts never change the counter. */
+const EPOCH_UTC = Date.UTC(2020, 0, 1);
+
+/** English title for daily verse notifications (see `translate` for other locales). */
 export const DAILY_VERSE_NOTIFICATION_TITLE = "Your daily verse awaits ✨";
 
-/** Get 1-based day of year (1–366) using local calendar date (DST-safe). */
-function getDayOfYear(date: Date): number {
-  const start = new Date(date.getFullYear(), 0, 1);
-  const local = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const diff = local.getTime() - start.getTime();
-  return Math.floor(diff / 864e5) + 1;
+/**
+ * Days since 1 Jan 2020 on the user's local calendar.
+ * Stable for a whole calendar day (time of day is ignored) and DST-safe, and
+ * monotonic across days — so the verse index advances past 366.
+ */
+export function getDayIndex(date: Date): number {
+  const local = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+  return Math.floor((local - EPOCH_UTC) / MS_PER_DAY);
 }
 
 /**
- * Returns the verse to show for a given day (same day = same verse every year).
+ * Returns the verse for a day index (days since epoch). Wraps around the
+ * catalogue, so a full cycle of `ALL_VERSES.length` days visits every verse.
  */
-export function getVerseByDayOfYear(
-  dayOfYear: number,
+export function getVerseByDayIndex(
+  dayIndex: number,
   language: ContentLanguage = DEFAULT_CONTENT_LANGUAGE
 ): VerseForNotification | null {
   if (ALL_VERSES.length === 0) return null;
-  const index = (dayOfYear - 1) % ALL_VERSES.length;
-  const verse = ALL_VERSES[index];
+  const wrapped = ((dayIndex % ALL_VERSES.length) + ALL_VERSES.length) % ALL_VERSES.length;
+  const verse = ALL_VERSES[wrapped];
   if (!verse) return null;
   return toNotificationVerse(verse, language);
 }
 
 /**
- * Returns the verse for a specific date.
+ * Returns the verse for a specific date. This is the single source of truth for
+ * Home, the widget and the daily notification — they all pass a local date here.
  */
 export function getVerseForDate(
   date: Date = new Date(),
   language: ContentLanguage = DEFAULT_CONTENT_LANGUAGE
 ): VerseForNotification | null {
-  const dayOfYear = getDayOfYear(date);
-  return getVerseByDayOfYear(dayOfYear, language);
+  return getVerseByDayIndex(getDayIndex(date), language);
 }
 
 /** Shorten at a word boundary so no word (or Indic conjunct) is cut in half. */
@@ -61,21 +72,24 @@ export function truncate(text: string, maxLen: number): string {
 }
 
 /**
- * Title and body for a notification (English, short).
- * Uses a constant captivating title; body shows verse preview.
+ * Title and body for a notification in the reader's language.
+ * Body shows the verse preview, truncated to stay readable in the tray.
  */
-export function getDailyVerseNotificationContent(verse: VerseForNotification): {
+export function getDailyVerseNotificationContent(
+  verse: VerseForNotification,
+  language: ContentLanguage = DEFAULT_CONTENT_LANGUAGE
+): {
   title: string;
   body: string;
   verseId: string;
 } {
-  const title = DAILY_VERSE_NOTIFICATION_TITLE;
+  const title = translate(language, "notifications.dailyTitle");
   const rawBody =
     verse.meaning ??
     (verse.sloka ? verse.sloka.replace(/\n/g, " ").replace(/\s+/g, " ").trim() : "");
   const body = rawBody
     ? truncate(rawBody, MAX_BODY_LENGTH)
-    : "Open the app to read the verse.";
+    : translate(language, "notifications.openApp");
 
   return { title, body, verseId: verse.id };
 }

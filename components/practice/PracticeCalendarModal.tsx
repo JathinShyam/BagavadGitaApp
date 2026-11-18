@@ -1,18 +1,34 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import { Modal, Pressable, StyleSheet, View } from "react-native";
 import { Text } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  type SharedValue,
+} from "react-native-reanimated";
 
+import { haptics } from "@/lib/haptics";
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useContentLanguage } from "@/context/language-context";
+import { useTranslation } from "@/hooks/useTranslation";
+import { INTL_LOCALES, WEEKDAY_INITIALS } from "@/lib/i18n";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { WeekHeatmap } from "@/components/practice/WeekHeatmap";
+import { Duration, Ease } from "@/theme/motion";
 import type { ReadingActivity } from "@/types";
 
-const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
 /** Classic chariot wheel — 8 spokes. */
 const WHEEL_SPOKES = [0, 45, 90, 135, 180, 225, 270, 315];
 
 type Props = {
   visible: boolean;
   activity: ReadingActivity;
+  streakDays: number;
+  longestStreak: number;
+  /** Days a lotus freeze covered, drawn cool instead of gold. */
+  protectedDates?: Record<string, true>;
   onClose: () => void;
 };
 
@@ -20,12 +36,18 @@ type Props = {
 function ChariotWheelMark({
   primary,
   onPrimary,
+  spin,
 }: {
   primary: string;
   onPrimary: string;
+  spin: SharedValue<number>;
 }) {
+  const spinStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${spin.value}deg` }],
+  }));
+
   return (
-    <View style={[styles.wheelOuter, { borderColor: primary }]}>
+    <Animated.View style={[styles.wheelOuter, { borderColor: primary }, spinStyle]}>
       <View style={[styles.wheelMid, { borderColor: primary + "AA" }]} />
       {WHEEL_SPOKES.map((deg) => (
         <View
@@ -41,12 +63,38 @@ function ChariotWheelMark({
           <Ionicons name="checkmark" size={10} color={onPrimary} />
         </View>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
-export function PracticeCalendarModal({ visible, activity, onClose }: Props) {
+export function PracticeCalendarModal({
+  visible,
+  activity,
+  streakDays,
+  longestStreak,
+  protectedDates,
+  onClose,
+}: Props) {
   const { colors } = useAppTheme();
+  const { language } = useContentLanguage();
+  const { t } = useTranslation();
+  const weekdays = WEEKDAY_INITIALS[language];
+  const reducedMotion = useReducedMotion();
+  // One shared angle for every wheel: a turned wheel is a day turning.
+  const spin = useSharedValue(0);
+
+  useEffect(() => {
+    if (!visible || reducedMotion) {
+      spin.value = 0;
+      return;
+    }
+
+    spin.value = 0;
+    spin.value = withTiming(360, {
+      duration: Duration.turn,
+      easing: Ease.decelerate,
+    });
+  }, [visible, reducedMotion, spin]);
 
   const monthCells = useMemo(() => {
     const now = new Date();
@@ -65,8 +113,8 @@ export function PracticeCalendarModal({ visible, activity, onClose }: Props) {
 
   const monthLabel = useMemo(() => {
     const now = new Date();
-    return now.toLocaleString(undefined, { month: "long", year: "numeric" });
-  }, []);
+    return now.toLocaleString(INTL_LOCALES[language], { month: "long", year: "numeric" });
+  }, [language]);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -75,10 +123,21 @@ export function PracticeCalendarModal({ visible, activity, onClose }: Props) {
           style={[styles.sheet, { backgroundColor: colors.surface }]}
           onPress={(e) => e.stopPropagation()}
         >
-          <Text style={[styles.sheetTitle, { color: colors.text }]}>Reading calendar</Text>
-          <Text style={[styles.monthLabel, { color: colors.textMuted }]}>{monthLabel}</Text>
+          <Text style={[styles.sheetTitle, { color: colors.text }]}>
+            {t("calendar.title")}
+          </Text>
+          <Text style={[styles.monthLabel, { color: colors.textMuted }]}>
+            {monthLabel}
+            {streakDays > 0 || longestStreak > 0
+              ? ` · ${t("calendar.streakLine", {
+                  current: streakDays,
+                  best: longestStreak,
+                })}`
+              : ""}
+          </Text>
+          <WeekHeatmap activity={activity} cellSize={24} />
           <View style={styles.monthDowRow}>
-            {WEEKDAYS.map((d, i) => (
+            {weekdays.map((d, i) => (
               <Text key={`${d}-${i}`} style={[styles.monthDow, { color: colors.textMuted }]}>
                 {d}
               </Text>
@@ -89,7 +148,13 @@ export function PracticeCalendarModal({ visible, activity, onClose }: Props) {
               cell ? (
                 <View key={cell.key} style={styles.monthCell}>
                   {cell.count > 0 ? (
-                    <ChariotWheelMark primary={colors.primary} onPrimary={colors.onPrimary} />
+                    <ChariotWheelMark
+                      primary={
+                        protectedDates?.[cell.key] ? colors.streakFrozen : colors.primary
+                      }
+                      onPrimary={colors.onPrimary}
+                      spin={spin}
+                    />
                   ) : (
                     <Text style={[styles.dayEmpty, { color: colors.textMuted }]}>
                       {cell.day}
@@ -102,16 +167,23 @@ export function PracticeCalendarModal({ visible, activity, onClose }: Props) {
             )}
           </View>
           <View style={styles.legendRow}>
-            <ChariotWheelMark primary={colors.primary} onPrimary={colors.onPrimary} />
+            <ChariotWheelMark
+              primary={colors.primary}
+              onPrimary={colors.onPrimary}
+              spin={spin}
+            />
             <Text style={[styles.legendText, { color: colors.textMuted }]}>
-              Day you read
+              {t("calendar.dayRead")}
             </Text>
           </View>
           <Pressable
+            onPressIn={haptics.light}
             onPress={onClose}
-            style={[styles.closeBtn, { backgroundColor: colors.primary }]}
+            style={[styles.closeBtn, { backgroundColor: colors.brandText }]}
           >
-            <Text style={{ color: colors.onPrimary, fontWeight: "700" }}>Close</Text>
+            <Text style={{ color: colors.onPrimary, fontWeight: "700" }}>
+              {t("calendar.close")}
+            </Text>
           </Pressable>
         </Pressable>
       </Pressable>

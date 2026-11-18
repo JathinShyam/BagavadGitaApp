@@ -1,17 +1,17 @@
 import React, { useEffect } from "react";
-import { View, StyleSheet, Dimensions, Text } from "react-native";
+import { View, StyleSheet, Dimensions } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withRepeat,
   withTiming,
-  withSequence,
   Easing,
   interpolate,
-  FadeIn,
+  cancelAnimation,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -32,15 +32,20 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
   tone = "neutral",
 }) => {
   const { isDark, colors } = useAppTheme();
+  const reducedMotion = useReducedMotion();
   const shimmerValue = useSharedValue(0);
 
   useEffect(() => {
+    if (reducedMotion) return;
+
     shimmerValue.value = withRepeat(
       withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.ease) }),
       -1,
       false
     );
-  }, [shimmerValue]);
+
+    return () => cancelAnimation(shimmerValue);
+  }, [shimmerValue, reducedMotion]);
 
   const animatedStyle = useAnimatedStyle(() => {
     const translateX = interpolate(
@@ -134,141 +139,6 @@ export const SkeletonVerseCard: React.FC<{ style?: object }> = ({ style }) => {
   );
 };
 
-/** Calm gold opening state for verse detail — no boxed white cards. */
-export const SkeletonVerseDetail: React.FC = () => {
-  const { colors } = useAppTheme();
-  const breath = useSharedValue(0);
-  const ring = useSharedValue(0);
-
-  useEffect(() => {
-    breath.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0, { duration: 1200, easing: Easing.inOut(Easing.ease) })
-      ),
-      -1,
-      false
-    );
-    ring.value = withRepeat(
-      withTiming(1, { duration: 2200, easing: Easing.out(Easing.ease) }),
-      -1,
-      false
-    );
-  }, [breath, ring]);
-
-  const orbStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 0.92 + breath.value * 0.08 }],
-    opacity: 0.55 + breath.value * 0.35,
-  }));
-
-  const ringStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 0.85 + ring.value * 0.35 }],
-    opacity: 0.45 * (1 - ring.value),
-  }));
-
-  return (
-    <View style={[styles.verseDetailContainer, { backgroundColor: colors.background }]}>
-      <Animated.View entering={FadeIn.duration(400)} style={styles.openingHero}>
-        <View style={styles.orbWrap}>
-          <Animated.View
-            style={[
-              styles.ring,
-              { borderColor: colors.primary },
-              ringStyle,
-            ]}
-          />
-          <Animated.View
-            style={[
-              styles.orb,
-              {
-                backgroundColor: colors.primary + "18",
-                borderColor: colors.primary + "55",
-              },
-              orbStyle,
-            ]}
-          >
-            <Text style={[styles.om, { color: colors.primary }]}>ॐ</Text>
-          </Animated.View>
-        </View>
-
-        <Text style={[styles.openingTitle, { color: colors.primary }]}>
-          Opening the verse
-        </Text>
-        <Text style={[styles.openingHint, { color: colors.textMuted }]}>
-          A quiet moment…
-        </Text>
-      </Animated.View>
-
-      <Animated.View
-        entering={FadeIn.delay(180).duration(500)}
-        style={styles.previewBlock}
-      >
-        <SkeletonLoader
-          width={72}
-          height={18}
-          borderRadius={4}
-          tone="gold"
-          style={{ alignSelf: "center", marginBottom: 18 }}
-        />
-        <SkeletonLoader
-          width="88%"
-          height={18}
-          borderRadius={4}
-          tone="gold"
-          style={{ alignSelf: "center", marginBottom: 10 }}
-        />
-        <SkeletonLoader
-          width="72%"
-          height={18}
-          borderRadius={4}
-          tone="gold"
-          style={{ alignSelf: "center", marginBottom: 10 }}
-        />
-        <SkeletonLoader
-          width="54%"
-          height={18}
-          borderRadius={4}
-          tone="gold"
-          style={{ alignSelf: "center", marginBottom: 28 }}
-        />
-
-        <View style={[styles.rule, { backgroundColor: colors.outline + "33" }]} />
-
-        <SkeletonLoader
-          width={140}
-          height={20}
-          borderRadius={4}
-          tone="gold"
-          style={{ marginBottom: 16 }}
-        />
-        {[0, 1, 2].map((i) => (
-          <Animated.View
-            key={i}
-            entering={FadeIn.delay(240 + i * 80).duration(400)}
-            style={styles.wordRow}
-          >
-            <SkeletonLoader width="28%" height={14} borderRadius={4} tone="gold" />
-            <SkeletonLoader width="48%" height={14} borderRadius={4} tone="gold" />
-          </Animated.View>
-        ))}
-
-        <View style={[styles.rule, { backgroundColor: colors.outline + "33", marginTop: 8 }]} />
-
-        <SkeletonLoader
-          width={100}
-          height={20}
-          borderRadius={4}
-          tone="gold"
-          style={{ marginBottom: 16, marginTop: 8 }}
-        />
-        <SkeletonLoader width="100%" height={14} borderRadius={4} tone="gold" style={{ marginBottom: 8 }} />
-        <SkeletonLoader width="96%" height={14} borderRadius={4} tone="gold" style={{ marginBottom: 8 }} />
-        <SkeletonLoader width="78%" height={14} borderRadius={4} tone="gold" />
-      </Animated.View>
-    </View>
-  );
-};
-
 const styles = StyleSheet.create({
   skeleton: {
     overflow: "hidden",
@@ -290,63 +160,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 0,
     borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  verseDetailContainer: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 28,
-  },
-  openingHero: {
-    alignItems: "center",
-    marginBottom: 36,
-  },
-  orbWrap: {
-    width: 88,
-    height: 88,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 20,
-  },
-  orb: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: StyleSheet.hairlineWidth,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  ring: {
-    position: "absolute",
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  om: {
-    fontSize: 28,
-    lineHeight: 34,
-  },
-  openingTitle: {
-    fontFamily: "PlayfairDisplay_700Bold",
-    fontSize: 22,
-    marginBottom: 6,
-  },
-  openingHint: {
-    fontSize: 13,
-    letterSpacing: 0.3,
-  },
-  previewBlock: {
-    paddingTop: 4,
-  },
-  rule: {
-    height: StyleSheet.hairlineWidth,
-    width: "100%",
-    marginBottom: 20,
-  },
-  wordRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 14,
   },
 });
 

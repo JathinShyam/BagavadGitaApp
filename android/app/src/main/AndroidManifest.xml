@@ -2,8 +2,9 @@
   <uses-permission android:name="android.permission.INTERNET"/>
   <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
   <uses-permission android:name="android.permission.VIBRATE"/>
-  <!-- Required for scheduled daily verse notifications on Android 12+ (API 31+) -->
-  <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+  <!-- SCHEDULE_EXACT_ALARM deliberately absent: it is a Play-restricted
+       permission, needs a declaration form, and the daily reminder uses
+       inexact alarms (no allowWhileIdle) which do not require it (BUG-023). -->
   <!-- Playback-only app: strip permissions merged in by libraries -->
   <uses-permission android:name="android.permission.RECORD_AUDIO" tools:node="remove"/>
   <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove"/>
