@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet, Dimensions, Pressable } from "react-native";
+import { View, StyleSheet, Dimensions, Pressable, Modal } from "react-native";
 import { Text } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, {
@@ -80,7 +80,19 @@ export default function MilestoneModal({ visible, days, onClose, onShare }: Prop
   const copy = MILESTONE_COPY[days];
 
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+    <Modal
+      transparent
+      visible={rendered}
+      onRequestClose={onClose}
+      animationType="none"
+      statusBarTranslucent
+    >
+      <View
+        style={StyleSheet.absoluteFill}
+        pointerEvents="box-none"
+        accessibilityViewIsModal
+        onAccessibilityEscape={onClose}
+      >
       <Animated.View
         style={[styles.backdrop, backdropStyle, { backgroundColor: "#000000aa" }]}
       >
@@ -122,7 +134,8 @@ export default function MilestoneModal({ visible, days, onClose, onShare }: Prop
           </View>
         </Animated.View>
       </View>
-    </View>
+      </View>
+    </Modal>
   );
 }
 

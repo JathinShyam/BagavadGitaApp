@@ -2,6 +2,8 @@
   <uses-permission android:name="android.permission.INTERNET"/>
   <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
   <uses-permission android:name="android.permission.VIBRATE"/>
+  <!-- Re-arm the widget's daily midnight refresh after a reboot. -->
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
   <!-- SCHEDULE_EXACT_ALARM deliberately absent: it is a Play-restricted
        permission, needs a declaration form, and the daily reminder uses
        inexact alarms (no allowWhileIdle) which do not require it (BUG-023). -->
@@ -20,6 +22,9 @@
     <meta-data android:name="expo.modules.updates.ENABLED" android:value="false"/>
     <meta-data android:name="expo.modules.updates.EXPO_UPDATES_CHECK_ON_LAUNCH" android:value="ALWAYS"/>
     <meta-data android:name="expo.modules.updates.EXPO_UPDATES_LAUNCH_WAIT_MS" android:value="0"/>
+    <!-- Monochrome small icon + brand accent for notifications (review finding P2). -->
+    <meta-data android:name="expo.modules.notifications.default_notification_icon" android:resource="@drawable/notification_icon"/>
+    <meta-data android:name="expo.modules.notifications.default_notification_color" android:resource="@color/notification_color"/>
     <activity android:name=".MainActivity" android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode" android:launchMode="singleTask" android:windowSoftInputMode="adjustResize" android:theme="@style/Theme.App.SplashScreen" android:exported="true" android:screenOrientation="portrait">
       <intent-filter>
         <action android:name="android.intent.action.MAIN"/>
@@ -41,6 +46,7 @@
       <intent-filter>
         <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
         <action android:name="com.jathinshyam.BagavadGita.DAILY_VERSE_WIDGET_REFRESH"/>
+        <action android:name="android.intent.action.BOOT_COMPLETED"/>
       </intent-filter>
       <meta-data
         android:name="android.appwidget.provider"

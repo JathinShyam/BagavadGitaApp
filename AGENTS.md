@@ -4,7 +4,7 @@ Instructions for AI coding agents working in this repository.
 
 ## What this is
 
-Expo + React Native (SDK 54) scripture app for daily Bhagavad Gita reading: chapters/verses, Explore topics, saved verses, streaks, guided paths, local notifications, share cards, and an Android daily-verse widget.
+Expo + React Native (SDK 54) scripture app for daily Bhagavad Gita reading: chapters/verses, Explore topics, saved verses, streaks, guided paths, local notifications, share cards, and home-screen widgets (Android shipped; iOS extension built but unverified).
 
 Package name in npm is `bagavadgita`; app display name is **Bhagavad Gita**. Deep-link scheme: `bagavadgita`.
 
@@ -45,7 +45,7 @@ theme/               # design-tokens.ts, screen-styles.ts
 types/               # Verse, progress, notes
 __tests__/           # Jest — category IDs, habit helpers
 docs/                # privacy/terms HTML + README screenshots
-android/ ios/        # Native projects (widget on Android)
+android/ ios/        # Native projects (widgets on both)
 ```
 
 ## Non-negotiable conventions
@@ -65,7 +65,7 @@ android/ ios/        # Native projects (widget on Android)
 | Feature | Start here |
 |---------|------------|
 | Daily verse | `lib/daily-verse.ts` |
-| Notifications (7-day DATE window) | `lib/daily-verse-notifications.ts`, `lib/notification-availability.ts` |
+| Notifications (30-day DATE window) | `lib/daily-verse-notifications.ts`, `lib/notification-availability.ts` |
 | Widget sync | `lib/widget-data.ts`, Android `DailyVerseWidgetProvider.kt` / `WidgetDataModule.kt` |
 | Reading paths | `lib/reading-paths.ts`, `data/reading-paths.ts` |
 | Progress / streak | `hooks/useReadingProgress.ts`, `context/reading-progress-context.tsx` |

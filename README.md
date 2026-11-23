@@ -2,7 +2,7 @@
 
 **A daily companion for reading the Gita — offline, multilingual, built for practice.**
 
-Open a chapter. Save a verse. Return tomorrow. An Expo + React Native scripture app for calm, consistent study: cream-and-gold reading UI, guided paths, topic explore, local reminders, share cards, and an Android home-screen widget.
+Open a chapter. Save a verse. Return tomorrow. An Expo + React Native scripture app for calm, consistent study: cream-and-gold reading UI, guided paths, topic explore, local reminders, share cards, and a home-screen widget.
 
 ### Main tabs
 
@@ -24,7 +24,7 @@ Most scripture apps are libraries or feeds. This one is a **practice loop**:
 
 | You want to… | The app gives you… |
 |--------------|--------------------|
-| Show up every day | Daily verse, streak, reminders, Android widget |
+| Show up every day | Daily verse, streak, reminders, home-screen widget |
 | Read with clarity | Sloka, word meanings, meaning, commentary |
 | Find guidance fast | Explore by life topics (anger, fear, peace, …) |
 | Stay offline | Full corpus + progress on device — no account |
@@ -54,8 +54,8 @@ Change under **Settings → Appearance → Content language**. App chrome stays 
 - Deterministic **today’s verse** (same calendar day → same verse each year)
 - Streak + daily reading goal
 - **Guided paths**: Chapter 2 in 7 days · Seeking peace · Foundational verses
-- **Local notifications** — next 7 days at your time; tap opens that day’s verse
-- **Android widget** — today’s verse on the home screen (open the app once after install to sync)
+- **Local notifications** — next 30 days at your time; tap opens that day’s verse
+- **Home-screen widget** — today’s verse on Android and iOS (open the app once after install to sync)
 
 ### Explore & keep
 - **19** topic tiles (anger, fear, loneliness, seeking peace, …)
@@ -81,7 +81,7 @@ Change under **Settings → Appearance → Content language**. App chrome stays 
 | Storage | AsyncStorage |
 | Notifications | `expo-notifications` (rolling DATE schedules) |
 | Share | `react-native-view-shot` · `expo-sharing` |
-| Native | Android AppWidget + Kotlin module · iOS data stub |
+| Native | Android AppWidget + Kotlin module · iOS WidgetKit extension + Swift module |
 
 **Naming (intentional):** npm package and URL scheme are `bagavadgita`; display name is **Bhagavad Gita**. Deep links: `bagavadgita://`.
 
@@ -130,7 +130,7 @@ data/           verses, chapters, explore categories, paths
 lib/            daily verse, notifications, widget, content helpers
 services/       share-card capture
 theme/          design tokens + shared styles
-android/ ios/   native projects (widget on Android)
+android/ ios/   native projects (widgets on both)
 docs/           privacy, terms, README screenshots
 __tests__/      catalog integrity + habit helpers
 ```
@@ -154,14 +154,14 @@ How to add another language: [`data/verses/ADDING_LANGUAGES.md`](data/verses/ADD
 
 A **rolling window of one-shot DATE notifications** (not one repeating alarm):
 
-1. Schedules the next **7 days** at the chosen time  
+1. Schedules the next **30 days** at the chosen time
 2. Tray text includes that day’s verse preview  
 3. Reschedules on app foreground and preference changes  
 4. Tap opens that day’s verse; handled ids are cleared so a normal launch does not re-open the last notification  
 
 | File | Role |
 |------|------|
-| `lib/daily-verse.ts` | Day-of-year selection |
+| `lib/daily-verse.ts` | Day-index selection |
 | `lib/daily-verse-notifications.ts` | Schedule / cancel |
 | `lib/notification-availability.ts` | Expo Go guard |
 | `app/_layout.tsx` | Lifecycle + tap routing |
@@ -170,17 +170,26 @@ A **rolling window of one-shot DATE notifications** (not one repeating alarm):
 
 ---
 
-## Android widget
+## Home-screen widget
+
+### Android
 
 | Piece | Path |
 |-------|------|
 | Provider | `android/app/src/main/java/com/jathinshyam/BagavadGita/DailyVerseWidgetProvider.kt` |
 | Bridge | `…/WidgetDataModule.kt` |
 | JS sync | `lib/widget-data.ts` (app lifecycle in `_layout.tsx`) |
+| Layout | 4×4 default (`daily_verse_widget.xml`) with a compact fallback for smaller sizes |
 
 **Setup:** install build → open the app once → long-press home screen → **Widgets → Bhagavad Gita → Daily Verse**.
 
-iOS: `WidgetDataModule.swift` is a storage stub only (no WidgetKit extension yet).
+### iOS
+
+The WidgetKit target `ios/DailyVerseWidget` is wired into `BagavadGita.xcodeproj`
+and shares data through the `group.com.bhagavadgita.ios` App Group
+(`WidgetDataModule.swift` writes, `DailyVerseWidget.swift` reads). It has not
+yet been built or verified on a device — treat the iOS widget as **unshipped**
+until that build passes.
 
 ---
 

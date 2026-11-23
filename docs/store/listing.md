@@ -89,7 +89,7 @@ May the light of the Gita guide your day.
 **Ship gate.** The iOS widget line is only true once the WidgetKit extension
 compiles and the App Group `group.com.bhagavadgita.ios` is enabled on both
 App IDs (BUILD_LOG [47]). Do not submit this description before that build is
-verified. Android's widget is already live.
+verified. Android's widget is live; its 4×4 redesign still needs a device pass.
 
 ## URLs (live — Cloudflare Worker `gitajyoti-site`, source in `/site`)
 - Privacy policy: https://gita.elevenpoint.ca/privacy/
@@ -103,7 +103,7 @@ verified. Android's widget is already live.
 ## Privacy answers
 - **Apple App Privacy:** "Data Not Collected." Verified 2026-10-03: no
   analytics/crash SDK, no account, no `fetch`/HTTP calls in app code; all 701
-  verse audio files are bundled (`assets/audios`, 143 MB) — fully offline.
+  verse audio files are bundled (`assets/audios`, 48 MB) — fully offline.
   Re-verify if Supabase / shorts are added.
 - **Play Data safety:** no data collected, no data shared; data encrypted in
   transit N/A; users can't request deletion because nothing is stored

@@ -11,7 +11,7 @@ type Props = {
   subtitle: string;
   sloka?: string;
   meaning?: string;
-  /** Deep link printed on the card so a screenshot still leads back to the verse. */
+  /** Public verse URL printed on the card so a screenshot still leads back. */
   link?: string;
 };
 

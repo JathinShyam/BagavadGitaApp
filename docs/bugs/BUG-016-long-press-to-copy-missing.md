@@ -5,7 +5,7 @@
 | **Priority** | P1 |
 | **Platform** | Both |
 | **Area** | Verse / Onboarding |
-| **Status** | fixed — loop [34] (long-press copy/share sheet; device check pending) |
+| **Status** | implemented [34], [48] — Android verified [50]; iOS verification owed (long-press + screen-reader actions) |
 | **Found** | 2026-11-15, code audit (no device build) |
 | **Estimate** | S (<1h) |
 
@@ -36,6 +36,16 @@ app/(main)/index.tsx:527:  onLongPress={handleShareStreak}
 ```
 
 One `onLongPress` in the whole app, and it shares the streak card.
+
+### Android verification — 2026-11-23
+
+Long-pressing the sloka opens the RN `Modal` sheet with **Copy verse** and
+**Share verse**; the hardware Back button dismisses it without leaving the
+verse screen. The Copy action uses `expo-clipboard`; the sheet and dismissal
+were verified on device, the clipboard string was not read back.
+Screenshot: `assets/a49-longpress.jpg`.
+
+iOS still owes the same check; there is no macOS host on this Linux machine.
 
 ## Likely cause
 

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="widget_daily_verse_label">दैनिक श्लोक</string>
+  <string name="widget_daily_verse_description">आज का भगवद्गीता श्लोक - हर दिन बदलता है</string>
+  <string name="widget_eyebrow_today">आज</string>
+  <string name="widget_title_placeholder">दैनिक श्लोक</string>
+  <string name="widget_meaning_placeholder">आज का श्लोक देखने के लिए भगवद्गीता ऐप खोलें।</string>
+  <string name="widget_cta_read">आज का श्लोक पढ़ें</string>
+  <string name="widget_cta_open">भगवद्गीता खोलें</string>
+  <string name="widget_refresh_prompt">आज का श्लोक देखने के लिए भगवद्गीता ऐप एक बार खोलें।</string>
+</resources>

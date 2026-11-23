@@ -158,6 +158,8 @@ private enum WidgetPalette {
   static let cream = Color(red: 1.0, green: 0.973, blue: 0.906) // #FFF8E7
   static let ink = Color(red: 0.180, green: 0.165, blue: 0.141) // #2E2A24
   static let gold = Color(red: 0.722, green: 0.525, blue: 0.043) // #B8860B
+  /// Gold for small text on cream (5.07:1). Decorative gold is for marks only.
+  static let goldText = Color(red: 0.541, green: 0.392, blue: 0.063) // #8A6410
   static let night = Color(red: 0.043, green: 0.039, blue: 0.035) // #0B0A09
   static let nightInk = Color(red: 0.949, green: 0.925, blue: 0.855) // #F2ECDA
   static let nightGold = Color(red: 0.902, green: 0.718, blue: 0.290) // #E6B74A
@@ -190,6 +192,11 @@ struct DailyVerseWidgetEntryView: View {
 
   private var gold: Color {
     colorScheme == .dark ? WidgetPalette.nightGold : WidgetPalette.gold
+  }
+
+  /// Text-sized gold. 9pt `#B8860B` on cream is 3.07:1 and fails WCAG AA.
+  private var goldText: Color {
+    colorScheme == .dark ? WidgetPalette.nightGold : WidgetPalette.goldText
   }
 
   private var appTitle: String {
@@ -302,7 +309,7 @@ struct DailyVerseWidgetEntryView: View {
       Diamond(color: gold)
       Text(day.eyebrow)
         .font(.system(size: 9, weight: .semibold))
-        .foregroundStyle(gold)
+        .foregroundStyle(goldText)
         .lineLimit(1)
       Spacer(minLength: 0)
     }
@@ -313,7 +320,7 @@ struct DailyVerseWidgetEntryView: View {
       Diamond(color: gold.opacity(0.8))
       Text(appTitle)
         .font(.system(size: 9, weight: .semibold))
-        .foregroundStyle(gold.opacity(0.9))
+        .foregroundStyle(goldText.opacity(0.9))
         .lineLimit(1)
     }
   }

@@ -10,6 +10,8 @@ jest.mock("@/components/verse/StreakShareCard", () => ({ StreakShareCard: () => 
 jest.mock("expo-file-system/legacy", () => ({
   cacheDirectory: "file:///cache/",
   copyAsync: jest.fn(async () => undefined),
+  readDirectoryAsync: jest.fn(async () => []),
+  deleteAsync: jest.fn(async () => undefined),
 }));
 
 jest.mock("expo-sharing", () => ({
@@ -44,7 +46,7 @@ describe("shareVerseCard (BUG-015)", () => {
     await expect(shareVerseCard(ref, "2-47", "Bhagavad Gita")).resolves.toBe(false);
   });
 
-  it("shares the image and a tappable deep link on iOS", async () => {
+  it("shares the image and a tappable web link on iOS", async () => {
     jest
       .spyOn(Share, "share")
       .mockResolvedValue({ action: Share.sharedAction } as never);
@@ -52,7 +54,7 @@ describe("shareVerseCard (BUG-015)", () => {
     await expect(shareVerseCard(ref, "2-47", "Bhagavad Gita")).resolves.toBe(true);
 
     const payload = (Share.share as jest.Mock).mock.calls[0][0];
-    expect(payload.message).toContain("bagavadgita://verses/2-47");
+    expect(payload.message).toContain("https://gita.elevenpoint.ca/verses/2-47");
     expect(payload.url).toContain("share-card-");
     expect(Sharing.shareAsync).not.toHaveBeenCalled();
   });

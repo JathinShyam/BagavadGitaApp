@@ -23,4 +23,16 @@ describe("truncate", () => {
     const last = words[words.length - 1];
     expect(te.split(/\s+/).map((w) => w.replace(/[,;:]$/, ""))).toContain(last);
   });
+
+  it("does not orphan a combining mark", () => {
+    const text = "ee\u0301".repeat(20);
+    const out = truncate(text, 5).slice(0, -1);
+    expect(out).not.toMatch(/[\u0300-\u036f]$/);
+  });
+
+  it("does not split an emoji grapheme cluster", () => {
+    const out = truncate("🙏🏽".repeat(20), 5);
+    // One whole skin-toned emoji plus the ellipsis.
+    expect(out).toBe("🙏🏽…");
+  });
 });

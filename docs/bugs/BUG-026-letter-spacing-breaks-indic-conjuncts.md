@@ -5,7 +5,7 @@
 | **Priority** | P1 |
 | **Platform** | Both |
 | **Area** | Verse / Home (all scripture and localised text) |
-| **Status** | fixed — loop [36] (tracking removed, type scale adopted) |
+| **Status** | implemented [36], [48] — Android verified [50]; iOS verification owed (all tokens + localized titles) |
 | **Found** | 2026-11-15, typography audit |
 | **Estimate** | S (<1h) |
 
@@ -54,6 +54,17 @@ $ grep -n "letterSpacing" app/\(main\)/index.tsx
 624:    letterSpacing: 0.5,   <- brand bar, renders getAppTitle(language)
 655:    letterSpacing: 1.2,   <- heroEyebrow ("Today") — Latin, safe
 ```
+
+### Android verification — 2026-11-23
+
+Telugu (the default content language) was rendered on the verse screen and
+in the widget: `అధ్యాయం 18 · శ్లోకం 35`, `ధృతిః`, `పార్థ`, `తామసీ` all keep
+their conjuncts, and the localized widget title shows no tracking gaps.
+Screenshots: `assets/a49-widget-te.jpg`, `assets/a49-light-verse.jpg`
+(English italics for comparison). Hindi and Tamil were not re-checked on
+device in this pass.
+
+iOS still owes the same check; there is no macOS host on this Linux machine.
 
 ## Likely cause
 

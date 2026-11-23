@@ -5,7 +5,7 @@
 | **Priority** | P2 |
 | **Platform** | Android |
 | **Area** | Widget |
-| **Status** | fixed — loop [32] (30-day payload; boot re-sync still open) |
+| **Status** | fixed [50] — Android verified (30-day payload; boot re-arm + daily midnight refresh) |
 | **Found** | 2026-11-15, code audit |
 | **Estimate** | S (<1h) |
 
@@ -32,6 +32,16 @@ redraws every 30 minutes (`android:updatePeriodMillis="1800000"`) but its
 `lib/widget-data.ts:26` sets `ROLLING_DAYS = 7`. The Kotlin provider falls
 back to the refresh string when today's `dateKey` is not in the payload
 (`DailyVerseWidgetProvider.kt:227, 232`).
+
+### Android verification — 2026-11-23
+
+The widget was placed at its declared 4×4 size and shrunk to the compact
+layout. Its payload held 30 consecutive days (`2026-11-23` … `2026-12-22`)
+with no replacement characters; after the date rolled over, the provider
+re-armed the midnight alarm for `2026-11-24 00:05`. Screenshots:
+`assets/a49-widget-en.jpg`, `assets/a49-widget-te.jpg`.
+
+Android-only bug — no iOS leg to verify.
 
 ## Likely cause
 
@@ -61,4 +71,4 @@ still resolves today's verse.
 
 ## Out of scope
 
-- The iOS WidgetKit extension — there is no iOS widget yet.
+- The iOS WidgetKit extension — its provider is implemented but unverified.

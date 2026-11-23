@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="widget_daily_verse_label">தினசரி ஸ்லோகம்</string>
+  <string name="widget_daily_verse_description">இன்றைய பகவத் கீதை ஸ்லோகம் - தினமும் மாறும்</string>
+  <string name="widget_eyebrow_today">இன்று</string>
+  <string name="widget_title_placeholder">தினசரி ஸ்லோகம்</string>
+  <string name="widget_meaning_placeholder">இன்றைய ஸ்லோகத்தைப் பார்க்க பகவத் கீதை செயலியைத் திறக்கவும்.</string>
+  <string name="widget_cta_read">இன்றைய ஸ்லோகத்தைப் படிக்கவும்</string>
+  <string name="widget_cta_open">பகவத் கீதையைத் திறக்கவும்</string>
+  <string name="widget_refresh_prompt">இன்றைய ஸ்லோகத்திற்காக பகவத் கீதை செயலியை ஒருமுறை திறக்கவும்.</string>
+</resources>

@@ -1,5 +1,6 @@
 package com.jathinshyam.BagavadGita
 
+import android.app.AlarmManager
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
@@ -13,6 +14,7 @@ import android.widget.RemoteViews
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
@@ -20,6 +22,7 @@ import java.util.TimeZone
 class DailyVerseWidgetProvider : AppWidgetProvider() {
   companion object {
     const val ACTION_REFRESH = "com.jathinshyam.BagavadGita.DAILY_VERSE_WIDGET_REFRESH"
+    private const val ACTION_MIDNIGHT = "com.jathinshyam.BagavadGita.DAILY_VERSE_WIDGET_MIDNIGHT"
     private const val PREFS = "dailyVerseWidget"
     private const val TAG = "DailyVerseWidget"
 
@@ -36,23 +39,94 @@ class DailyVerseWidgetProvider : AppWidgetProvider() {
       }
       context.sendBroadcast(intent)
     }
+
+    /**
+     * The widget shows a *day's* verse, so it only needs to redraw at midnight.
+     * `updatePeriodMillis="0"` plus one inexact daily alarm replaces the old
+     * 30-minute poll (48 wakeups a day) — Review finding P1.
+     */
+    fun scheduleMidnightRefresh(context: Context) {
+      try {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(context, DailyVerseWidgetProvider::class.java).apply {
+          action = ACTION_MIDNIGHT
+        }
+        val pending = PendingIntent.getBroadcast(
+          context,
+          0,
+          intent,
+          PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val next = Calendar.getInstance().apply {
+          add(Calendar.DAY_OF_YEAR, 1)
+          set(Calendar.HOUR_OF_DAY, 0)
+          set(Calendar.MINUTE, 5)
+          set(Calendar.SECOND, 0)
+          set(Calendar.MILLISECOND, 0)
+        }
+        // Inexact on purpose: exact alarms are a Play-restricted permission and
+        // a few minutes of drift does not matter for a daily verse.
+        alarmManager.set(AlarmManager.RTC, next.timeInMillis, pending)
+      } catch (e: Exception) {
+        Log.e(TAG, "Could not schedule the midnight refresh", e)
+      }
+    }
+
+    /**
+     * Stop the daily alarm once no widget is placed. Without this, a removed
+     * widget leaves a broadcast waking the app every midnight forever.
+     */
+    fun cancelMidnightRefresh(context: Context) {
+      try {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(context, DailyVerseWidgetProvider::class.java).apply {
+          action = ACTION_MIDNIGHT
+        }
+        val pending = PendingIntent.getBroadcast(
+          context,
+          0,
+          intent,
+          PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+        ) ?: return
+        alarmManager.cancel(pending)
+        pending.cancel()
+      } catch (e: Exception) {
+        Log.e(TAG, "Could not cancel the midnight refresh", e)
+      }
+    }
   }
 
   override fun onReceive(context: Context, intent: Intent) {
     try {
-      if (intent.action == ACTION_REFRESH) {
-        val manager = AppWidgetManager.getInstance(context)
-        val component = ComponentName(context, DailyVerseWidgetProvider::class.java)
-        val ids = manager.getAppWidgetIds(component)
-        if (ids.isNotEmpty()) {
-          onUpdate(context, manager, ids)
+      when (intent.action) {
+        ACTION_REFRESH, ACTION_MIDNIGHT, Intent.ACTION_BOOT_COMPLETED -> {
+          val manager = AppWidgetManager.getInstance(context)
+          val component = ComponentName(context, DailyVerseWidgetProvider::class.java)
+          val ids = manager.getAppWidgetIds(component)
+          if (ids.isNotEmpty()) {
+            onUpdate(context, manager, ids)
+          } else if (intent.action == ACTION_MIDNIGHT) {
+            // Nothing placed (or all removed); stop waking the app.
+            cancelMidnightRefresh(context)
+          }
+          return
         }
-        return
       }
       super.onReceive(context, intent)
     } catch (e: Exception) {
       Log.e(TAG, "onReceive failed", e)
     }
+  }
+
+  override fun onEnabled(context: Context) {
+    super.onEnabled(context)
+    scheduleMidnightRefresh(context)
+  }
+
+  override fun onDisabled(context: Context) {
+    super.onDisabled(context)
+    // Last widget removed: do not leave a midnight alarm behind.
+    cancelMidnightRefresh(context)
   }
 
   override fun onUpdate(
@@ -69,13 +143,15 @@ class DailyVerseWidgetProvider : AppWidgetProvider() {
       val payload = resolveTodayPayload(context, widgetData, today)
 
       for (appWidgetId in appWidgetIds) {
+        val compact = isCompact(appWidgetManager, appWidgetId)
         try {
-          bindMainWidget(context, appWidgetManager, appWidgetId, payload)
+          bindMainWidget(context, appWidgetManager, appWidgetId, payload, compact)
         } catch (e: Exception) {
           Log.e(TAG, "Main layout bind failed for $appWidgetId", e)
           bindFallbackWidget(context, appWidgetManager, appWidgetId, payload)
         }
       }
+      scheduleMidnightRefresh(context)
     } catch (e: Exception) {
       Log.e(TAG, "onUpdate failed", e)
       for (appWidgetId in appWidgetIds) {
@@ -96,19 +172,50 @@ class DailyVerseWidgetProvider : AppWidgetProvider() {
     }
   }
 
+  /** Rebind when the reader resizes between the 4x4 and compact layouts. */
+  override fun onAppWidgetOptionsChanged(
+    context: Context,
+    appWidgetManager: AppWidgetManager,
+    appWidgetId: Int,
+    newOptions: android.os.Bundle
+  ) {
+    super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+    onUpdate(context, appWidgetManager, intArrayOf(appWidgetId))
+  }
+
+  /**
+   * A widget shorter than ~4 rows cannot hold the sloka and CTA without
+   * clipping them (review finding P0), so it switches to the compact layout.
+   */
+  private fun isCompact(appWidgetManager: AppWidgetManager, appWidgetId: Int): Boolean {
+    return try {
+      val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
+      val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0)
+      minHeight in 1..200
+    } catch (e: Exception) {
+      false
+    }
+  }
+
   private fun bindMainWidget(
     context: Context,
     appWidgetManager: AppWidgetManager,
     appWidgetId: Int,
-    payload: Payload
+    payload: Payload,
+    compact: Boolean
   ) {
-    val views = RemoteViews(context.packageName, R.layout.daily_verse_widget)
+    val layout = if (compact) {
+      R.layout.daily_verse_widget_compact
+    } else {
+      R.layout.daily_verse_widget
+    }
+    val views = RemoteViews(context.packageName, layout)
 
     views.setTextViewText(R.id.widget_eyebrow, payload.eyebrow)
     views.setTextViewText(R.id.widget_title, payload.title)
     views.setTextViewText(R.id.widget_meaning, payload.meaning)
 
-    if (payload.sloka.isNotBlank()) {
+    if (!compact && payload.sloka.isNotBlank()) {
       views.setViewVisibility(R.id.widget_sloka, View.VISIBLE)
       views.setTextViewText(R.id.widget_sloka, payload.sloka)
     } else {

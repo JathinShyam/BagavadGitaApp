@@ -21,7 +21,7 @@ and keeps opening in month three. Not a library, a practice.
 
 The app already has the bones: 18 chapters, four content languages
 (te/en/hi/ta), daily verse, streaks, guided paths, Explore topics, saved
-verses, share cards, local reminders, an Android widget. The job now is
+verses, share cards, local reminders, home-screen widgets. The job now is
 **depth, calm, and habit**: every iteration should either make the daily
 reading ritual better (retention) or give someone a reason to install it and
 tell a friend (acquisition).
@@ -533,15 +533,15 @@ total.
 | 1 | [BUG-017](docs/bugs/BUG-017-daily-verse-never-reaches-chapters-11-18.md) | 40% of the scripture can never be a daily verse |
 | 2 | [BUG-018](docs/bugs/BUG-018-rereading-verse-does-not-advance-streak.md) | Re-reading never advances the streak — "Continue reading" can't count |
 | 3 | [BUG-019](docs/bugs/BUG-019-stale-streak-chip-after-missed-day.md) | The chip shows a streak that isn't true |
-| 4 | [BUG-022](docs/bugs/BUG-022-bundle-is-175mb.md) | 175 MB — Play's 150 MB limit rejects the upload |
+| 4 | [BUG-022](docs/bugs/BUG-022-bundle-is-175mb.md) | 55 MB assets / 68 MB export — under Play's limit; on-demand audio remains |
 | 5 | [BUG-023](docs/bugs/BUG-023-schedule-exact-alarm-restricted-permission.md) | Restricted permission → Play rejection path |
 | 6 | [BUG-015](docs/bugs/BUG-015-verse-share-button-missing.md) | Store listing promises a feature that does not exist |
 | 7 | [BUG-016](docs/bugs/BUG-016-long-press-to-copy-missing.md) | Onboarding promises a feature that does not exist |
 | 8 | [BUG-025](docs/bugs/BUG-025-light-theme-gold-fails-wcag-aa.md) | Primary colour fails AA — legal and accessibility |
 | 9 | [BUG-026](docs/bugs/BUG-026-letter-spacing-breaks-indic-conjuncts.md) | Broken conjuncts in the scripture text |
-| 10 | [BUG-020](docs/bugs/BUG-020-notifications-stop-after-eight-days.md) | The reminder dies after 8 days |
+| 10 | [BUG-020](docs/bugs/BUG-020-notifications-stop-after-eight-days.md) | Reminder used to die after 8 days — 30-day window; device verification owed |
 | 11 | [BUG-024](docs/bugs/BUG-024-ci-uses-wrong-jdk-and-node.md) | Nothing is verified before a release |
-| 12 | [BUG-021](docs/bugs/BUG-021-widget-goes-stale-after-eight-days.md) | Widget placeholder after 8 days |
+| 12 | [BUG-021](docs/bugs/BUG-021-widget-goes-stale-after-eight-days.md) | Widget used to show a placeholder after 8 days — 30-day payload + boot re-arm |
 
 ## Polish Punch List
 

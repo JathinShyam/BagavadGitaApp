@@ -10,7 +10,10 @@ import {
   DEFAULT_REMINDER_TIME,
   getAtRiskMoment,
 } from "@/lib/streak-at-risk";
-import { cancelStreakAtRiskNotification } from "@/lib/daily-verse-notifications";
+import {
+  getStoredPreferences,
+  scheduleStreakAtRiskNotification,
+} from "@/lib/daily-verse-notifications";
 import { computeNextStreak, creditDayAsRead, reconcileStreak } from "@/lib/streak";
 import {
   EMPTY_FREEZES,
@@ -93,6 +96,8 @@ interface ReadingProgressContextValue {
   getActivityMap: () => ReadingActivity;
   isDailyGoalComplete: (dateKey?: string) => boolean;
   isStreakAtRisk: () => boolean;
+  /** Re-read the reminder time so the at-risk moment follows Settings. */
+  refreshReminderTime: () => Promise<void>;
 }
 
 const ReadingProgressContext = createContext<ReadingProgressContextValue | null>(null);
@@ -301,8 +306,8 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
         setActivity(nextActivity);
         await saveActivity(nextActivity);
       }
-      // Reading now makes tonight's nudge untrue.
-      cancelStreakAtRiskNotification().catch(() => {});
+      // Reading now makes tonight's nudge untrue; scheduling happens once the
+      // streak is saved below, so tomorrow's nudge carries the new count.
 
       const dailyGoalJustCompleted =
         (currentActivity[todayKey] ?? 0) < DAILY_VERSE_GOAL &&
@@ -315,6 +320,10 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
         setStreak(nextStreak);
         await saveStreak(nextStreak);
       }
+
+      // Rebuild the nudge window from the freshly saved state: today's read
+      // cancels tonight and schedules tomorrow's (review finding P1).
+      scheduleStreakAtRiskNotification().catch(() => {});
 
       // Every seventh day of a live streak puts another lotus in hand.
       const currentFreezes = freezesRef.current;
@@ -484,6 +493,20 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
 
   const getActivityMap = useCallback(() => activity, [activity]);
 
+  /**
+   * Settings owns the reminder time; the flame's "at risk" moment is derived
+   * from it. Without this the reader changes the time, comes back to Home, and
+   * the flame still worries on the old schedule until the next cold start.
+   */
+  const refreshReminderTime = useCallback(async () => {
+    try {
+      const { time } = await getStoredPreferences();
+      setAtRiskMoment(getAtRiskMoment(time));
+    } catch {
+      // Keep the current moment; the next cold start reloads it.
+    }
+  }, []);
+
   const isDailyGoalComplete = useCallback(
     (dateKey?: string) => {
       const key = dateKey ?? getLocalDateKey();
@@ -525,6 +548,7 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
     getActivityMap,
     isDailyGoalComplete,
     isStreakAtRisk,
+    refreshReminderTime,
   };
 
   return React.createElement(ReadingProgressContext.Provider, { value }, children);

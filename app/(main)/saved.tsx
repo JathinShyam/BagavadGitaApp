@@ -18,7 +18,7 @@ import { SkeletonVerseCard } from "@/components/ui/SkeletonLoader";
 import { useMinimumLoading } from "@/hooks/useMinimumLoading";
 import { GoldCard } from "@/components/ui/GoldCard";
 import { ScreenCornerArt, CORNER_ART } from "@/components/ui/ScreenCornerArt";
-import { ROUTES, DEEP_LINKS } from "@/constants/routes";
+import { ROUTES, SHARE_URLS } from "@/constants/routes";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
 import { Spacing, Type } from "@/theme/design-tokens";
 import { getVerseById } from "@/data/verses/verse-catalog";
@@ -235,7 +235,7 @@ export default function SavedVersesScreen() {
               accessibilityLabel={t("saved.removeA11y")}
             >
               <Ionicons name="bookmark-outline" size={16} color={colors.brandText} />
-              <Text style={[styles.footerActionText, { color: colors.brandText }]}>
+              <Text style={[styles.footerActionText, { color: colors.brandText, letterSpacing: tracking(language, 0.2) }]}>
                 {t("saved.unsave")}
               </Text>
             </Pressable>
@@ -253,12 +253,12 @@ export default function SavedVersesScreen() {
               })}
             >
               <Ionicons name="share-outline" size={16} color={colors.brandText} />
-              <Text style={[styles.footerActionText, { color: colors.brandText }]}>
+              <Text style={[styles.footerActionText, { color: colors.brandText, letterSpacing: tracking(language, 0.2) }]}>
                 {t("common.share")}
               </Text>
             </Pressable>
             <View style={styles.footerAction}>
-              <Text style={[styles.footerActionText, { color: colors.brandText }]}>
+              <Text style={[styles.footerActionText, { color: colors.brandText, letterSpacing: tracking(language, 0.2) }]}>
                 {t("saved.viewVerse")}
               </Text>
               <Ionicons name="chevron-forward" size={14} color={colors.brandText} />
@@ -299,7 +299,9 @@ export default function SavedVersesScreen() {
           style={styles.headerArt}
           opacity={isDark ? 0.5 : 0.62}
         />
-        <Text style={[styles.title, { color: colors.brandText }]}>Saved</Text>
+        <Text style={[styles.title, { color: colors.brandText, letterSpacing: tracking(language, 0.3) }]}>
+          {t("saved.title")}
+        </Text>
         <Text style={[styles.subtitle, { color: colors.textMuted }]}>
           {t("saved.subtitle")}
         </Text>
@@ -332,7 +334,7 @@ export default function SavedVersesScreen() {
           subtitle={t("verse.verseCaption", { verse: shareTarget.verse_number })}
           sloka={savedVerseSloka(shareTarget, language)}
           meaning={savedVerseMeaning(shareTarget, language)}
-          link={DEEP_LINKS.verse(shareTarget.id)}
+          link={SHARE_URLS.verse(shareTarget.id)}
         />
       ) : null}
     </SafeAreaView>
@@ -417,7 +419,6 @@ const styles = StyleSheet.create({
   footerActionText: {
     fontSize: 13,
     fontWeight: "500",
-    letterSpacing: 0.2,
     opacity: 0.92,
   },
 });

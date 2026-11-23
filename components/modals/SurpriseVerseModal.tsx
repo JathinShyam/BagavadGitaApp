@@ -1,7 +1,7 @@
 // components/SurpriseVerseModal.tsx
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { View, StyleSheet, Dimensions, Pressable, Image } from "react-native";
+import { View, StyleSheet, Dimensions, Pressable, Image, Modal } from "react-native";
 import { Text } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, {
@@ -433,7 +433,18 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
   if (!visible && !rendered) return null;
 
   return (
-    <View style={styles.overlay}>
+    <Modal
+      transparent
+      visible={rendered}
+      onRequestClose={onClose}
+      animationType="none"
+      statusBarTranslucent
+    >
+      <View
+        style={styles.overlay}
+        accessibilityViewIsModal
+        onAccessibilityEscape={onClose}
+      >
       <Animated.View
         style={[
           styles.backdrop,
@@ -563,7 +574,8 @@ const SurpriseVerseModal: React.FC<SurpriseVerseModalProps> = ({
           <Ionicons name="close" size={22} color={colors.text} />
         </Pressable>
       </Animated.View>
-    </View>
+      </View>
+    </Modal>
   );
 };
 

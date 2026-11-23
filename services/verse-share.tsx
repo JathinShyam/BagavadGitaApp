@@ -6,7 +6,7 @@ import { Platform, Share, View, type ViewStyle } from "react-native";
 
 import { ShareCard } from "@/components/verse/ShareCard";
 import { StreakShareCard } from "@/components/verse/StreakShareCard";
-import { DEEP_LINKS } from "@/constants/routes";
+import { SHARE_URLS } from "@/constants/routes";
 import { translate } from "@/lib/i18n";
 import { DEFAULT_CONTENT_LANGUAGE, type ContentLanguage } from "@/constants/languages";
 
@@ -18,15 +18,51 @@ import { DEFAULT_CONTENT_LANGUAGE, type ContentLanguage } from "@/constants/lang
  */
 const offscreen: ViewStyle = { position: "absolute", left: -9999, top: -9999 };
 
+const SHARE_FILE_PREFIX = "share-card-";
+const SHARE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Share cards are one-shot files. They used to accumulate in the cache
+ * directory for the life of the install, so every share left another full-size
+ * PNG behind. Prune yesterday's before writing today's; failures are harmless.
+ */
+async function cleanShareCache(): Promise<void> {
+  const cacheDirectory = FileSystem.cacheDirectory;
+  if (!cacheDirectory) return;
+  try {
+    const cutoff = Date.now() - SHARE_CACHE_TTL_MS;
+    const names = await FileSystem.readDirectoryAsync(cacheDirectory);
+    await Promise.all(
+      names
+        .filter((name) => name.startsWith(SHARE_FILE_PREFIX) && name.endsWith(".png"))
+        .map(async (name) => {
+          const stamp = Number(name.slice(SHARE_FILE_PREFIX.length).replace(".png", ""));
+          if (Number.isFinite(stamp) && stamp > cutoff) return;
+          await FileSystem.deleteAsync(`${cacheDirectory}${name}`, {
+            idempotent: true,
+          });
+        })
+    );
+  } catch {
+    // Cache cleanup must never block a share.
+  }
+}
+
 export async function captureShareCardRef(viewRef: any): Promise<string> {
+  await cleanShareCache();
+
   const uri = await captureRef(viewRef, {
     format: "png",
     quality: 1,
   });
 
   // Ensure file lives in cache directory with stable extension.
-  const target = `${FileSystem.cacheDirectory}share-card-${Date.now()}.png`;
+  const cacheDirectory = FileSystem.cacheDirectory;
+  if (!cacheDirectory) return uri;
+  const target = `${cacheDirectory}${SHARE_FILE_PREFIX}${Date.now()}.png`;
   await FileSystem.copyAsync({ from: uri, to: target });
+  // The captureRef temp file is no longer needed once copied.
+  FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {});
   return target;
 }
 
@@ -47,9 +83,9 @@ export async function shareImage(
  * Capture and share a verse card.
  *
  * iOS can carry text and a file together, so the recipient gets the image plus a
- * tappable `bagavadgita://verses/<id>` link. Android's Share API drops the file
- * when text is present, so the image goes on its own and the deep link is
- * printed on the card instead.
+ * tappable `https://gita.elevenpoint.ca/verses/<id>` link. Android's Share API
+ * drops the file when text is present, so the image goes on its own and the
+ * link is printed on the card instead.
  *
  * Returns false when there is nothing to capture or no share sheet available.
  */
@@ -63,7 +99,7 @@ export async function shareVerseCard(
   if (!view) return false;
 
   const uri = await captureShareCardRef(view);
-  const message = `${caption}\n${DEEP_LINKS.verse(verseId)}`;
+  const message = `${caption}\n${SHARE_URLS.verse(verseId)}`;
 
   if (Platform.OS === "ios") {
     await Share.share({ message, url: uri });

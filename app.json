@@ -52,7 +52,13 @@
           "microphonePermission": false
         }
       ],
-      "expo-notifications"
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#B8860B"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

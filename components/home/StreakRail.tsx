@@ -5,7 +5,6 @@ import { useFocusEffect } from "expo-router";
 import Animated, {
   Easing,
   cancelAnimation,
-  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -123,6 +122,12 @@ function StreakDot({
  * The count rolls in from below while the old one leaves upward — two
  * absolutely positioned texts in a fixed-height box, so nothing reflows.
  * Falls back to a straight swap when Reduce Motion is on.
+ *
+ * Both layers are always mounted and always carry their animated style. Only
+ * the values change. Swapping via an animation completion callback was fragile:
+ * a dropped callback (or a Reduce Motion flip mid-roll) left the outgoing layer
+ * at opacity 0 with the incoming layer never promoted, so the count vanished.
+ * A JS timer now owns the swap and restores the visible state atomically.
  */
 function StreakCount({
   value,
@@ -140,15 +145,16 @@ function StreakCount({
   const inY = useSharedValue(14);
   const inOpacity = useSharedValue(0);
 
-  const settle = useCallback((next: number) => {
-    setShown(next);
-    setIncoming(null);
-  }, []);
-
   useEffect(() => {
     if (value === shown) return;
+
     if (reducedMotion) {
+      outY.value = 0;
+      outOpacity.value = 1;
+      inY.value = 14;
+      inOpacity.value = 0;
       setShown(value);
+      setIncoming(null);
       return;
     }
 
@@ -164,13 +170,19 @@ function StreakCount({
       easing: Ease.accelerate,
     });
     inY.value = withDelay(40, withTiming(0, { duration: 200, easing: Ease.standard }));
-    inOpacity.value = withDelay(
-      40,
-      withTiming(1, { duration: 200, easing: Ease.standard }, (finished) => {
-        if (finished) runOnJS(settle)(value);
-      })
-    );
-  }, [value, shown, reducedMotion, outY, outOpacity, inY, inOpacity, settle]);
+    inOpacity.value = withDelay(40, withTiming(1, { duration: 200, easing: Ease.standard }));
+
+    // 260ms = 40ms delay + 200ms entrance, plus one frame of slack.
+    const swap = setTimeout(() => {
+      outY.value = 0;
+      outOpacity.value = 1;
+      inY.value = 14;
+      inOpacity.value = 0;
+      setShown(value);
+      setIncoming(null);
+    }, 260);
+    return () => clearTimeout(swap);
+  }, [value, shown, reducedMotion, outY, outOpacity, inY, inOpacity]);
 
   const outStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: outY.value }],
@@ -183,20 +195,15 @@ function StreakCount({
 
   return (
     <View style={styles.countBox}>
-      <Animated.Text
-        style={[styles.count, { color }, incoming !== null && outStyle]}
-        numberOfLines={1}
-      >
+      <Animated.Text style={[styles.count, { color }, outStyle]} numberOfLines={1}>
         {shown}
       </Animated.Text>
-      {incoming !== null && (
-        <Animated.Text
-          style={[styles.count, styles.countLayered, { color }, inStyle]}
-          numberOfLines={1}
-        >
-          {incoming}
-        </Animated.Text>
-      )}
+      <Animated.Text
+        style={[styles.count, styles.countLayered, { color }, inStyle]}
+        numberOfLines={1}
+      >
+        {incoming ?? shown}
+      </Animated.Text>
     </View>
   );
 }

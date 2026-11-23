@@ -2,7 +2,7 @@
 name: gita-practice-systems
 description: >-
   Work on daily verse, streaks, reading paths, local notifications, milestones,
-  and Android widget sync in the Bhagavad Gita app. Use when editing practice
+  and widget sync in the Bhagavad Gita app. Use when editing practice
   habits, notification scheduling, widget data, reading progress, or path flows.
 ---
 

@@ -33,6 +33,7 @@ import {
   requestNotificationPermissions,
   scheduleNextDailyVerseNotification,
   cancelDailyVerseNotifications,
+  cancelStreakAtRiskNotification,
 } from "@/lib/daily-verse-notifications";
 import { syncDailyVerseWidget } from "@/lib/widget-data";
 import { APP_URLS } from "@/constants/app-urls";
@@ -107,7 +108,7 @@ export default function SettingsScreen() {
   const { colors } = useAppTheme();
   const { language, languageOption, setLanguage } = useContentLanguage();
   const { t } = useTranslation();
-  const { resetAllProgress, freezes } = useReadingProgress();
+  const { resetAllProgress, freezes, refreshReminderTime } = useReadingProgress();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [notificationTime, setNotificationTime] = useState("08:00");
   const [autoPlayAudio, setAutoPlayAudio] = useState(false);
@@ -199,7 +200,12 @@ export default function SettingsScreen() {
       try {
         await setStoredPreferences(false, notificationTime);
         setNotificationsEnabled(false);
-        await cancelDailyVerseNotifications();
+        // The at-risk nudge has its own identifier family, so the daily cancel
+        // alone would leave it scheduled (review finding P0).
+        await Promise.all([
+          cancelDailyVerseNotifications(),
+          cancelStreakAtRiskNotification(),
+        ]);
       } catch {
         Alert.alert(
           t("settings.couldNotDisableTitle"),
@@ -250,11 +256,12 @@ export default function SettingsScreen() {
     setShowTimePicker(false);
     try {
       await setStoredPreferences(notificationsEnabled, nextTime);
+      await refreshReminderTime();
       await scheduleNextDailyVerseNotification();
     } catch {
       // ignore — UI already updated
     }
-  }, [draftTime, notificationsEnabled, toTimeString]);
+  }, [draftTime, notificationsEnabled, toTimeString, refreshReminderTime]);
 
   const handleAutoPlayToggle = useCallback(async () => {
     const next = !autoPlayAudio;

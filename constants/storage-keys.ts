@@ -5,6 +5,8 @@ export const STORAGE_KEYS = {
   AUTO_PLAY_AUDIO: "autoPlayAudio",
   SAVED_VERSES: "savedVerses",
   ONBOARDING: "hasCompletedOnboarding",
+  /** The branded cold-start intro plays once per install (review finding P1). */
+  LAUNCH_INTRO_SHOWN: "launchIntroShown",
   THEME: "theme",
   /** Scripture content language (`te` | `en` | `hi`). */
   CONTENT_LANGUAGE: "contentLanguage",

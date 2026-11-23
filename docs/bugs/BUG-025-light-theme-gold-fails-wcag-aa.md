@@ -5,7 +5,7 @@
 | **Priority** | P1 |
 | **Platform** | Both |
 | **Area** | All screens |
-| **Status** | fixed — loop [35] (palette split + contrast test) |
+| **Status** | implemented [35], [48] — Android verified [50]; iOS verification owed (app + widget palettes) |
 | **Found** | 2026-11-15, contrast computation |
 | **Estimate** | M (half-day) |
 
@@ -44,6 +44,17 @@ Computed from the real token values:
 The dark theme is fine (`#E6B74A` on `#0B0A09` = 10.58:1). The **light**
 theme — the one users see first, because the README, the store listing and
 the website all show cream — is the broken one.
+
+### Android verification — 2026-11-23
+
+Light theme checked on Home, verse, Explore, Saved and Settings: gold
+`#8A6410` on cream `#FFF8E7` (5.07:1) and on the `#F5F2EA` card surface
+(4.80:1); status-bar icons are dark and visible. Screenshots:
+`assets/a49-light-home.jpg`, `a49-light-verse.jpg`, `a49-light-explore.jpg`,
+`a49-light-settings.jpg`. The widget palette is covered by
+`a49-widget-en.jpg`.
+
+iOS still owes the same check; there is no macOS host on this Linux machine.
 
 ## Likely cause
 

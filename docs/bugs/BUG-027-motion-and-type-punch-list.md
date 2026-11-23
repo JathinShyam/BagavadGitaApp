@@ -5,7 +5,7 @@
 | **Priority** | P3 |
 | **Platform** | Both |
 | **Area** | All screens |
-| **Status** | fixed [37]–[40] (device pass owed) |
+| **Status** | implemented [37]–[40], [48] — Android verified [50]; iOS verification owed |
 | **Found** | 2026-11-15, full motion audit (15 files) |
 | **Estimate** | L (1–2 days) for the batch |
 
@@ -28,6 +28,16 @@ Audit summary: 15 files with motion code · 34 `entering=` usages · 0
 `exiting=` usages · 0 reduced-motion guards · 0 motion tokens · 60+ magic
 numbers · 6 layout-prop animations · 41 haptic call sites · 13 concurrent
 infinite animation loops on one screen.
+
+### Android verification — 2026-11-23
+
+With all three system animation scales at 0, Home still renders the streak
+count, the daily card and the chapter list; the verse screen renders both
+layers and the audio bar. The notification shade shows the gold accent and
+the white lotus small icon. Screenshots:
+`assets/a49-reduced-motion.jpg`, `assets/a49-notif.jpg`.
+
+iOS still owes the same check; there is no macOS host on this Linux machine.
 
 ## Likely cause
 

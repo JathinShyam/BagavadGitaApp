@@ -61,11 +61,51 @@ export function getVerseForDate(
   return getVerseByDayIndex(getDayIndex(date), language);
 }
 
-/** Shorten at a word boundary so no word (or Indic conjunct) is cut in half. */
+/**
+ * Longest prefix of `text` that fits `maxCodeUnits` without splitting a
+ * grapheme cluster. `Intl.Segmenter` is used where the runtime has it (Node,
+ * current Hermes on iOS/Android); the fallback guards surrogate pairs and
+ * Indic combining marks so a truncation can never orphan one.
+ */
+function graphemePrefix(text: string, maxCodeUnits: number): string {
+  if (maxCodeUnits <= 0) return "";
+
+  type SegmenterCtor = new (
+    locales?: string | string[],
+    options?: { granularity: "grapheme" }
+  ) => { segment(input: string): Iterable<{ segment: string }> };
+
+  const Segmenter = (Intl as unknown as { Segmenter?: SegmenterCtor }).Segmenter;
+  if (typeof Segmenter === "function") {
+    try {
+      let out = "";
+      for (const part of new Segmenter(undefined, { granularity: "grapheme" }).segment(text)) {
+        if (out.length + part.segment.length > maxCodeUnits) break;
+        out += part.segment;
+      }
+      return out;
+    } catch {
+      // A stub/partial Intl implementation: use the manual guard below.
+    }
+  }
+
+  let end = Math.min(maxCodeUnits, text.length);
+  // Don't start on a low surrogate (split an emoji or astral character).
+  if (end < text.length && /[\uDC00-\uDFFF]/.test(text[end])) end -= 1;
+  // Back off while the boundary lands on a mark, joiner or variation selector.
+  while (end > 0 && /[\u0300-\u036f\u0900-\u0903\u093a-\u094f\u0951-\u0957\u0962-\u0963\u0bbe-\u0bcd\u0bd7\u0c00-\u0c04\u0c3e-\u0c56\u0c62-\u0c63\u200d\ufe0f]/u.test(text[end])) {
+    end -= 1;
+  }
+  // A cut that ends with a joiner is dangling; drop the joiner too.
+  while (end > 0 && text[end - 1] === "\u200d") end -= 1;
+  return text.slice(0, end);
+}
+
+/** Shorten at a word boundary when available; never split a grapheme cluster. */
 export function truncate(text: string, maxLen: number): string {
   const trimmed = text.replace(/\s+/g, " ").trim();
   if (trimmed.length <= maxLen) return trimmed;
-  const cut = trimmed.slice(0, maxLen - 1);
+  const cut = graphemePrefix(trimmed, maxLen - 1);
   const lastSpace = cut.lastIndexOf(" ");
   const atWord = lastSpace > maxLen * 0.6 ? cut.slice(0, lastSpace) : cut;
   return `${atWord.replace(/[\s,;:—–-]+$/, "")}…`;

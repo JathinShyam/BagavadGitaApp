@@ -49,15 +49,15 @@ BUILD_LOG.md           ← append-only
 | Chapters / verse entries in the catalogue | 18 / 640 | `data/verses/verse-catalog.ts` |
 | Language coverage (sloka, meaning, word-meanings) | 100% in te/en/hi/ta | instrumented audit |
 | Commentary coverage | 99% | instrumented audit |
-| App bundle (assets only) | 175 MB | `du -sh assets/*` |
-| Audio files bundled | 701 MP3 = 143 MB | `find assets/audios -name '*.mp3'` |
-| Daily-verse reachable chapters | 10 of 18 | see BUG-017 |
-| Contrast, gold on cream | 3.07:1 (needs 4.5) | computed from tokens |
-| Contrast, proposed `brandText` on cream | 5.07:1 | computed from tokens |
-| `entering=` usages / `exiting=` usages | 34 / 0 | grep |
-| Reduced-motion guards | 0 | grep |
-| Motion tokens | 0 | `theme/design-tokens.ts` |
-| Haptic call sites | 41 | grep |
+| App bundle (assets only) | 55 MB | `du -sh assets` |
+| Audio files bundled | 701 `.m4a` = 48 MB | `find assets/audios -name '*.m4a'` |
+| Daily-verse reachable chapters | 18 of 18 | `lib/daily-verse.ts`, BUG-017 |
+| Contrast, decorative gold `brand` on cream | 3.07:1 (marks only) | computed from tokens |
+| Contrast, text gold `brandText` on cream | 5.07:1 | computed from tokens |
+| `entering=` usages / `exiting=` usages | 25 / 0 | grep |
+| Reduced-motion guards | 11 files / 59 refs | grep `useReducedMotion` |
+| Motion tokens | `theme/motion.ts` (`Duration`, `Ease`, `Spring`) | `theme/motion.ts` |
+| Haptic call sites | 72 | grep `haptics.` |
 | Bugs found in the retention engine | 25 | see BUG-017 … BUG-021 |
 | Competitors surveyed (US App Store) | 24 | iTunes Search API |
 

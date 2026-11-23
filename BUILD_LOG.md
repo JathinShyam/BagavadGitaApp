@@ -1484,3 +1484,73 @@ extension is verified before submission.
 **Blocked**    Premium: store products, tax/pricing setup and purchase
 credentials are operator work. iOS widget copy depends on BUILD_LOG [47]'s
 native build and App Group approval.
+
+## [50] 2026-11-23 — The verification pass (Android closed; iOS blocked)
+
+**Move**       The batch 1–3 fixes were code-complete but unproven. Close every
+Android claim with a screenshot that was actually looked at, and keep the
+statuses honest where the machine cannot run the other platform.
+
+**Plan**       Drive the debug build on the Android 16 emulator: notifications,
+widget, language switch, light/dark, reduced motion, share, long-press, streak.
+Re-run the static gate after removing the temporary notification logs.
+
+**Decisions**  1. The enable race is fixed and proven. Instrumented runs showed
+the stale foreground pass reading `prefs false`, then the toggle pass reading
+`prefs true` and scheduling 30 daily requests + the at-risk nudge. The queue
+serialises writes instead of coalescing them, so the later preference wins.
+2. Notifications are healthy: 30 stored identifiers (`daily-verse-2026-11-24`
+… `2026-12-23`), 31 `NOTIFICATION_EVENT` alarms, `streak-at-risk2026-11-24`,
+channel `daily-verse` at importance 3 with vibration. A test notification
+posted with the white lotus small icon and the `#B8860B` accent.
+3. The widget is 4×4, still legible at its compact minimum, carries 30 days
+with no replacement characters, and re-arms the midnight alarm
+(`2026-11-24 00:05`) after the date rolls. BUG-021 is Android-only, so it
+closes; the shared bugs stay "implemented" until iOS runs.
+4. Language switch now refreshes both surfaces: the widget payload and the
+30 notification requests were rewritten in Telugu, then back to English.
+Telugu conjuncts are intact in the widget title, sloka and meaning.
+5. Light theme was checked on five screens. Gold `#8A6410` on cream is 5.07:1
+and on the card surface 4.80:1; status-bar icons are dark.
+6. **iOS is blocked by the host, not the code.** This machine is Linux now —
+no Xcode, no Simulator, no `xcodebuild`. Every Both-platform status therefore
+reads "Android verified [50]; iOS verification owed" rather than `fixed`.
+7. No new feature work this iteration. The only code change was deleting the
+`[notif-debug]` instrumentation added to prove the race.
+
+**Verified**   Android screenshots, all read:
+- `assets/a49-share-sheet.jpg` — share sheet + card with HTTPS link
+- `assets/a49-longpress.jpg` — Copy verse / Share verse, Back dismisses
+- `assets/a49-widget-en.jpg`, `a49-widget-te.jpg` — 4×4 widget, both languages
+- `assets/a49-light-home.jpg`, `a49-light-verse.jpg`, `a49-light-explore.jpg`,
+  `a49-light-settings.jpg` — cream/gold, dark status-bar icons
+- `assets/a49-lang-sheet.jpg` — localized language sheet
+- `assets/a49-reduced-motion.jpg` — streak and cards render at scale 0
+- `assets/a49-notif.jpg` — gold accent + lotus icon in the shade
+
+**Critique**
+- The light Home's "0 of 2" freeze count is the only cool-coloured element on
+  the screen; it reads as a link next to the gold. A future pass should decide
+  whether counts are gold or neutral.
+- At the compact widget size the sloka disappears and only the meaning
+  remains. That is the right trade for a 2×2 cell, but it means the widget is
+  a paraphrase at the smallest size, not scripture.
+- The share sheet's generated card uses a deep green field, not the app's
+  cream/gold. It looks deliberate and legible, but it is a second visual
+  language; keep it or fold it back into the tokens in a later design pass.
+- Nothing in this list was changed in this iteration — it was a verification
+  pass; the observations are recorded for the next one.
+
+**Ship**       Bug statuses and Android evidence under `docs/bugs/`; this log.
+
+**Gate**       lint ✅ (0 warnings) · tsc ✅ · jest 20 suites / 144 ✅
+
+**Observe**    1. On the next iOS-capable host, run the same list and flip the
+seven shared statuses to `fixed`. 2. Watch the first real 08:00 delivery and
+the at-risk nudge on a missed day; the chain is scheduled, not yet observed
+firing on a natural day. 3. Re-check the widget after a forced reboot to
+confirm the boot receiver re-arms the midnight alarm.
+
+**Blocked**    iOS build + simulator verification: no macOS/Xcode on this host.
+BUG-022 (bundle size) still awaits the on-demand audio decision; BUG-024
+(expo-doctor drift) still awaits dependency alignment.

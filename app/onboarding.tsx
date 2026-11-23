@@ -5,6 +5,7 @@ import {
   Dimensions,
   FlatList,
   Pressable,
+  Alert,
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from "react-native";
@@ -31,7 +32,7 @@ import { STORAGE_KEYS } from "@/constants/storage-keys";
 import { CONTENT_LANGUAGES, getAppTitle } from "@/constants/languages";
 import { useContentLanguage } from "@/context/language-context";
 import { useTranslation } from "@/hooks/useTranslation";
-import { getLanguageLabel, tracking, type Translator } from "@/lib/i18n";
+import { getLanguageLabel, INTL_LOCALES, tracking, type Translator } from "@/lib/i18n";
 import {
   requestNotificationPermissions,
   scheduleNextDailyVerseNotification,
@@ -130,11 +131,12 @@ function getSlides(t: Translator): OnboardingSlide[] {
   ];
 }
 
-function formatChipLabel(time: string): string {
+function formatChipLabel(time: string, locale: string): string {
   const [h, m] = time.split(":").map(Number);
-  const period = h >= 12 ? "PM" : "AM";
-  const hour12 = h % 12 || 12;
-  return `${hour12}:${String(m).padStart(2, "0")} ${period}`;
+  const d = new Date();
+  d.setHours(h, m, 0, 0);
+  // Locale-aware so the first screen doesn't read "8:00 AM" in Telugu.
+  return d.toLocaleTimeString(locale, { hour: "numeric", minute: "2-digit" });
 }
 
 export default function OnboardingScreen() {
@@ -186,6 +188,12 @@ export default function OnboardingScreen() {
         await scheduleNextDailyVerseNotification();
       } else {
         await setStoredPreferences(false, reminderTime);
+        // Settings explains a denial; the first-run ask must too (review
+        // finding P1), otherwise the tap appears to do nothing.
+        Alert.alert(
+          t("settings.notificationsDisabledTitle"),
+          t("settings.notificationsDisabledBody")
+        );
       }
     } catch (error) {
       console.error("Failed to enable daily reminder:", error);
@@ -267,15 +275,15 @@ export default function OnboardingScreen() {
 
           {item.kind === "reminder" && (
             <View style={styles.timeChips}>
-              {REMINDER_TIMES.map((t) => (
+              {REMINDER_TIMES.map((time) => (
                 <SelectableChip
-                  key={t}
-                  label={formatChipLabel(t)}
-                  selected={reminderTime === t}
+                  key={time}
+                  label={formatChipLabel(time, INTL_LOCALES[language])}
+                  selected={reminderTime === time}
                   onPressIn={haptics.light}
                   onPress={() => {
                     haptics.selection();
-                    setReminderTime(t);
+                    setReminderTime(time);
                   }}
                   accessibilityRole="radio"
                   containerStyle={styles.timeChip}

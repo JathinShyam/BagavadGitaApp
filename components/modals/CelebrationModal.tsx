@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, StyleSheet, Dimensions, Pressable } from "react-native";
+import { View, StyleSheet, Dimensions, Pressable, Modal } from "react-native";
 import { Text } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, {
@@ -59,7 +59,8 @@ const ConfettiParticle: React.FC<{
       startDelay,
       withTiming(SCREEN_HEIGHT + 100, {
         duration: seed.fallDuration,
-        easing: Easing.out(Easing.quad),
+        // Gravity accelerates; Easing.out started fast and slowed down.
+        easing: Easing.in(Easing.quad),
       })
     );
     translateX.value = withDelay(
@@ -143,14 +144,12 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
   );
 
   const confettiColors = [
-    colors.primary,
+    colors.brand,
+    colors.primarySoft,
+    colors.brandText,
     colors.success,
-    colors.warning,
-    "#FF6B6B",
-    "#4ECDC4",
-    "#45B7D1",
-    "#96CEB4",
-    "#FFEAA7",
+    "#C9A227",
+    "#8C6D1F",
   ];
 
   useEffect(() => {
@@ -198,7 +197,18 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
   if (!visible && !rendered) return null;
 
   return (
-    <View style={styles.overlay}>
+    <Modal
+      transparent
+      visible={rendered}
+      onRequestClose={onClose}
+      animationType="none"
+      statusBarTranslucent
+    >
+      <View
+        style={styles.overlay}
+        accessibilityViewIsModal
+        onAccessibilityEscape={onClose}
+      >
       {/* Confetti — decorative motion, skipped under Reduce Motion. */}
       {!reducedMotion &&
         confettiDelays.map((delay, i) => (
@@ -260,7 +270,8 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({
           </Text>
         </Pressable>
       </Animated.View>
-    </View>
+      </View>
+    </Modal>
   );
 };
 

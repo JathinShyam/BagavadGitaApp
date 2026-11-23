@@ -20,8 +20,8 @@ export const Palette = {
     success: "#2E7D32",
     warning: "#B26A00",
     danger: "#C62828",
-    /** Streak flame — live streak (4.89:1 on background). */
-    streakFlame: "#C2410C",
+    /** Streak flame — live streak (5.08:1 on background, 4.63:1 elevated). */
+    streakFlame: "#BE3F0C",
     /** Streak flame — about to expire tonight (5.14:1). */
     streakAtRisk: "#C0392B",
     /** Streak flame — streak reset, kept as a memory (5.08:1). */
@@ -97,16 +97,16 @@ export const Shadows = {
 /**
  * The eight named type tokens (motion-and-typography spec §5.3).
  *
- * Tracking is a Latin-only tool: it is baked into `caption` and `display`,
- * which are only ever used on fixed English strings. Scripture and localized
- * content must stay untracked (BUG-026).
+ * Tracking is a Latin-only tool and is never baked into a token: call sites
+ * that render fixed English chrome opt in with `tracking()`, while localized
+ * and scripture text stays untracked (BUG-026). Baking it into `display` made
+ * the token unsafe the moment a screen localized its title.
  */
 export const Type = {
   display: {
     fontFamily: "PlayfairDisplay_700Bold",
     fontSize: 40,
     lineHeight: 46,
-    letterSpacing: 0.3,
   },
   title: {
     fontFamily: "PlayfairDisplay_600SemiBold",
@@ -141,7 +141,6 @@ export const Type = {
     fontSize: 11,
     lineHeight: 14,
     fontWeight: "600",
-    letterSpacing: 0.6,
   },
 } as const;
 

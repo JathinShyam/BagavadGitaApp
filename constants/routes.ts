@@ -22,3 +22,14 @@ export const DEEP_LINKS = {
   mainTabs: "bagavadgita://",
   verse: (verseId: string) => `bagavadgita://verses/${verseId}` as const,
 } as const;
+
+/**
+ * Public web URLs for content shared outside the app.
+ *
+ * A `bagavadgita://` link is useless to a recipient who does not already have
+ * the app, so share cards and share messages use the marketing site, which
+ * renders the same route (review finding P1).
+ */
+export const SHARE_URLS = {
+  verse: (verseId: string) => `https://gita.elevenpoint.ca/verses/${verseId}` as const,
+} as const;

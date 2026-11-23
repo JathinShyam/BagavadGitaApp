@@ -27,6 +27,7 @@ import { useAppTheme } from "@/hooks/useAppTheme";
 import { useTranslation } from "@/hooks/useTranslation";
 import { tracking } from "@/lib/i18n";
 import { useReadingProgress } from "@/hooks/useReadingProgress";
+import { useTodayKey } from "@/hooks/useTodayKey";
 import SurpriseVerseModal from "@/components/modals/SurpriseVerseModal";
 import { SelectableChip } from "@/components/ui/SelectableChip";
 import { PathPickerModal } from "@/components/practice/PathPickerModal";
@@ -174,9 +175,16 @@ export default function HomeScreen() {
   // The rail stops its at-risk breath while another screen is on top.
   const [screenFocused, setScreenFocused] = useState(true);
 
-  const todaysVerse = useMemo(() => getVerseForDate(new Date(), language), [language]);
+  const todayKey = useTodayKey();
+  // `todayKey` is the real dependency: it changes at midnight and on resume,
+  // so the card never keeps showing yesterday's verse (review finding P0).
+  const todaysVerse = useMemo(
+    () => getVerseForDate(new Date(), language),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [language, todayKey]
+  );
   const todayPreview = todaysVerse
-    ? getDailyVerseNotificationContent(todaysVerse).body
+    ? getDailyVerseNotificationContent(todaysVerse, language).body
     : "";
   const goalDone = isDailyGoalComplete();
   const streakAtRisk = isStreakAtRisk();

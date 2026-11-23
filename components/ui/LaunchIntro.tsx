@@ -191,6 +191,9 @@ export function LaunchIntro({ onFinish }: Props) {
               styles.telugu,
               {
                 color: colors.brandText,
+                // Playfair is Latin-only; Indic titles use the platform serif.
+                fontFamily:
+                  language === "en" ? "PlayfairDisplay_700Bold" : undefined,
                 // Latin-only tracking; Indic scripts need their conjuncts intact.
                 letterSpacing: language === "en" ? 0.5 : 0,
               },
@@ -255,7 +258,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   telugu: {
-    fontFamily: "PlayfairDisplay_700Bold",
     fontSize: 36,
   },
   rule: {

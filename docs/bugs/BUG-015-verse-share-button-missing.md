@@ -5,7 +5,7 @@
 | **Priority** | P1 |
 | **Platform** | Both |
 | **Area** | Verse |
-| **Status** | fixed — loop [33] (implemented; device sharing/deep-link tap not verified on this machine) |
+| **Status** | implemented [33], [48] — Android verified [50]; iOS verification owed (share sheet + HTTPS link tap) |
 | **Found** | 2026-11-15, code audit (no device build) |
 | **Estimate** | M (half-day) |
 
@@ -47,6 +47,16 @@ app/(main)/index.tsx:198:  await shareImage(uri);
 
 Every call is the *streak* share. `constants/routes.ts:21` defines
 `DEEP_LINKS` but nothing references it.
+
+### Android verification — 2026-11-23
+
+Debug build on the Android 16 emulator (1080×2400). The header share icon
+opens the system share sheet with the generated card; the card carries
+`https://gita.elevenpoint.ca/verses/12-20` (HTTPS, not the `bagavadgita://`
+scheme). The long-press sheet also offers **Share verse**. Screenshot:
+`assets/a49-share-sheet.jpg`.
+
+iOS still owes the same check; there is no macOS host on this Linux machine.
 
 ## Likely cause
 

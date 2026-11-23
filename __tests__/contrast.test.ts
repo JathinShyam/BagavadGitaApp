@@ -30,7 +30,7 @@ const AA_TEXT = 4.5;
 const AA_GRAPHIC = 3;
 
 describe("light palette contrast (BUG-025)", () => {
-  const { background, surface } = Palette.light;
+  const { background, surface, surfaceElevated } = Palette.light;
 
   it.each([
     ["brandText", Palette.light.brandText],
@@ -41,6 +41,24 @@ describe("light palette contrast (BUG-025)", () => {
   ])("%s passes AA on background and surface", (_name, color) => {
     expect(contrastRatio(color, background)).toBeGreaterThanOrEqual(AA_TEXT);
     expect(contrastRatio(color, surface)).toBeGreaterThanOrEqual(AA_TEXT);
+  });
+
+  it.each([
+    ["text", Palette.light.text],
+    ["textMuted", Palette.light.textMuted],
+  ])("%s passes AA on the elevated toast surface", (_name, color) => {
+    expect(contrastRatio(color, surfaceElevated)).toBeGreaterThanOrEqual(AA_TEXT);
+  });
+
+  it.each([
+    ["streakFlame", Palette.light.streakFlame],
+    ["streakAtRisk", Palette.light.streakAtRisk],
+    ["streakBroken", Palette.light.streakBroken],
+    ["streakFrozen", Palette.light.streakFrozen],
+  ])("%s stays legible on every light surface", (_name, color) => {
+    for (const bg of [background, surface, surfaceElevated]) {
+      expect(contrastRatio(color, bg)).toBeGreaterThanOrEqual(AA_TEXT);
+    }
   });
 
   it("the primary CTA label passes AA on its fill", () => {
@@ -65,7 +83,7 @@ describe("light palette contrast (BUG-025)", () => {
 });
 
 describe("dark palette contrast", () => {
-  const { background, surface } = Palette.dark;
+  const { background, surface, surfaceElevated } = Palette.dark;
 
   it.each([
     ["brandText", Palette.dark.brandText],
@@ -77,6 +95,17 @@ describe("dark palette contrast", () => {
   ])("%s passes AA on background and surface", (_name, color) => {
     expect(contrastRatio(color, background)).toBeGreaterThanOrEqual(AA_TEXT);
     expect(contrastRatio(color, surface)).toBeGreaterThanOrEqual(AA_TEXT);
+  });
+
+  it.each([
+    ["streakFlame", Palette.dark.streakFlame],
+    ["streakAtRisk", Palette.dark.streakAtRisk],
+    ["streakBroken", Palette.dark.streakBroken],
+    ["streakFrozen", Palette.dark.streakFrozen],
+  ])("%s stays legible on every dark surface", (_name, color) => {
+    for (const bg of [background, surface, surfaceElevated]) {
+      expect(contrastRatio(color, bg)).toBeGreaterThanOrEqual(AA_TEXT);
+    }
   });
 
   it("the primary CTA label passes AA on its fill", () => {

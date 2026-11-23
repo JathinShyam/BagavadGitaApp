@@ -1,7 +1,7 @@
 import { NativeModules, Platform } from "react-native";
 
 import { addDaysToDateKey, getLocalDateKey } from "@/lib/date-keys";
-import { getVerseForDate } from "@/lib/daily-verse";
+import { getVerseForDate, truncate } from "@/lib/daily-verse";
 import { getStoredContentLanguage } from "@/lib/chapter-content";
 import {
   APP_TITLES,
@@ -42,11 +42,8 @@ const ROLLING_DAYS = 30;
 const MAX_SLOKA = 72;
 const MAX_MEANING = 140;
 
-function truncate(text: string, maxLen: number): string {
-  const trimmed = text.replace(/\s+/g, " ").trim();
-  if (trimmed.length <= maxLen) return trimmed;
-  return `${trimmed.slice(0, maxLen - 1).trim()}…`;
-}
+// Truncation lives in `daily-verse`: it cuts on a word boundary so an Indic
+// conjunct is never split into two code points (review finding P1).
 
 /** Build a 30-day feed of daily verses so the native widget can pick today's entry. */
 export function buildWidgetSyncPayload(

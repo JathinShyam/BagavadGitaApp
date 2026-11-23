@@ -21,8 +21,10 @@ describe("type scale (BUG-026)", () => {
     expect(Type.sloka.lineHeight).toBe(38);
   });
 
-  it("keeps tracking off the sloka token", () => {
-    expect(Type.sloka).not.toHaveProperty("letterSpacing");
+  it("keeps tracking off every token", () => {
+    for (const style of Object.values(Type)) {
+      expect(style).not.toHaveProperty("letterSpacing");
+    }
   });
 
   it.each([

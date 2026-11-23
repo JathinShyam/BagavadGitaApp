@@ -43,6 +43,7 @@ import {
 import { verseScreenStyles } from "@/theme/screen-styles";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useReadingProgress } from "@/hooks/useReadingProgress";
+import { useTodayKey } from "@/hooks/useTodayKey";
 import { useToast } from "@/components/ui/Toast";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
 import type { StreakMilestone } from "@/constants/milestones";
@@ -69,10 +70,10 @@ import {
 } from "@/lib/milestones";
 import { markPathProgressForVerse } from "@/lib/reading-paths";
 import { maybeRequestReview, notePositiveEvent } from "@/lib/review-prompt";
-import { getDailyVerseNotificationContent, getVerseForDate } from "@/lib/daily-verse";
+import { getDailyVerseNotificationContent, getVerseForDate, truncate } from "@/lib/daily-verse";
 import { buildVerseCopyText } from "@/lib/verse-copy";
 
-import { ROUTES, DEEP_LINKS } from "@/constants/routes";
+import { ROUTES, SHARE_URLS } from "@/constants/routes";
 import { VERSE_SEQUENCES } from "@/constants/verse-sequences";
 import { getRouteParam } from "@/lib/route-params";
 import { getScriptureFont } from "@/lib/scripture-font";
@@ -143,7 +144,6 @@ export default function VerseDetailScreen() {
   const { showToast } = useToast();
   const {
     markVerseAsRead,
-    isLastVerseInChapter,
     setLastReadVerse,
     streak,
   } = useReadingProgress();
@@ -155,10 +155,15 @@ export default function VerseDetailScreen() {
     ? getAudioFile(verse.chapter.toString(), verse.verse_number)?.[0] ?? null
     : null;
 
+  const todayKey = useTodayKey();
   const todayInsight = useMemo(() => {
     const v = getVerseForDate(new Date(), language);
-    return v ? getDailyVerseNotificationContent(v).body.slice(0, 120) : "";
-  }, [language]);
+    if (!v) return "";
+    // Word-safe truncation: slicing by code units can split an Indic conjunct.
+    return truncate(getDailyVerseNotificationContent(v, language).body, 120);
+    // `todayKey` refreshes the insight across midnight (review finding P0).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [language, todayKey]);
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEYS.AUTO_PLAY_AUDIO)
@@ -218,9 +223,10 @@ export default function VerseDetailScreen() {
           setShowDayRibbon(true);
         }
         const rewardDelay = goalJustCompleted ? DAY_RIBBON_MS + 400 : 500;
-        const chapterJustCompleted =
-          result?.isNewCompletion &&
-          isLastVerseInChapter(verse.chapter, verse.verse_number);
+        // `isNewCompletion` already means the chapter is now complete. Gating
+        // on "this is the highest verse" suppressed the celebration whenever
+        // the reader finished the chapter out of order (review finding P1).
+        const chapterJustCompleted = result?.isNewCompletion ?? false;
 
         if (chapterJustCompleted) {
           if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
@@ -257,7 +263,7 @@ export default function VerseDetailScreen() {
       };
       trackReading();
     }
-  }, [verse, markVerseAsRead, isLastVerseInChapter, showToast, t]);
+  }, [verse, markVerseAsRead, showToast, t]);
 
   useEffect(() => {
     if (verse) {
@@ -544,7 +550,9 @@ export default function VerseDetailScreen() {
           headerTitleStyle: {
             color: colors.brandText,
             fontSize: 15,
-            fontFamily: "PlayfairDisplay_700Bold",
+            // Playfair has no Indic glyphs; let the platform serif render them.
+            fontFamily:
+              language === "en" ? "PlayfairDisplay_700Bold" : undefined,
           },
           headerShadowVisible: false,
           headerTitleAlign: "center",
@@ -557,7 +565,7 @@ export default function VerseDetailScreen() {
         subtitle={t("verse.verseCaption", { verse: verse.verse_number })}
         sloka={slokaText}
         meaning={meaningText}
-        link={DEEP_LINKS.verse(verse.id)}
+        link={SHARE_URLS.verse(verse.id)}
       />
       <StreakShareCardView
         ref={streakShareRef}
@@ -594,6 +602,15 @@ export default function VerseDetailScreen() {
                     setShowVerseActions(true);
                   }}
                   accessibilityHint={t("verse.longPressHint")}
+                  accessibilityActions={[
+                    { name: "copy", label: t("verse.copy") },
+                    { name: "share", label: t("verse.shareA11y") },
+                  ]}
+                  onAccessibilityAction={(event) => {
+                    const action = event.nativeEvent.actionName;
+                    if (action === "copy") void handleCopyVerse();
+                    if (action === "share") void handleShareVerse();
+                  }}
                 >
                   {slokaText}
                 </Text>

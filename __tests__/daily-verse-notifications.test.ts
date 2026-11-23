@@ -24,14 +24,14 @@ jest.mock("expo-notifications", () => ({
     mockScheduled.push(request);
     return request.identifier ?? "generated";
   },
-  getAllScheduledNotificationsAsync: async () => [
+  getAllScheduledNotificationsAsync: jest.fn(async () => [
     { identifier: "daily-verse-2026-11-16" },
     { identifier: "daily-verse-2026-11-17" },
     { identifier: "streak-at-risk" },
-  ],
-  cancelScheduledNotificationAsync: async (identifier: string) => {
+  ]),
+  cancelScheduledNotificationAsync: jest.fn(async (identifier: string) => {
     mockCancelled.push(identifier);
-  },
+  }),
   cancelAllScheduledNotificationsAsync: async () => {},
 }));
 
@@ -99,6 +99,43 @@ describe("daily verse notification schedule (BUG-020)", () => {
 
     expect(mockScheduled).toHaveLength(0);
   });
+
+  it("keeps the schedule when enabling races a stale foreground run", async () => {
+    // The permission dialog backgrounds the app; the AppState refresh can
+    // start a run that reads `enabled=false` just before the toggle writes
+    // `true`. Coalescing let the toggle join that stale run and cancel the
+    // schedule instead of creating it.
+    await setStoredPreferences(false, "08:00");
+
+    const Notifications = jest.requireMock("expo-notifications") as {
+      getAllScheduledNotificationsAsync: jest.Mock;
+    };
+    let enterCancel!: () => void;
+    const enteredCancel = new Promise<void>((resolve) => {
+      enterCancel = resolve;
+    });
+    let releaseCancel!: () => void;
+    const cancelGate = new Promise<void>((resolve) => {
+      releaseCancel = resolve;
+    });
+    Notifications.getAllScheduledNotificationsAsync.mockImplementationOnce(
+      async () => {
+        enterCancel();
+        await cancelGate;
+        return [];
+      }
+    );
+
+    const staleRun = scheduleNextDailyVerseNotification();
+    await enteredCancel;
+
+    await setStoredPreferences(true, "08:00");
+    const enableRun = scheduleNextDailyVerseNotification();
+    releaseCancel();
+    await Promise.all([staleRun, enableRun]);
+
+    expect(mockScheduled).toHaveLength(30);
+  });
 });
 
 describe("streak-at-risk nudge (spec §2.7)", () => {
@@ -136,7 +173,7 @@ describe("streak-at-risk nudge (spec §2.7)", () => {
     );
   });
 
-  it("stays quiet once the day is read", async () => {
+  it("schedules tomorrow's nudge once the day is read", async () => {
     await AsyncStorage.setItem(
       STORAGE_KEYS.READING_STREAK,
       JSON.stringify({
@@ -154,7 +191,16 @@ describe("streak-at-risk nudge (spec §2.7)", () => {
     atNine.setHours(9, 0, 0, 0);
     await scheduleStreakAtRiskNotification(atNine);
 
-    expect(atRiskRequests()).toHaveLength(0);
+    // Tonight is already earned, but the streak is live tomorrow — that is the
+    // night the reader can still lose it without opening the app.
+    const [request] = atRiskRequests();
+    expect(request).toBeDefined();
+    expect(request.identifier).toBe(
+      `streak-at-risk${addDaysToDateKey(getLocalDateKey(), 1)}`
+    );
+    expect((request.content as { title: string }).title).toBe(
+      "Your 12-day streak ends at midnight"
+    );
   });
 
   it("never nudges a streak that was last read before yesterday", async () => {

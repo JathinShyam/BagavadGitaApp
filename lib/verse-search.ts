@@ -86,11 +86,6 @@ function tokenize(value: string): string[] {
   return normalized ? normalized.split(" ").filter(Boolean) : [];
 }
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-/** English plurals are common in queries; "angers" should find "anger". */
 function termVariants(term: string): string[] {
   if (/^[a-z]{4,}s$/.test(term) && !term.endsWith("ss")) {
     return [term, term.slice(0, -1)];
@@ -383,58 +378,78 @@ export function searchVerses(
     }
   }
 
-  const hits: VerseSearchHit[] = [];
+  /**
+   * One scan of the corpus. `requireAll` is the precise pass ("anger fear"
+   * both present); the fallback pass accepts any term so a longer query still
+   * returns something instead of an empty screen (review finding P2).
+   */
+  const collect = (requireAll: boolean): VerseSearchHit[] => {
+    const hits: VerseSearchHit[] = [];
 
-  for (const doc of getIndex()) {
-    const textMatches =
-      contentTerms.length > 0 &&
-      contentTerms.every((term) =>
+    for (const doc of getIndex()) {
+      const matchedTerms = contentTerms.filter((term) =>
         doc.fields.some((field) => fieldHasTerm(field.normalized, term))
       );
-    const topicMatch = topicByVerse.get(doc.verse.id);
+      const textMatches =
+        contentTerms.length > 0 &&
+        (requireAll
+          ? matchedTerms.length === contentTerms.length
+          : matchedTerms.length > 0);
+      const topicMatch = topicByVerse.get(doc.verse.id);
 
-    if (!textMatches && !topicMatch) continue;
+      if (!textMatches && !topicMatch) continue;
 
-    let score = 0;
-    let field: IndexedField | null = null;
+      let score = 0;
+      let field: IndexedField | null = null;
 
-    if (textMatches) {
-      score += 14 + contentTerms.length * 2;
-      field = pickField(doc.fields, contentTerms, language, true);
+      if (textMatches) {
+        score += 14 + matchedTerms.length * 2;
+        field = pickField(doc.fields, matchedTerms, language, true);
 
-      if (field) {
-        if (phrase && field.normalized.includes(phrase)) score += 16;
-        if (field.language === language) score += 4;
-        for (const term of contentTerms) {
-          score += Math.min(3, countOccurrences(field.normalized, term, 3));
+        if (field) {
+          if (phrase && field.normalized.includes(phrase)) score += 16;
+          if (field.language === language) score += 4;
+          for (const term of matchedTerms) {
+            score += Math.min(3, countOccurrences(field.normalized, term, 3));
+          }
         }
       }
+
+      if (topicMatch) score += topicMatch.score;
+
+      if (!field) {
+        field = pickField(doc.fields, matchedTerms, language, false);
+      }
+      if (!field) continue;
+
+      hits.push({
+        verse: doc.verse,
+        score,
+        snippet: makeSnippet(field.text, matchedTerms),
+        snippetLanguage: field.language,
+        snippetField: field.field,
+        ...(topicMatch ? { topicId: topicMatch.topic.id } : {}),
+      });
     }
 
-    if (topicMatch) score += topicMatch.score;
+    hits.sort((a, b) => b.score - a.score);
+    return hits.slice(0, limit);
+  };
 
-    if (!field) {
-      field = pickField(doc.fields, contentTerms, language, false);
-    }
-    if (!field) continue;
-
-    hits.push({
-      verse: doc.verse,
-      score,
-      snippet: makeSnippet(field.text, contentTerms),
-      snippetLanguage: field.language,
-      snippetField: field.field,
-      ...(topicMatch ? { topicId: topicMatch.topic.id } : {}),
-    });
-  }
-
-  hits.sort((a, b) => b.score - a.score);
-  return hits.slice(0, limit);
+  const precise = collect(true);
+  if (precise.length > 0 || contentTerms.length <= 1) return precise;
+  return collect(false);
 }
 
 export type HighlightSegment = { text: string; match: boolean };
 
-/** Split a snippet into plain and matched runs for a two-tone Text. */
+/**
+ * Split a snippet into plain and matched runs for a two-tone Text.
+ *
+ * Whole words only: highlighting a substring could cut through a word or an
+ * Indic grapheme cluster ("art" inside "earth", a vowel sign off its consonant).
+ * The terms themselves are already matched at word prefixes by the scorer.
+ */
 export function highlightSegments(
   text: string,
   terms: string[]
@@ -444,9 +459,28 @@ export function highlightSegments(
     .sort((a, b) => b.length - a.length);
   if (usable.length === 0) return [{ text, match: false }];
 
-  const pattern = new RegExp(`(${usable.map(escapeRegExp).join("|")})`, "gi");
-  return text
-    .split(pattern)
-    .map((part, index) => ({ text: part, match: index % 2 === 1 }))
-    .filter((part) => part.text.length > 0);
+  const segments: HighlightSegment[] = [];
+  for (const chunk of text.split(/(\s+)/)) {
+    if (!chunk) continue;
+    if (/^\s+$/.test(chunk)) {
+      segments.push({ text: chunk, match: false });
+      continue;
+    }
+    const lower = chunk.toLowerCase();
+    segments.push({
+      text: chunk,
+      match: usable.some((term) => lower.startsWith(term)),
+    });
+  }
+
+  // Merge adjacent runs so the caller renders as few Text children as possible.
+  return segments.reduce<HighlightSegment[]>((acc, segment) => {
+    const last = acc[acc.length - 1];
+    if (last && last.match === segment.match) {
+      last.text += segment.text;
+    } else {
+      acc.push({ ...segment });
+    }
+    return acc;
+  }, []);
 }

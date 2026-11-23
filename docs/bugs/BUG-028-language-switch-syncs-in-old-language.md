@@ -5,7 +5,7 @@
 | **Priority** | P2 |
 | **Platform** | Both |
 | **Area** | Settings / widget / notifications |
-| **Status** | fixed [47] (device verification owed) |
+| **Status** | implemented [47], [48] — Android verified [50]; iOS verification owed |
 | **Found** | 2026-11-18, while wiring the iOS widget |
 | **Estimate** | S (<30 min) |
 
@@ -33,6 +33,16 @@ second time. The mismatch looks like the setting did not apply.
   and then, in the same tick, `scheduleNextDailyVerseNotification()` and
   `syncDailyVerseWidget()`. Both helpers call `getStoredContentLanguage()`,
   which re-reads AsyncStorage. The write and the read race.
+
+### Android verification — 2026-11-23
+
+English → Telugu: the widget payload was rewritten with Telugu eyebrow,
+title and sloka, and the notification store was rescheduled with Telugu
+UTF-8 content (30 daily requests + the at-risk nudge). Telugu → English
+refreshed both again. Screenshots: `assets/a49-lang-sheet.jpg`,
+`assets/a49-widget-te.jpg`.
+
+iOS still owes the same check; there is no macOS host on this Linux machine.
 
 ## Likely cause
 

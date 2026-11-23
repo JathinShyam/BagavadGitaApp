@@ -57,14 +57,21 @@ export default function ExploreScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { isVerseRead } = useReadingProgress();
-  const [selectedMoodId, setSelectedMoodId] = useState<string>("anger");
+  const [selectedMoodId, setSelectedMoodId] = useState<string>("seeking-peace");
   const [query, setQuery] = useState("");
+  // Typing is debounced before the corpus scan; deferred value then keeps the
+  // input responsive while results render (review finding P2).
+  const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  // Searching scans the whole corpus; deferring the query keeps typing smooth.
-  const deferredQuery = useDeferredValue(query);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query), 180);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const deferredQuery = useDeferredValue(debouncedQuery);
   const trimmedQuery = deferredQuery.trim();
   const hasQuery = query.trim().length > 0;
-  const isStale = query !== deferredQuery;
+  const isStale = query.trim() !== trimmedQuery;
 
   const results = useMemo(
     () =>
