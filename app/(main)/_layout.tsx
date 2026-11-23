@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useTranslation } from "@/hooks/useTranslation";
 
 /** Visible tab content (icons + labels); system nav inset is added separately. */
 const TAB_BAR_CONTENT_HEIGHT = 56;
@@ -10,6 +11,7 @@ const TAB_BAR_MIN_BOTTOM_PAD = 8;
 
 export default function MainTabLayout() {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
   // 3-button nav → large insets.bottom; gesture / no bar → ~0. Always keep a small pad.
@@ -19,7 +21,7 @@ export default function MainTabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: colors.brandText,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {
           backgroundColor: colors.background,
@@ -38,7 +40,7 @@ export default function MainTabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: t("tab.home"),
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? "home" : "home-outline"}
@@ -51,7 +53,7 @@ export default function MainTabLayout() {
       <Tabs.Screen
         name="explore"
         options={{
-          title: "Explore",
+          title: t("tab.explore"),
           headerShown: false,
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
@@ -65,7 +67,7 @@ export default function MainTabLayout() {
       <Tabs.Screen
         name="saved"
         options={{
-          title: "Saved",
+          title: t("tab.saved"),
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? "bookmark" : "bookmark-outline"}
@@ -78,7 +80,7 @@ export default function MainTabLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          title: "Settings",
+          title: t("tab.settings"),
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? "settings" : "settings-outline"}

@@ -23,11 +23,15 @@ import Animated, {
   runOnJS,
   FadeIn,
 } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
+import * as Clipboard from "expo-clipboard";
 
+import { haptics } from "@/lib/haptics";
 import { getVerseById } from "@/data/verses/verse-catalog";
 import { getAudioFile } from "@/data/verses/verse-audio";
 import { useContentLanguage } from "@/context/language-context";
+import { useTranslation } from "@/hooks/useTranslation";
+import { getAppTitle } from "@/constants/languages";
+import { tracking } from "@/lib/i18n";
 import {
   getVerseCommentary,
   getVerseLocaleContent,
@@ -39,12 +43,16 @@ import {
 import { verseScreenStyles } from "@/theme/screen-styles";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useReadingProgress } from "@/hooks/useReadingProgress";
+import { useTodayKey } from "@/hooks/useTodayKey";
 import { useToast } from "@/components/ui/Toast";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
 import type { StreakMilestone } from "@/constants/milestones";
 import CelebrationModal from "@/components/modals/CelebrationModal";
 import MilestoneModal from "@/components/modals/MilestoneModal";
-import { SkeletonVerseDetail } from "@/components/ui/SkeletonLoader";
+import {
+  DAY_RIBBON_MS,
+  DayCompleteRibbon,
+} from "@/components/practice/DayCompleteRibbon";
 import { GoldCard } from "@/components/ui/GoldCard";
 import { OrnamentalDivider, ORNAMENTS } from "@/components/ui/OrnamentalDivider";
 import { VerseAudioPlayer } from "@/components/verse/VerseAudioPlayer";
@@ -53,6 +61,7 @@ import {
   StreakShareCardView,
   captureShareCardRef,
   shareImage,
+  shareVerseCard,
 } from "@/services/verse-share";
 import { getVerseNote, setVerseNote } from "@/lib/verse-notes";
 import {
@@ -60,11 +69,14 @@ import {
   markMilestoneSeen,
 } from "@/lib/milestones";
 import { markPathProgressForVerse } from "@/lib/reading-paths";
-import { getDailyVerseNotificationContent, getVerseForDate } from "@/lib/daily-verse";
+import { maybeRequestReview, notePositiveEvent } from "@/lib/review-prompt";
+import { getDailyVerseNotificationContent, getVerseForDate, truncate } from "@/lib/daily-verse";
+import { buildVerseCopyText } from "@/lib/verse-copy";
 
-import { ROUTES } from "@/constants/routes";
+import { ROUTES, SHARE_URLS } from "@/constants/routes";
 import { VERSE_SEQUENCES } from "@/constants/verse-sequences";
 import { getRouteParam } from "@/lib/route-params";
+import { getScriptureFont } from "@/lib/scripture-font";
 import { Spacing } from "@/theme/design-tokens";
 
 const getAdjacentVerse = (
@@ -97,6 +109,7 @@ export default function VerseDetailScreen() {
   const { verseId } = useLocalSearchParams<{ verseId: string }>();
   const { colors } = useAppTheme();
   const { language } = useContentLanguage();
+  const { t } = useTranslation();
   const idStr = getRouteParam(verseId);
   const verse = getVerseById(idStr);
   const locale = useMemo(
@@ -104,25 +117,33 @@ export default function VerseDetailScreen() {
     [verse, language]
   );
   const [isSaved, setIsSaved] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [autoPlayAudio, setAutoPlayAudio] = useState(false);
   const [isCommentaryExpanded, setIsCommentaryExpanded] = useState(true);
   // Meaning first; word-by-word grid on demand (it pushed the meaning below the fold).
   const [isWordsExpanded, setIsWordsExpanded] = useState(false);
   const [noteText, setNoteText] = useState("");
   const [showNoteSheet, setShowNoteSheet] = useState(false);
+  const [showVerseActions, setShowVerseActions] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const [milestoneDays, setMilestoneDays] = useState<StreakMilestone | null>(null);
   const [showMilestone, setShowMilestone] = useState(false);
   const router = useRouter();
   const [showCelebration, setShowCelebration] = useState(false);
+  const [showDayRibbon, setShowDayRibbon] = useState(false);
+  const [ribbonStreak, setRibbonStreak] = useState(0);
+  // Held back while the celebration is on screen: one reward at a time.
+  const [pendingMilestone, setPendingMilestone] = useState<StreakMilestone | null>(
+    null
+  );
   const shareCardRef = useRef<View | null>(null);
   const streakShareRef = useRef<View | null>(null);
   const noteSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const celebrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const milestoneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { showToast } = useToast();
   const {
     markVerseAsRead,
-    isLastVerseInChapter,
     setLastReadVerse,
     streak,
   } = useReadingProgress();
@@ -134,15 +155,15 @@ export default function VerseDetailScreen() {
     ? getAudioFile(verse.chapter.toString(), verse.verse_number)?.[0] ?? null
     : null;
 
+  const todayKey = useTodayKey();
   const todayInsight = useMemo(() => {
     const v = getVerseForDate(new Date(), language);
-    return v ? getDailyVerseNotificationContent(v).body.slice(0, 120) : "";
-  }, [language]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 480);
-    return () => clearTimeout(timer);
-  }, [idStr]);
+    if (!v) return "";
+    // Word-safe truncation: slicing by code units can split an Indic conjunct.
+    return truncate(getDailyVerseNotificationContent(v, language).body, 120);
+    // `todayKey` refreshes the insight across midnight (review finding P0).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [language, todayKey]);
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEYS.AUTO_PLAY_AUDIO)
@@ -181,45 +202,74 @@ export default function VerseDetailScreen() {
     };
   }, [verse, flushPendingNote]);
 
-  const celebrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => {
-    if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
+      if (milestoneTimerRef.current) clearTimeout(milestoneTimerRef.current);
+    },
+    []
+  );
 
   useEffect(() => {
-    if (verse && !isLoading) {
+    if (verse) {
       const trackReading = async () => {
         const result = await markVerseAsRead(verse.chapter, verse.verse_number);
-        if (result?.isNewCompletion && isLastVerseInChapter(verse.chapter, verse.verse_number)) {
+
+        // The day's goal can land on any verse, not just the last of a chapter.
+        // The ribbon is the reward; modals wait for it to clear (spec §2.4).
+        const goalJustCompleted = result?.dailyGoalJustCompleted ?? false;
+        if (goalJustCompleted) {
+          setRibbonStreak(result.currentStreak);
+          setShowDayRibbon(true);
+        }
+        const rewardDelay = goalJustCompleted ? DAY_RIBBON_MS + 400 : 500;
+        // `isNewCompletion` already means the chapter is now complete. Gating
+        // on "this is the highest verse" suppressed the celebration whenever
+        // the reader finished the chapter out of order (review finding P1).
+        const chapterJustCompleted = result?.isNewCompletion ?? false;
+
+        if (chapterJustCompleted) {
           if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
           celebrationTimerRef.current = setTimeout(() => {
             celebrationTimerRef.current = null;
             setShowCelebration(true);
-          }, 500);
+          }, rewardDelay);
         }
         if (result?.wasNewlyRead) {
           const milestone = await getUnseenMilestoneReached(result.currentStreak);
           if (milestone) {
             setMilestoneDays(milestone);
-            setShowMilestone(true);
+            if (chapterJustCompleted) {
+              // Ribbon → celebration → milestone. The celebration's close
+              // handler opens the milestone, so the two never stack.
+              setPendingMilestone(milestone);
+            } else if (goalJustCompleted) {
+              if (milestoneTimerRef.current) clearTimeout(milestoneTimerRef.current);
+              milestoneTimerRef.current = setTimeout(() => {
+                milestoneTimerRef.current = null;
+                setShowMilestone(true);
+              }, rewardDelay);
+            } else {
+              setShowMilestone(true);
+            }
           }
           const pathResult = await markPathProgressForVerse(verse.id);
           if (pathResult.pathCompleted) {
-            showToast("Reading path complete", "success", "trophy");
+            showToast(t("verse.pathCompleteToast"), "success", "trophy");
           } else if (pathResult.dayCompleted) {
-            showToast("Path day complete", "success", "checkmark-circle");
+            showToast(t("verse.pathDayCompleteToast"), "success", "checkmark-circle");
           }
         }
       };
       trackReading();
     }
-  }, [verse, isLoading, markVerseAsRead, isLastVerseInChapter, showToast]);
+  }, [verse, markVerseAsRead, showToast, t]);
 
   useEffect(() => {
-    if (verse && !isLoading) {
+    if (verse) {
       setLastReadVerse(verse.id);
     }
-  }, [verse, isLoading, setLastReadVerse]);
+  }, [verse, setLastReadVerse]);
 
   const checkIfSaved = useCallback(async () => {
     if (!verse) return;
@@ -279,26 +329,78 @@ export default function VerseDetailScreen() {
       await AsyncStorage.setItem(STORAGE_KEYS.SAVED_VERSES, JSON.stringify(verses));
       setIsSaved(!isSaved);
 
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      haptics.medium();
       bookmarkScale.value = withSequence(
         withTiming(1.3, { duration: 150 }),
         withTiming(1, { duration: 150 })
       );
       showToast(
-        wasAlreadySaved ? "Removed from saved verses" : "Saved to bookmarks",
+        wasAlreadySaved ? t("verse.unsavedToast") : t("verse.savedToast"),
         "success",
         wasAlreadySaved ? "bookmark-outline" : "bookmark"
       );
     } catch (error) {
       console.error("Error toggling verse save:", error);
     }
-  }, [verse, isSaved, showToast, bookmarkScale, language]);
+  }, [verse, isSaved, showToast, bookmarkScale, language, t]);
+
+  const handleCopyVerse = useCallback(async () => {
+    if (!verse) return;
+    const text = buildVerseCopyText(verse, language);
+    if (!text) return;
+    try {
+      await Clipboard.setStringAsync(text);
+      haptics.success();
+      showToast(
+        t("verse.copiedToast", {
+          chapter: verse.chapter,
+          verse: verse.verse_number,
+        }),
+        "success",
+        "copy-outline"
+      );
+    } catch (error) {
+      console.error("Copy verse failed:", error);
+      showToast(t("verse.copyFailedToast"), "error", "alert-circle-outline");
+    }
+  }, [verse, language, showToast, t]);
+
+  const handleShareVerse = useCallback(async () => {
+    if (!verse || isSharing) return;
+    setIsSharing(true);
+    try {
+      await shareVerseCard(
+        shareCardRef,
+        verse.id,
+        t("share.caption", {
+          app: getAppTitle(language),
+          chapter: verse.chapter,
+          verse: verse.verse_number,
+        }),
+        language
+      );
+    } catch (error) {
+      console.error("Verse share failed:", error);
+    } finally {
+      setIsSharing(false);
+    }
+  }, [verse, isSharing, t, language]);
+
+  // A finished chapter or a streak milestone is a genuine win. Record it, then
+  // ask for a rating only when no other reward modal is queued behind this one.
+  const recordWin = useCallback((allowPrompt: boolean) => {
+    notePositiveEvent()
+      .then(() => {
+        if (allowPrompt) return maybeRequestReview();
+      })
+      .catch(() => {});
+  }, []);
 
   const handleShareStreak = useCallback(async () => {
     if (!streakShareRef.current) return;
     try {
       const uri = await captureShareCardRef(streakShareRef.current);
-      await shareImage(uri);
+      await shareImage(uri, language);
     } catch (e) {
       console.error("Streak share failed:", e);
     } finally {
@@ -307,7 +409,7 @@ export default function VerseDetailScreen() {
       }
       setShowMilestone(false);
     }
-  }, [milestoneDays]);
+  }, [milestoneDays, language]);
 
   const navigateToVerse = useCallback(
     (offset: number) => {
@@ -320,7 +422,6 @@ export default function VerseDetailScreen() {
 
       if (nextVerseNum) {
         const newId = `${chapterId}-${nextVerseNum}`;
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         router.replace(ROUTES.verse(newId));
       }
     },
@@ -368,7 +469,7 @@ export default function VerseDetailScreen() {
   if (!verse) {
     return (
       <SafeAreaView style={[verseScreenStyles.container, { backgroundColor: colors.background }]}>
-        <Text style={{ color: colors.text }}>Verse not found</Text>
+        <Text style={{ color: colors.text }}>{t("verse.notFound")}</Text>
       </SafeAreaView>
     );
   }
@@ -376,32 +477,10 @@ export default function VerseDetailScreen() {
   const hasPrevVerse = !!getAdjacentVerse(verse.chapter, verse.verse_number, -1);
   const hasNextVerse = !!getAdjacentVerse(verse.chapter, verse.verse_number, 1);
 
-  if (isLoading) {
-    return (
-      <SafeAreaView
-        style={[verseScreenStyles.container, { backgroundColor: colors.background }]}
-        edges={["bottom"]}
-      >
-        <Stack.Screen
-          options={{
-            headerTitle: `Chapter ${verse.chapter} · Verse ${verse.verse_number}`,
-            headerStyle: { backgroundColor: colors.background },
-            headerTintColor: colors.primary,
-            headerTitleStyle: {
-              color: colors.primary,
-              fontSize: 15,
-              fontFamily: "PlayfairDisplay_700Bold",
-            },
-            headerShadowVisible: false,
-            headerTitleAlign: "center",
-          }}
-        />
-        <SkeletonVerseDetail />
-      </SafeAreaView>
-    );
-  }
-
-  const headerTitle = `Chapter ${verse.chapter} · Verse ${verse.verse_number}`;
+  const headerTitle = t("common.chapterVerseN", {
+    chapter: verse.chapter,
+    verse: verse.verse_number,
+  });
   const verseRef = `${verse.chapter}.${verse.verse_number}`;
   const wordMeanings = getVerseWordMeanings(verse, language);
   const slokaText = locale?.sloka ?? "";
@@ -419,32 +498,47 @@ export default function VerseDetailScreen() {
           headerRight: () => (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
               <Pressable
+                onPressIn={haptics.light}
+                onPress={handleShareVerse}
+                disabled={isSharing}
+                style={[verseScreenStyles.saveButton, isSharing && { opacity: 0.4 }]}
+                accessibilityLabel={t("verse.shareA11y")}
+                accessibilityRole="button"
+              >
+                <Ionicons name="share-outline" size={22} color={colors.brandText} />
+              </Pressable>
+              <Pressable
+                onPressIn={haptics.light}
                 onPress={toggleSave}
                 style={verseScreenStyles.saveButton}
-                accessibilityLabel={isSaved ? "Remove from saved" : "Save verse"}
+                accessibilityLabel={
+                  isSaved ? t("verse.unsaveA11y") : t("verse.saveA11y")
+                }
                 accessibilityRole="button"
               >
                 <Animated.View style={bookmarkAnimatedStyle}>
                   <Ionicons
                     name={isSaved ? "bookmark" : "bookmark-outline"}
                     size={24}
-                    color={colors.primary}
+                    color={colors.brandText}
                   />
                 </Animated.View>
               </Pressable>
               <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setShowNoteSheet(true);
-                }}
+                onPressIn={haptics.light}
+                onPress={() => setShowNoteSheet(true)}
                 style={verseScreenStyles.saveButton}
-                accessibilityLabel={noteText.trim() ? "Edit reflection" : "Add reflection"}
+                accessibilityLabel={
+                  noteText.trim()
+                    ? t("verse.editReflectionA11y")
+                    : t("verse.addReflectionA11y")
+                }
                 accessibilityRole="button"
               >
                 <Ionicons
                   name={noteText.trim() ? "create" : "create-outline"}
                   size={22}
-                  color={colors.primary}
+                  color={colors.brandText}
                 />
               </Pressable>
             </View>
@@ -452,40 +546,33 @@ export default function VerseDetailScreen() {
           headerStyle: {
             backgroundColor: colors.background,
           },
-          headerTintColor: colors.primary,
+          headerTintColor: colors.brandText,
           headerTitleStyle: {
-            color: colors.primary,
+            color: colors.brandText,
             fontSize: 15,
-            fontFamily: "PlayfairDisplay_700Bold",
+            // Playfair has no Indic glyphs; let the platform serif render them.
+            fontFamily:
+              language === "en" ? "PlayfairDisplay_700Bold" : undefined,
           },
           headerShadowVisible: false,
           headerTitleAlign: "center",
         }}
       />
 
-      <View
+      <ShareCardView
         ref={shareCardRef}
-        style={{ position: "absolute", left: -9999, top: -9999, opacity: 0 }}
-        collapsable={false}
-      >
-        <ShareCardView
-          title={`Chapter ${verse.chapter}`}
-          subtitle={`Verse ${verse.verse_number}`}
-          sloka={slokaText}
-          meaning={meaningText}
-        />
-      </View>
-      <View
+        title={t("verse.chapterCaption", { chapter: verse.chapter })}
+        subtitle={t("verse.verseCaption", { verse: verse.verse_number })}
+        sloka={slokaText}
+        meaning={meaningText}
+        link={SHARE_URLS.verse(verse.id)}
+      />
+      <StreakShareCardView
         ref={streakShareRef}
-        style={{ position: "absolute", left: -9999, top: -9999, opacity: 0 }}
-        collapsable={false}
-      >
-        <StreakShareCardView
-          streakDays={streak.currentStreak}
-          longestStreak={streak.longestStreak}
-          insight={todayInsight}
-        />
-      </View>
+        streakDays={streak.currentStreak}
+        longestStreak={streak.longestStreak}
+        insight={todayInsight}
+      />
 
       <GestureDetector gesture={swipeGesture}>
         <Animated.View style={[{ flex: 1 }, animatedContentStyle]}>
@@ -508,12 +595,26 @@ export default function VerseDetailScreen() {
                   style={[
                     verseScreenStyles.teluguSlokaText,
                     localStyles.slokaText,
-                    { color: colors.text },
+                    { color: colors.text, fontFamily: getScriptureFont(language) },
                   ]}
+                  onLongPress={() => {
+                    haptics.medium();
+                    setShowVerseActions(true);
+                  }}
+                  accessibilityHint={t("verse.longPressHint")}
+                  accessibilityActions={[
+                    { name: "copy", label: t("verse.copy") },
+                    { name: "share", label: t("verse.shareA11y") },
+                  ]}
+                  onAccessibilityAction={(event) => {
+                    const action = event.nativeEvent.actionName;
+                    if (action === "copy") void handleCopyVerse();
+                    if (action === "share") void handleShareVerse();
+                  }}
                 >
                   {slokaText}
                 </Text>
-                <Text style={[localStyles.verseRef, { color: colors.primary }]}>
+                <Text style={[localStyles.verseRef, { color: colors.brandText }]}>
                   || {verseRef} ||
                 </Text>
                 <OrnamentalDivider
@@ -528,12 +629,15 @@ export default function VerseDetailScreen() {
             <Animated.View entering={FadeIn.delay(200)}>
               <GoldCard style={localStyles.sectionCard}>
                 <View style={localStyles.sectionHeader}>
-                  <Ionicons name="book" size={18} color={colors.primary} />
-                  <Text style={[localStyles.sectionTitle, { color: colors.primary }]}>
-                    Meaning
+                  <Ionicons name="book" size={18} color={colors.brandText} />
+                  <Text style={[localStyles.sectionTitle, { color: colors.brandText }]}>
+                      {t("verse.meaning")}
                   </Text>
                 </View>
-                <Text style={[verseScreenStyles.meaningStyle, { color: colors.text }]}>
+                <Text
+                  selectable
+                  style={[verseScreenStyles.meaningStyle, { color: colors.text }]}
+                >
                   {meaningText}
                 </Text>
               </GoldCard>
@@ -547,17 +651,21 @@ export default function VerseDetailScreen() {
                     onPress={() => setIsWordsExpanded((v) => !v)}
                     style={localStyles.commentaryHeader}
                     accessibilityRole="button"
-                    accessibilityLabel={isWordsExpanded ? "Collapse word meanings" : "Expand word meanings"}
+                    accessibilityLabel={
+                      isWordsExpanded
+                        ? t("verse.collapseWordsA11y")
+                        : t("verse.expandWordsA11y")
+                    }
                   >
                     <View style={localStyles.sectionHeader}>
-                      <Ionicons name="book-outline" size={18} color={colors.primary} />
-                      <Text style={[localStyles.sectionTitle, { color: colors.primary }]}>
-                        Word meanings
+                      <Ionicons name="book-outline" size={18} color={colors.brandText} />
+                      <Text style={[localStyles.sectionTitle, { color: colors.brandText }]}>
+                        {t("verse.wordMeanings")}
                       </Text>
                     </View>
                     <View style={localStyles.commentaryToggle}>
                       <Text style={[localStyles.commentaryToggleText, { color: colors.textMuted }]}>
-                        {isWordsExpanded ? "Hide" : "Show"}
+                        {isWordsExpanded ? t("verse.hide") : t("verse.show")}
                       </Text>
                       <Ionicons
                         name={isWordsExpanded ? "chevron-up" : "chevron-down"}
@@ -603,25 +711,32 @@ export default function VerseDetailScreen() {
             <Animated.View entering={FadeIn.delay(400)}>
               <GoldCard style={localStyles.sectionCard}>
                 <Pressable
+                  onPressIn={haptics.light}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     setIsCommentaryExpanded((v) => !v);
                   }}
                   style={localStyles.commentaryHeader}
                   accessibilityRole="button"
                   accessibilityLabel={
-                    isCommentaryExpanded ? "Collapse commentary" : "Expand commentary"
+                    isCommentaryExpanded
+                      ? t("verse.collapseCommentaryA11y")
+                      : t("verse.expandCommentaryA11y")
                   }
                 >
                   <View style={localStyles.sectionHeader}>
-                    <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.primary} />
-                    <Text style={[localStyles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>
-                      Commentary
+                    <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.brandText} />
+                    <Text
+                      style={[
+                        localStyles.sectionTitle,
+                        { color: colors.brandText, marginBottom: 0 },
+                      ]}
+                    >
+                      {t("verse.commentary")}
                     </Text>
                   </View>
                   <View style={localStyles.commentaryToggle}>
                     <Text style={[localStyles.commentaryToggleText, { color: colors.textMuted }]}>
-                      {isCommentaryExpanded ? "Hide" : "Read"}
+                      {isCommentaryExpanded ? t("verse.hide") : t("verse.read")}
                     </Text>
                     <Ionicons
                       name={isCommentaryExpanded ? "chevron-up" : "chevron-down"}
@@ -632,7 +747,10 @@ export default function VerseDetailScreen() {
                 </Pressable>
                 {isCommentaryExpanded && (
                   <View style={{ marginTop: 12 }}>
-                    <Text style={[verseScreenStyles.commentaryText, { color: colors.text }]}>
+                    <Text
+                      selectable
+                      style={[verseScreenStyles.commentaryText, { color: colors.text }]}
+                    >
                       {commentaryText}
                     </Text>
                   </View>
@@ -658,33 +776,35 @@ export default function VerseDetailScreen() {
           ]}
         >
           <Pressable
+            onPressIn={haptics.light}
             onPress={() => navigateToVerse(-1)}
             disabled={!hasPrevVerse}
             hitSlop={8}
             style={[localStyles.dockNavBtn, { opacity: hasPrevVerse ? 1 : 0.3 }]}
             accessibilityRole="button"
-            accessibilityLabel="Previous verse"
+            accessibilityLabel={t("verse.previousA11y")}
           >
-            <Ionicons name="chevron-back" size={24} color={colors.primary} />
+            <Ionicons name="chevron-back" size={24} color={colors.brandText} />
           </Pressable>
           <View style={{ flex: 1 }}>
             <VerseAudioPlayer
               audioSource={verseAudioSource}
-              primaryColor={colors.primary}
+              primaryColor={colors.brandText}
               textMutedColor={colors.textMuted}
               outlineColor={colors.outline}
               autoPlay={autoPlayAudio}
             />
           </View>
           <Pressable
+            onPressIn={haptics.light}
             onPress={() => navigateToVerse(1)}
             disabled={!hasNextVerse}
             hitSlop={8}
             style={[localStyles.dockNavBtn, { opacity: hasNextVerse ? 1 : 0.3 }]}
             accessibilityRole="button"
-            accessibilityLabel="Next verse"
+            accessibilityLabel={t("verse.nextA11y")}
           >
-            <Ionicons name="chevron-forward" size={24} color={colors.primary} />
+            <Ionicons name="chevron-forward" size={24} color={colors.brandText} />
           </Pressable>
         </View>
       ) : (
@@ -699,6 +819,7 @@ export default function VerseDetailScreen() {
           ]}
         >
           <Pressable
+            onPressIn={haptics.light}
             onPress={() => navigateToVerse(-1)}
             disabled={!hasPrevVerse}
             style={[
@@ -706,12 +827,13 @@ export default function VerseDetailScreen() {
               { borderColor: colors.primary + "88", opacity: hasPrevVerse ? 1 : 0.3 },
             ]}
           >
-            <Text style={{ fontSize: 16, color: colors.primary }}>◀</Text>
-            <Text style={[verseScreenStyles.navButtonText, { color: colors.primary }]}>
-              Previous
+            <Text style={{ fontSize: 16, color: colors.brandText }}>◀</Text>
+            <Text style={[verseScreenStyles.navButtonText, { color: colors.brandText }]}>
+              {t("verse.previous")}
             </Text>
           </Pressable>
           <Pressable
+            onPressIn={haptics.light}
             onPress={() => navigateToVerse(1)}
             disabled={!hasNextVerse}
             style={[
@@ -719,18 +841,36 @@ export default function VerseDetailScreen() {
               { borderColor: colors.primary + "88", opacity: hasNextVerse ? 1 : 0.3 },
             ]}
           >
-            <Text style={[verseScreenStyles.navButtonText, { color: colors.primary }]}>
-              Next
+            <Text style={[verseScreenStyles.navButtonText, { color: colors.brandText }]}>
+              {t("verse.next")}
             </Text>
-            <Text style={{ fontSize: 16, color: colors.primary }}>▶</Text>
+            <Text style={{ fontSize: 16, color: colors.brandText }}>▶</Text>
           </Pressable>
         </View>
       )}
 
+      <DayCompleteRibbon
+        visible={showDayRibbon}
+        streakDays={ribbonStreak}
+        onHidden={() => setShowDayRibbon(false)}
+      />
+
       <CelebrationModal
         visible={showCelebration}
         chapterNumber={verse.chapter}
-        onClose={() => setShowCelebration(false)}
+        onClose={() => {
+          setShowCelebration(false);
+          // If a milestone is queued, the celebration close is only the first
+          // of two wins; don't put a rating dialog between them.
+          recordWin(!pendingMilestone);
+          if (!pendingMilestone) return;
+          setPendingMilestone(null);
+          if (milestoneTimerRef.current) clearTimeout(milestoneTimerRef.current);
+          milestoneTimerRef.current = setTimeout(() => {
+            milestoneTimerRef.current = null;
+            setShowMilestone(true);
+          }, 400);
+        }}
       />
       <MilestoneModal
         visible={showMilestone}
@@ -740,9 +880,68 @@ export default function VerseDetailScreen() {
             markMilestoneSeen(milestoneDays).catch(() => {});
           }
           setShowMilestone(false);
+          recordWin(true);
         }}
         onShare={handleShareStreak}
       />
+
+      <Modal
+        visible={showVerseActions}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowVerseActions(false)}
+      >
+        <View style={localStyles.noteBackdrop}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setShowVerseActions(false)}
+            accessibilityLabel={t("verse.actionsDismissA11y")}
+          />
+          <View
+            style={[
+              localStyles.actionSheet,
+              { backgroundColor: colors.surface, borderTopColor: colors.primary + "33" },
+            ]}
+          >
+            <Text
+              style={[
+                localStyles.actionTitle,
+                { color: colors.brandText, letterSpacing: tracking(language, 0.2) },
+              ]}
+            >
+              {t("verse.actionTitle", { ref: verseRef })}
+            </Text>
+            <Pressable
+              onPress={() => {
+                setShowVerseActions(false);
+                void handleCopyVerse();
+              }}
+              style={({ pressed }) => [localStyles.actionRow, pressed && { opacity: 0.6 }]}
+              accessibilityRole="button"
+              accessibilityLabel={t("verse.copy")}
+            >
+              <Ionicons name="copy-outline" size={20} color={colors.brandText} />
+              <Text style={[localStyles.actionLabel, { color: colors.text }]}>
+                {t("verse.copy")}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                setShowVerseActions(false);
+                void handleShareVerse();
+              }}
+              style={({ pressed }) => [localStyles.actionRow, pressed && { opacity: 0.6 }]}
+              accessibilityRole="button"
+              accessibilityLabel={t("verse.shareA11y")}
+            >
+              <Ionicons name="share-outline" size={20} color={colors.brandText} />
+              <Text style={[localStyles.actionLabel, { color: colors.text }]}>
+                {t("verse.shareA11y")}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         visible={showNoteSheet}
@@ -754,7 +953,7 @@ export default function VerseDetailScreen() {
           <Pressable
             style={StyleSheet.absoluteFill}
             onPress={() => setShowNoteSheet(false)}
-            accessibilityLabel="Dismiss reflection"
+            accessibilityLabel={t("verse.dismissReflectionA11y")}
           />
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -762,13 +961,18 @@ export default function VerseDetailScreen() {
           >
             <View style={[localStyles.noteSheet, { backgroundColor: colors.surface }]}>
               <View style={localStyles.noteHeader}>
-                <Text style={[localStyles.noteTitle, { color: colors.primary }]}>
-                  Your reflection
+                <Text
+                  style={[
+                    localStyles.noteTitle,
+                    { color: colors.brandText, letterSpacing: tracking(language, 0.2) },
+                  ]}
+                >
+                  {t("verse.reflectionTitle")}
                 </Text>
                 <Pressable
                   onPress={() => setShowNoteSheet(false)}
                   hitSlop={12}
-                  accessibilityLabel="Close reflection"
+                  accessibilityLabel={t("verse.closeReflectionA11y")}
                 >
                   <Ionicons name="close" size={22} color={colors.textMuted} />
                 </Pressable>
@@ -776,7 +980,7 @@ export default function VerseDetailScreen() {
               <TextInput
                 value={noteText}
                 onChangeText={handleNoteChange}
-                placeholder="A few words that stayed with you…"
+                placeholder={t("verse.reflectionPlaceholder")}
                 placeholderTextColor={colors.textMuted}
                 multiline
                 autoFocus
@@ -788,8 +992,13 @@ export default function VerseDetailScreen() {
                   },
                 ]}
               />
-              <Text style={[localStyles.noteHint, { color: colors.textMuted }]}>
-                Saves as you type
+              <Text
+                style={[
+                  localStyles.noteHint,
+                  { color: colors.textMuted, letterSpacing: tracking(language, 0.2) },
+                ]}
+              >
+                {t("verse.reflectionHint")}
               </Text>
             </View>
           </KeyboardAvoidingView>
@@ -903,6 +1112,29 @@ const localStyles = StyleSheet.create({
     justifyContent: "flex-end",
     backgroundColor: "rgba(0,0,0,0.35)",
   },
+  actionSheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 26,
+  },
+  actionTitle: {
+    fontFamily: "PlayfairDisplay_700Bold",
+    fontSize: 20,
+    marginBottom: 6,
+  },
+  actionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 14,
+  },
+  actionLabel: {
+    fontSize: 16,
+    fontWeight: "500",
+  },
   noteKeyboard: {
     width: "100%",
   },
@@ -923,7 +1155,6 @@ const localStyles = StyleSheet.create({
   noteTitle: {
     fontFamily: "PlayfairDisplay_700Bold",
     fontSize: 22,
-    letterSpacing: 0.2,
   },
   noteInput: {
     minHeight: 140,
@@ -938,6 +1169,5 @@ const localStyles = StyleSheet.create({
   noteHint: {
     marginTop: 10,
     fontSize: 12,
-    letterSpacing: 0.2,
   },
 });

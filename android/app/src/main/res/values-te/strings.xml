@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="widget_daily_verse_label">రోజు శ్లోకం</string>
+  <string name="widget_daily_verse_description">ఈరోజు భగవద్గీత శ్లోకం - ప్రతిరోజూ మారుతుంది</string>
+  <string name="widget_eyebrow_today">ఈరోజు</string>
+  <string name="widget_title_placeholder">రోజు శ్లోకం</string>
+  <string name="widget_meaning_placeholder">ఈరోజు శ్లోకం కోసం భగవద్గీత యాప్‌ను తెరవండి.</string>
+  <string name="widget_cta_read">ఈరోజు శ్లోకాన్ని చదవండి</string>
+  <string name="widget_cta_open">భగవద్గీతను తెరవండి</string>
+  <string name="widget_refresh_prompt">ఈరోజు శ్లోకం కోసం భగవద్గీత యాప్‌ను ఒకసారి తెరవండి.</string>
+</resources>

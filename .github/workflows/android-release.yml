@@ -12,7 +12,46 @@ permissions:
   packages: write
 
 jobs:
+  # Runs before anything is built. A red gate fails the PR instead of the
+  # release, and the build job below is skipped entirely.
+  quality:
+    name: 🔍 Quality gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: ✅ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🌐 Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: 📁 Install project dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: 🧹 Lint
+        run: npx expo lint --max-warnings=0
+
+      - name: 🔤 Type check
+        run: npx tsc --noEmit
+
+      - name: 🧪 Tests
+        run: npx jest --ci --watchAll=false
+
+      # Advisory only for now: expo-doctor currently reports pre-existing
+      # dependency drift (9 patch-level packages + a missing expo-asset peer)
+      # that needs a deliberate dependency pass and a native rebuild.
+      # Non-blocking so the gate is green from day one; see BUG-024.
+      - name: 🩺 Expo doctor (advisory)
+        run: npx expo-doctor
+        continue-on-error: true
+
   validate-and-build-release:
+    needs: quality
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -23,16 +62,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: ☕ Set up JDK 11
+      - name: ☕ Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 11
+          java-version: 17
 
       - name: 🌐 Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
+          cache: npm
 
       - name: 📁 Install project dependencies
         run: |
@@ -40,7 +80,7 @@ jobs:
           npm config set fetch-retry-mintimeout 20000
           npm config set fetch-retry-maxtimeout 120000
           npm cache clean --force
-          npm install --legacy-peer-deps || npm install --no-package-lock --legacy-peer-deps
+          npm ci --legacy-peer-deps
         env:
           NODE_OPTIONS: "--max-old-space-size=4096"
 

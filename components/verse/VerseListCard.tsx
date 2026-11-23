@@ -1,7 +1,7 @@
 import { View, Pressable, StyleSheet, Text as RNText } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 
+import { haptics } from "@/lib/haptics";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { Radius, Spacing } from "@/theme/design-tokens";
 
@@ -30,10 +30,8 @@ export function VerseListCard({
 
   return (
     <Pressable
-      onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        onPress();
-      }}
+      onPressIn={haptics.light}
+      onPress={onPress}
       style={({ pressed }) => [
         styles.card,
         {
@@ -57,7 +55,7 @@ export function VerseListCard({
         <RNText
           style={[
             styles.badgeText,
-            { color: colors.primary, fontSize: badge.length > 4 ? 11 : 14 },
+            { color: colors.brandText, fontSize: badge.length > 4 ? 11 : 14 },
           ]}
           numberOfLines={1}
           adjustsFontSizeToFit
@@ -69,7 +67,7 @@ export function VerseListCard({
 
       <View style={styles.body}>
         {!!title && (
-          <RNText style={[styles.title, { color: colors.primary }]} numberOfLines={1}>
+          <RNText style={[styles.title, { color: colors.brandText }]} numberOfLines={1}>
             {title}
           </RNText>
         )}
@@ -91,7 +89,7 @@ export function VerseListCard({
         ]}
       >
         {read && <Ionicons name="checkmark" size={15} color={colors.success} />}
-        <RNText style={[styles.actionText, { color: colors.primary }]}>
+        <RNText style={[styles.actionText, { color: colors.brandText }]}>
           {read ? "Read" : "Open"}
         </RNText>
       </View>

@@ -1,19 +1,33 @@
 import React, { useState, useEffect, useCallback, useRef, createContext, useContext } from "react";
+import { AppState } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { CHAPTER_VERSE_COUNTS } from "@/constants/chapter-verse-counts";
 import { DAILY_VERSE_GOAL } from "@/constants/milestones";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
+import { addDaysToDateKey, getLocalDateKey } from "@/lib/date-keys";
 import {
-  addDaysToDateKey,
-  daysBetweenDateKeys,
-  getLocalDateKey,
-} from "@/lib/date-keys";
+  DEFAULT_REMINDER_TIME,
+  getAtRiskMoment,
+} from "@/lib/streak-at-risk";
+import {
+  getStoredPreferences,
+  scheduleStreakAtRiskNotification,
+} from "@/lib/daily-verse-notifications";
+import { computeNextStreak, creditDayAsRead, reconcileStreak } from "@/lib/streak";
+import {
+  EMPTY_FREEZES,
+  awardFreezeIfEarned,
+  loadStreakFreezes,
+  protectMissedDays,
+  saveStreakFreezes,
+} from "@/lib/streak-freeze";
 import type {
   LastReadVerse,
   ReadingActivity,
   ReadingProgress,
   ReadingStreak,
+  StreakFreezeState,
 } from "@/types";
 
 /**
@@ -74,12 +88,16 @@ interface ReadingProgressContextValue {
   resetAllProgress: () => Promise<void>;
   CHAPTER_VERSES: { [key: number]: number };
   streak: ReadingStreak;
+  /** Lotus freezes in hand plus the days they have covered. */
+  freezes: StreakFreezeState;
   lastReadVerseId: string | null;
   setLastReadVerse: (verseId: string) => Promise<void>;
   getVersesReadOnDate: (dateKey: string) => number;
   getActivityMap: () => ReadingActivity;
   isDailyGoalComplete: (dateKey?: string) => boolean;
   isStreakAtRisk: () => boolean;
+  /** Re-read the reminder time so the at-risk moment follows Settings. */
+  refreshReminderTime: () => Promise<void>;
 }
 
 const ReadingProgressContext = createContext<ReadingProgressContextValue | null>(null);
@@ -93,6 +111,9 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
     longestStreak: 0,
     lastReadDate: null,
   });
+  const [freezes, setFreezes] = useState<StreakFreezeState>(EMPTY_FREEZES);
+  // The reader's own reminder time sets when the flame starts to worry.
+  const [atRiskMoment, setAtRiskMoment] = useState(getAtRiskMoment(DEFAULT_REMINDER_TIME));
   const [lastReadVerse, setLastReadVerseState] = useState<LastReadVerse>({
     verseId: null,
     updatedAt: null,
@@ -102,19 +123,33 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
   const progressRef = useRef(progress);
   const activityRef = useRef(activity);
   const streakRef = useRef(streak);
+  const freezesRef = useRef(freezes);
   progressRef.current = progress;
   activityRef.current = activity;
   streakRef.current = streak;
+  freezesRef.current = freezes;
 
   const loadProgress = useCallback(async () => {
     try {
-      const [storedProgress, storedStreak, storedLastRead, storedActivity] =
-        await Promise.all([
-          AsyncStorage.getItem(STORAGE_KEYS.READING_PROGRESS),
-          AsyncStorage.getItem(STORAGE_KEYS.READING_STREAK),
-          AsyncStorage.getItem(STORAGE_KEYS.LAST_READ_VERSE),
-          AsyncStorage.getItem(STORAGE_KEYS.READING_ACTIVITY),
-        ]);
+      const [
+        storedProgress,
+        storedStreak,
+        storedLastRead,
+        storedActivity,
+        storedFreezes,
+        storedReminderTime,
+      ] = await Promise.all([
+        AsyncStorage.getItem(STORAGE_KEYS.READING_PROGRESS),
+        AsyncStorage.getItem(STORAGE_KEYS.READING_STREAK),
+        AsyncStorage.getItem(STORAGE_KEYS.LAST_READ_VERSE),
+        AsyncStorage.getItem(STORAGE_KEYS.READING_ACTIVITY),
+        loadStreakFreezes(),
+        AsyncStorage.getItem(STORAGE_KEYS.DAILY_VERSE_NOTIFICATION_TIME),
+      ]);
+
+      setAtRiskMoment(
+        getAtRiskMoment(storedReminderTime ?? DEFAULT_REMINDER_TIME)
+      );
 
       if (storedProgress) {
         setProgress(JSON.parse(storedProgress));
@@ -122,11 +157,32 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
       if (storedStreak) {
         try {
           const parsed = JSON.parse(storedStreak);
-          setStreak({
+          const loaded: ReadingStreak = {
             currentStreak: parsed.currentStreak ?? 0,
             longestStreak: parsed.longestStreak ?? 0,
             lastReadDate: parsed.lastReadDate ?? null,
-          });
+          };
+          // A streak cannot survive a missed day, but the stored value can —
+          // reconcile before showing it (BUG-019). A lotus freeze covers a
+          // missed day first, so a saved streak never looks broken.
+          const today = getLocalDateKey();
+          const protectedStreak = protectMissedDays(loaded, today, storedFreezes);
+          const reconciled = reconcileStreak(protectedStreak.streak, today);
+          streakRef.current = reconciled;
+          setStreak(reconciled);
+          if (reconciled !== loaded) {
+            await AsyncStorage.setItem(STORAGE_KEYS.READING_STREAK, JSON.stringify(reconciled));
+          }
+
+          const nextFreezes = awardFreezeIfEarned(
+            protectedStreak.freezes,
+            reconciled.currentStreak
+          );
+          freezesRef.current = nextFreezes;
+          setFreezes(nextFreezes);
+          if (nextFreezes !== storedFreezes) {
+            await saveStreakFreezes(nextFreezes);
+          }
         } catch {}
       }
       if (storedLastRead) {
@@ -142,6 +198,10 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
         try {
           setActivity(JSON.parse(storedActivity));
         } catch {}
+      }
+      if (!storedStreak) {
+        freezesRef.current = storedFreezes;
+        setFreezes(storedFreezes);
       }
     } catch (error) {
       console.error("Error loading reading progress:", error);
@@ -170,6 +230,40 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
     }
   }, []);
 
+  /**
+   * Decay the streak against the calendar. Runs at load and whenever the app
+   * returns to the foreground, so a missed day is reflected in the chip without
+   * waiting for the next read (BUG-019).
+   */
+  const reconcileStreakForToday = useCallback(() => {
+    const current = streakRef.current;
+    const today = getLocalDateKey();
+    const protectedStreak = protectMissedDays(current, today, freezesRef.current);
+    const next = reconcileStreak(protectedStreak.streak, today);
+    const nextFreezes = awardFreezeIfEarned(
+      protectedStreak.freezes,
+      next.currentStreak
+    );
+
+    if (next !== current) {
+      streakRef.current = next;
+      setStreak(next);
+      saveStreak(next);
+    }
+    if (nextFreezes !== freezesRef.current) {
+      freezesRef.current = nextFreezes;
+      setFreezes(nextFreezes);
+      saveStreakFreezes(nextFreezes);
+    }
+  }, [saveStreak]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") reconcileStreakForToday();
+    });
+    return () => subscription.remove();
+  }, [reconcileStreakForToday]);
+
   const saveActivity = useCallback(async (data: ReadingActivity) => {
     try {
       await AsyncStorage.setItem(STORAGE_KEYS.READING_ACTIVITY, JSON.stringify(data));
@@ -194,23 +288,62 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
       const todayKey = getLocalDateKey();
 
       const currentProgress = progressRef.current;
-      const currentActivity = activityRef.current;
-      const currentStreak = streakRef.current;
-
       const chapterProgress = currentProgress[chapterKey] || {
         versesRead: [] as string[],
         totalVerses,
         isComplete: false,
       };
-
       const alreadyRead = chapterProgress.versesRead.includes(verseKey);
+
+      // Daily credit is independent of whether the verse is new to the user:
+      // re-reading still marks the day as read and keeps the streak alive
+      // (BUG-018). Without this, Home's "Continue reading" — which by
+      // definition reopens an already-read verse — could never count.
+      const currentActivity = activityRef.current;
+      const nextActivity = creditDayAsRead(currentActivity, todayKey, !alreadyRead);
+      if (nextActivity !== currentActivity) {
+        activityRef.current = nextActivity;
+        setActivity(nextActivity);
+        await saveActivity(nextActivity);
+      }
+      // Reading now makes tonight's nudge untrue; scheduling happens once the
+      // streak is saved below, so tomorrow's nudge carries the new count.
+
+      const dailyGoalJustCompleted =
+        (currentActivity[todayKey] ?? 0) < DAILY_VERSE_GOAL &&
+        (nextActivity[todayKey] ?? 0) >= DAILY_VERSE_GOAL;
+
+      const currentStreak = streakRef.current;
+      const nextStreak = computeNextStreak(currentStreak, todayKey);
+      if (nextStreak !== currentStreak) {
+        streakRef.current = nextStreak;
+        setStreak(nextStreak);
+        await saveStreak(nextStreak);
+      }
+
+      // Rebuild the nudge window from the freshly saved state: today's read
+      // cancels tonight and schedules tomorrow's (review finding P1).
+      scheduleStreakAtRiskNotification().catch(() => {});
+
+      // Every seventh day of a live streak puts another lotus in hand.
+      const currentFreezes = freezesRef.current;
+      const nextFreezes = awardFreezeIfEarned(
+        currentFreezes,
+        nextStreak.currentStreak
+      );
+      if (nextFreezes !== currentFreezes) {
+        freezesRef.current = nextFreezes;
+        setFreezes(nextFreezes);
+        await saveStreakFreezes(nextFreezes);
+      }
+
       if (alreadyRead) {
         return {
           isNewCompletion: false,
           totalVerses,
           wasNewlyRead: false,
-          currentStreak: currentStreak.currentStreak,
-          dailyGoalJustCompleted: false,
+          currentStreak: nextStreak.currentStreak,
+          dailyGoalJustCompleted,
         };
       }
 
@@ -232,42 +365,6 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
       progressRef.current = newProgress;
       setProgress(newProgress);
       await saveProgress(newProgress);
-
-      const prevCount = currentActivity[todayKey] ?? 0;
-      const nextActivity: ReadingActivity = {
-        ...currentActivity,
-        [todayKey]: prevCount + 1,
-      };
-      activityRef.current = nextActivity;
-      setActivity(nextActivity);
-      await saveActivity(nextActivity);
-      const dailyGoalJustCompleted =
-        prevCount < DAILY_VERSE_GOAL && nextActivity[todayKey] >= DAILY_VERSE_GOAL;
-
-      let nextStreak = currentStreak;
-      if (currentStreak.lastReadDate !== todayKey) {
-        let streakCount: number;
-        if (!currentStreak.lastReadDate) {
-          streakCount = 1;
-        } else {
-          const diffDays = daysBetweenDateKeys(currentStreak.lastReadDate, todayKey);
-          if (diffDays === 1) {
-            streakCount = currentStreak.currentStreak + 1;
-          } else if (diffDays > 1) {
-            streakCount = 1;
-          } else {
-            streakCount = currentStreak.currentStreak || 1;
-          }
-        }
-        nextStreak = {
-          currentStreak: streakCount,
-          longestStreak: Math.max(currentStreak.longestStreak, streakCount),
-          lastReadDate: todayKey,
-        };
-        streakRef.current = nextStreak;
-        setStreak(nextStreak);
-        await saveStreak(nextStreak);
-      }
 
       return {
         isNewCompletion,
@@ -358,9 +455,11 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
     progressRef.current = {};
     activityRef.current = {};
     streakRef.current = emptyStreak;
+    freezesRef.current = EMPTY_FREEZES;
     setProgress({});
     setActivity({});
     setStreak(emptyStreak);
+    setFreezes(EMPTY_FREEZES);
     setLastReadVerseState(emptyLastRead);
     try {
       await AsyncStorage.multiRemove([
@@ -368,6 +467,7 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
         STORAGE_KEYS.READING_STREAK,
         STORAGE_KEYS.READING_ACTIVITY,
         STORAGE_KEYS.LAST_READ_VERSE,
+        STORAGE_KEYS.STREAK_FREEZES,
       ]);
     } catch (error) {
       console.error("Error resetting reading progress:", error);
@@ -393,6 +493,20 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
 
   const getActivityMap = useCallback(() => activity, [activity]);
 
+  /**
+   * Settings owns the reminder time; the flame's "at risk" moment is derived
+   * from it. Without this the reader changes the time, comes back to Home, and
+   * the flame still worries on the old schedule until the next cold start.
+   */
+  const refreshReminderTime = useCallback(async () => {
+    try {
+      const { time } = await getStoredPreferences();
+      setAtRiskMoment(getAtRiskMoment(time));
+    } catch {
+      // Keep the current moment; the next cold start reloads it.
+    }
+  }, []);
+
   const isDailyGoalComplete = useCallback(
     (dateKey?: string) => {
       const key = dateKey ?? getLocalDateKey();
@@ -407,8 +521,11 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
     if (!streak.lastReadDate || streak.currentStreak <= 0) return false;
     const yesterday = addDaysToDateKey(today, -1);
     if (streak.lastReadDate !== yesterday) return false;
-    return new Date().getHours() >= 18;
-  }, [activity, streak]);
+
+    const now = new Date();
+    const minutesNow = now.getHours() * 60 + now.getMinutes();
+    return minutesNow >= atRiskMoment.hour * 60 + atRiskMoment.minute;
+  }, [activity, streak, atRiskMoment]);
 
   const value: ReadingProgressContextValue = {
     progress,
@@ -424,12 +541,14 @@ export function ReadingProgressProvider({ children }: { children: React.ReactNod
     resetAllProgress,
     CHAPTER_VERSES,
     streak,
+    freezes,
     lastReadVerseId: lastReadVerse.verseId,
     setLastReadVerse,
     getVersesReadOnDate,
     getActivityMap,
     isDailyGoalComplete,
     isStreakAtRisk,
+    refreshReminderTime,
   };
 
   return React.createElement(ReadingProgressContext.Provider, { value }, children);

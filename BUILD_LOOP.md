@@ -21,7 +21,7 @@ and keeps opening in month three. Not a library, a practice.
 
 The app already has the bones: 18 chapters, four content languages
 (te/en/hi/ta), daily verse, streaks, guided paths, Explore topics, saved
-verses, share cards, local reminders, an Android widget. The job now is
+verses, share cards, local reminders, home-screen widgets. The job now is
 **depth, calm, and habit**: every iteration should either make the daily
 reading ritual better (retention) or give someone a reason to install it and
 tell a friend (acquisition).
@@ -163,19 +163,21 @@ for a post-release update.
 ## 5. Branching
 
 All loop work happens on the local branch **`build-loop`** (created from
-`main` at setup). Never commit to `main`, never push. The operator reviews
-with `git log main..build-loop` and decides what goes where.
+`master` at setup). Never commit to `master`, never push. The operator reviews
+with `git log master..build-loop` and decides what goes where.
 
 ## 6. The gate
 
 ```bash
 npm run lint                  # expo lint — must exit 0
 npx tsc --noEmit              # must print nothing
-npx jest --watchAll=false     # all suites green
+npm test                      # jest, single run — all suites green
 ```
 
 Read each command's own exit status — never pipe it into `tail` and trust
-the pipe. `npm run test` uses `--watchAll` and hangs; don't use it.
+the pipe. `npm run test:watch` is the watch-mode variant; never use it in CI.
+`.github/workflows/android-release.yml` runs this same gate before any build,
+so a red gate fails the PR instead of the release.
 
 ## 7. Devices — verified commands
 
@@ -409,6 +411,16 @@ entries to read in the morning.
 
 ## 10. Research inputs
 
+- **The 2026-11-15 audits** (read before scoping anything):
+  - [`docs/reviews/app-critique.md`](docs/reviews/app-critique.md) — product,
+    competitor and store-readiness critique. Live App Store competitor data
+    (24 apps, ratings + review counts), a feature-gap matrix against the
+    category, monetization/ASO analysis, and a two-week launch plan.
+  - [`docs/reviews/motion-and-typography-spec.md`](docs/reviews/motion-and-typography-spec.md) —
+    every animation in the codebase inventoried, with exact durations,
+    easings, spring configs, a type scale, and a contrast-verified palette.
+  - Their findings are already written up as sprint tasks in `docs/bugs/`
+    (BUG-015 … BUG-027). **Pick those up instead of re-deriving them.**
 - **Competitors** (one teardown per week, add gaps to the Feature Backlog):
   Bhagavad Gita (by Vedic/various), Holy Bhagavad Gita, Gita Wisdom,
   Bhagavad Gita for All, ISKCON's "Bhagavad Gita As It Is", Gita Press
@@ -437,12 +449,64 @@ delete — rejected items move to the Not-doing list with a reason.
   verse. tags: area:home/explore
 - `[?] Streak grace day` — one missed day doesn't break the streak; copy
   welcomes the user back. tags: area:practice, effort:2
-- `[?] iOS home-screen widget` — WidgetKit extension; Android already has
-  one, iOS has only a storage stub. tags: area:widget, effort:4
+- ~~iOS home-screen widget~~ shipped in [47] — WidgetKit extension sharing the
+  Android 30-day payload through an App Group; small, medium and lock-screen
+  families. Live Activity deliberately deferred (see BUILD_LOG [47]).
 - `[?] Chapter titles in hi/ta` — currently fall back (README). Needs a
   cited source, not generation. tags: area:content
 - `[?] Large-text audit` — every reading screen at the largest Dynamic Type /
   font scale. tags: area:a11y
+- ~~Localise the UI chrome~~ shipped in [41] — the scripture is 100% covered in te/en/hi/ta
+  but every button, label and heading is English. The competition ships
+  *separate* apps per language (Shrimad Hindi 222 ratings, Telugu 141,
+  Gujarati 187) precisely because they can't localise in-app. Biggest
+  single growth lever; ~120 strings. tags: area:i18n, effort:2, growth:high
+- ~~Search the whole corpus~~ shipped in [46] — full-text over sloka + meaning +
+  commentary in all four languages, plus a ~80-tag topic taxonomy so
+  "dealing with anxiety" matches verses that never say "anxiety". Not a
+  tab (AGENTS.md forbids a Search tab) — a search field inside Explore.
+  Every serious competitor has this; 520 of 640 verses are currently
+  unreachable except by scrolling. tags: area:explore, effort:3, growth:high
+- `[?] Curated daily verse sequence` — replace the linear catalogue walk
+  with anchor verses first, then a theme per month. Data changes only.
+  tags: area:practice, effort:1, retention:high
+- `[?] Configurable daily goal` — 1 / 3 / 5 / 10 verses, slider at
+  onboarding and in Settings. `DAILY_VERSE_GOAL` is currently hardcoded to
+  1. tags: area:practice, effort:1, retention:high
+- ~~Streak rail + flame states~~ shipped in [42] (rail) and [43] (ribbon) — persistent 7-dot rail under the Home
+  brand bar, flame states for idle/at-risk/broken/frozen, number roll, and
+  an inline "day complete" ribbon (not a modal — the user is reading).
+  Spec in `docs/reviews/motion-and-typography-spec.md` §2. tags:
+  area:home, effort:2, retention:high
+- ~~Streak freeze / lotus mark~~ shipped in [44] — one earned freeze per 7 days; a missed
+  day no longer resets the streak. The highest-ROI retention feature in
+  the comparable apps. tags: area:practice, effort:1, retention:high
+- ~~At-risk push notification~~ shipped in [45] — "your N-day streak ends at midnight" at
+  reminder time + 4h. `isStreakAtRisk()` already detects it; nothing
+  sends it. tags: area:notifications, effort:1, retention:high
+- ~~Rating prompt~~ shipped in [48] — native store dialog after two wins
+  (chapter complete or streak milestone), 90-day cooldown. Needs a rebuilt
+  native client; TestFlight/Expo Go suppress it. tags: area:growth, effort:1
+- `[?] Crash reporting + privacy-safe analytics + EAS Update` — deferred in
+  [48] with setup steps: all three need a DSN/vendor account, updated privacy
+  declarations and a new binary. `expo.modules.updates.ENABLED=false` still
+  means every fix needs a store review. tags: area:infra, effort:1
+- `[?] Font-size setting (S/M/L/XL)` — four competitors ship this as
+  baseline. One token change in `theme/design-tokens.ts`. tags: area:a11y,
+  effort:1
+- `[?] Light / Dark / System theme` — currently a binary toggle with a
+  dark default, while every screenshot and the website show cream. tags:
+  area:settings, effort:1
+- `[?] One-time Premium unlock` — deferred in [49]; the category norm
+  (Everyday, For All, Updesh, Daily Bhakti all have IAP). Keeps the "no ads,
+  no tracking, no account" promise intact; unlocks extra paths, audio packs,
+  themes, export. Blocked on store products, a purchase SDK/receipt
+  validation and privacy updates — checklist in `docs/store/listing.md`
+  § Monetization. tags: area:growth, effort:3
+- `[?] Continuous chapter audio` — play straight through a chapter with
+  per-word sync highlight. `Updesh` and `Read & Search` have it as a paid
+  feature; free, offline, in four languages would make this the reference
+  app for audio study. tags: area:verse, effort:5, growth:high
 
 ### Not-doing list
 - Extra tabs (Read / Library / Profile / Search) — AGENTS.md forbids.
@@ -456,6 +520,28 @@ verification) so it can be handed to a sub-agent. `docs/bugs/README.md` has
 the index, priorities and template. When you find a bug: add a file there,
 add a row to the index, never just a line here. When you fix one: update its
 status and the index with the commit SHA.
+
+### Ship blockers (from the 2026-11-15 audit)
+
+These are P1 and must clear before a store submission. Full tasks in
+`docs/bugs/`. **Work them in this order** — the first three repair the habit
+loop that the whole product is positioned around, and they are ~2 hours in
+total.
+
+| Order | Bug | Why first |
+|--|--|--|
+| 1 | [BUG-017](docs/bugs/BUG-017-daily-verse-never-reaches-chapters-11-18.md) | 40% of the scripture can never be a daily verse |
+| 2 | [BUG-018](docs/bugs/BUG-018-rereading-verse-does-not-advance-streak.md) | Re-reading never advances the streak — "Continue reading" can't count |
+| 3 | [BUG-019](docs/bugs/BUG-019-stale-streak-chip-after-missed-day.md) | The chip shows a streak that isn't true |
+| 4 | [BUG-022](docs/bugs/BUG-022-bundle-is-175mb.md) | 55 MB assets / 68 MB export — under Play's limit; on-demand audio remains |
+| 5 | [BUG-023](docs/bugs/BUG-023-schedule-exact-alarm-restricted-permission.md) | Restricted permission → Play rejection path |
+| 6 | [BUG-015](docs/bugs/BUG-015-verse-share-button-missing.md) | Store listing promises a feature that does not exist |
+| 7 | [BUG-016](docs/bugs/BUG-016-long-press-to-copy-missing.md) | Onboarding promises a feature that does not exist |
+| 8 | [BUG-025](docs/bugs/BUG-025-light-theme-gold-fails-wcag-aa.md) | Primary colour fails AA — legal and accessibility |
+| 9 | [BUG-026](docs/bugs/BUG-026-letter-spacing-breaks-indic-conjuncts.md) | Broken conjuncts in the scripture text |
+| 10 | [BUG-020](docs/bugs/BUG-020-notifications-stop-after-eight-days.md) | Reminder used to die after 8 days — 30-day window; device verification owed |
+| 11 | [BUG-024](docs/bugs/BUG-024-ci-uses-wrong-jdk-and-node.md) | Nothing is verified before a release |
+| 12 | [BUG-021](docs/bugs/BUG-021-widget-goes-stale-after-eight-days.md) | Widget used to show a placeholder after 8 days — 30-day payload + boot re-arm |
 
 ## Polish Punch List
 

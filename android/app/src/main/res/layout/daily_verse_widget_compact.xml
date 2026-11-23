@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Compact layout for widgets resized below 4x4 (roughly 4x2, ~110dp).
+  Keeps every id the provider binds so RemoteViews never targets a missing view.
+  Same RemoteViews limits as the full layout.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:id="@+id/widget_root"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:orientation="vertical"
+  android:gravity="center_vertical"
+  android:paddingStart="14dp"
+  android:paddingEnd="14dp"
+  android:paddingTop="10dp"
+  android:paddingBottom="10dp"
+  android:background="@drawable/widget_daily_verse_bg"
+  android:contentDescription="@string/widget_daily_verse_description">
+
+  <TextView
+    android:id="@+id/widget_eyebrow"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:text="@string/widget_eyebrow_today"
+    android:textColor="@color/widget_primary"
+    android:textSize="11sp"
+    android:textStyle="bold"
+    android:maxLines="1"
+    android:ellipsize="end" />
+
+  <TextView
+    android:id="@+id/widget_title"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="2dp"
+    android:text="@string/widget_title_placeholder"
+    android:textColor="@color/widget_text"
+    android:textSize="16sp"
+    android:textStyle="bold"
+    android:maxLines="2"
+    android:ellipsize="end" />
+
+  <TextView
+    android:id="@+id/widget_meaning"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="2dp"
+    android:text="@string/widget_meaning_placeholder"
+    android:textColor="@color/widget_text_muted"
+    android:textSize="12sp"
+    android:maxLines="2"
+    android:ellipsize="end" />
+
+  <!-- Present so the shared binding code can address them; never shown. -->
+  <TextView
+    android:id="@+id/widget_sloka"
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:visibility="gone" />
+
+  <TextView
+    android:id="@+id/widget_cta"
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:visibility="gone" />
+
+</LinearLayout>

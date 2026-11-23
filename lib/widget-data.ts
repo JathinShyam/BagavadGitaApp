@@ -1,9 +1,14 @@
 import { NativeModules, Platform } from "react-native";
 
 import { addDaysToDateKey, getLocalDateKey } from "@/lib/date-keys";
-import { getVerseForDate } from "@/lib/daily-verse";
+import { getVerseForDate, truncate } from "@/lib/daily-verse";
 import { getStoredContentLanguage } from "@/lib/chapter-content";
-import { DEFAULT_CONTENT_LANGUAGE, type ContentLanguage } from "@/constants/languages";
+import {
+  APP_TITLES,
+  DEFAULT_CONTENT_LANGUAGE,
+  type ContentLanguage,
+} from "@/constants/languages";
+import { INTL_LOCALES, translate, WEEKDAY_SHORT } from "@/lib/i18n";
 
 export type WidgetDayPayload = {
   dateKey: string;
@@ -17,23 +22,30 @@ export type WidgetDayPayload = {
 export type WidgetSyncPayload = {
   days: WidgetDayPayload[];
   updatedAt: number;
+  /**
+   * Fallback copy for the native widget's empty/stale state. Native code has no
+   * access to the JS dictionary, so the strings travel with the payload (the
+   * iOS extension reads the same JSON after 30 days without an app launch).
+   */
+  strings: {
+    refreshTitle: string;
+    refreshBody: string;
+    appTitle: string;
+  };
 };
 
 const { WidgetDataModule } = NativeModules as {
   WidgetDataModule?: { setWidgetData: (json: string) => Promise<boolean> };
 };
 
-const ROLLING_DAYS = 7;
+const ROLLING_DAYS = 30;
 const MAX_SLOKA = 72;
 const MAX_MEANING = 140;
 
-function truncate(text: string, maxLen: number): string {
-  const trimmed = text.replace(/\s+/g, " ").trim();
-  if (trimmed.length <= maxLen) return trimmed;
-  return `${trimmed.slice(0, maxLen - 1).trim()}…`;
-}
+// Truncation lives in `daily-verse`: it cuts on a word boundary so an Indic
+// conjunct is never split into two code points (review finding P1).
 
-/** Build a 7-day feed of daily verses so the native widget can pick today's entry. */
+/** Build a 30-day feed of daily verses so the native widget can pick today's entry. */
 export function buildWidgetSyncPayload(
   now: Date = new Date(),
   language: ContentLanguage = DEFAULT_CONTENT_LANGUAGE
@@ -50,24 +62,37 @@ export function buildWidgetSyncPayload(
     const slokaRaw = (verse.sloka ?? "").replace(/\n/g, " ").trim();
     const meaningRaw = (verse.meaning ?? "").replace(/\n/g, " ").trim();
 
-    const weekday = new Date(y, m - 1, d).toLocaleDateString(undefined, {
-      weekday: "short",
-    });
+    const weekday =
+      WEEKDAY_SHORT[language][new Date(y, m - 1, d).getDay()] ??
+      new Date(y, m - 1, d).toLocaleDateString(INTL_LOCALES[language], {
+        weekday: "short",
+      });
 
     days.push({
       dateKey: key,
       verseId: verse.id,
-      eyebrow: i === 0 ? "Today" : weekday,
-      title: `Chapter ${verse.chapter} · Verse ${verse.verse_number}`,
+      eyebrow: i === 0 ? translate(language, "home.today") : weekday,
+      title: translate(language, "common.chapterVerseN", {
+        chapter: verse.chapter,
+        verse: verse.verse_number,
+      }),
       sloka: truncate(slokaRaw, MAX_SLOKA),
       meaning: truncate(
-        meaningRaw || "Open the app to read the full meaning.",
+        meaningRaw || translate(language, "notifications.openApp"),
         MAX_MEANING
       ),
     });
   }
 
-  return { days, updatedAt: Date.now() };
+  return {
+    days,
+    updatedAt: Date.now(),
+    strings: {
+      refreshTitle: translate(language, "widget.refreshTitle"),
+      refreshBody: translate(language, "widget.refreshBody"),
+      appTitle: APP_TITLES[language],
+    },
+  };
 }
 
 export async function setWidgetVerseData(data: WidgetSyncPayload): Promise<void> {

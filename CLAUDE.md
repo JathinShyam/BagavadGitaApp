@@ -9,6 +9,13 @@ Read these, in order, before changing anything:
    self-directed build loop (`/loop`). Mission, rules, devices, the gate.
 3. **[BUILD_LOG.md](BUILD_LOG.md)** — append-only handover, one entry per
    iteration. Read the last five entries before starting.
+4. **[docs/reviews/](docs/reviews/README.md)** — the 2026-11-15 audits:
+   `app-critique.md` (product, competitors, store readiness) and
+   `motion-and-typography-spec.md` (every animation, type and colour token).
+   Reference material — the actionable items from both are already written up
+   as sprint tasks in `docs/bugs/` (BUG-015 … BUG-027). Read
+   `docs/reviews/` before touching anything in the streak, the daily verse,
+   notifications, the widget, the bundle, motion, or typography.
 
 Task skills live in `.cursor/skills/` (UI polish, verse content, practice
 systems). Read the matching `SKILL.md` before work in that area.

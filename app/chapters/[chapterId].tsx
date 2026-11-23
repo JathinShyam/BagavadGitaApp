@@ -3,22 +3,22 @@ import { Text } from "react-native-paper";
 import { useLocalSearchParams, Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  Easing,
 } from "react-native-reanimated";
 
+import { haptics } from "@/lib/haptics";
 import { getChapterById } from "@/data/chapters/chapter-details";
 import { CHAPTER_IMAGES } from "@/constants/chapter-images";
 import type { Verse } from "@/types";
 
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useContentLanguage } from "@/context/language-context";
+import { useTranslation } from "@/hooks/useTranslation";
 import { useReadingProgress } from "@/hooks/useReadingProgress";
 import { ROUTES } from "@/constants/routes";
 import { chapterScreenStyles } from "@/theme/screen-styles";
@@ -29,6 +29,7 @@ import { GoldCard } from "@/components/ui/GoldCard";
 import { OrnamentalDivider, ORNAMENTS } from "@/components/ui/OrnamentalDivider";
 import { VerseListCard } from "@/components/verse/VerseListCard";
 import { Spacing } from "@/theme/design-tokens";
+import { Duration, Ease } from "@/theme/motion";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const HERO_ASPECT = 853 / 1280;
@@ -41,6 +42,7 @@ export default function ChapterDetailScreen() {
   const { chapterId } = useLocalSearchParams<{ chapterId: string }>();
   const { colors } = useAppTheme();
   const { language } = useContentLanguage();
+  const { t } = useTranslation();
   const router = useRouter();
   const chapter = getChapterById(getRouteParam(chapterId));
   const chapterTitle = chapter ? getChapterTitle(chapter.id, language) : "";
@@ -93,13 +95,13 @@ export default function ChapterDetailScreen() {
   useEffect(() => {
     const next = Math.max(0, Math.min(100, chapterProgress)) / 100;
     journeyProgress.value = withTiming(next, {
-      duration: 550,
-      easing: Easing.out(Easing.cubic),
+      duration: Duration.ritual,
+      easing: Ease.decelerate,
     });
   }, [chapterProgress, journeyProgress]);
 
   const journeyFillStyle = useAnimatedStyle(() => ({
-    width: Math.max(0, pathWidth.value * journeyProgress.value),
+    transform: [{ scaleX: journeyProgress.value }],
   }));
 
   /** Chariot sits at the leading tip of the fill (50% → middle of the bar). */
@@ -122,7 +124,7 @@ export default function ChapterDetailScreen() {
         preview={getVerseListPreview(item, language)}
         read={read}
         onPress={() => router.push(ROUTES.verseFromChapter(chapter.id, item.verse_number))}
-        accessibilityLabel={`Open verse ${item.verse_number}`}
+        accessibilityLabel={t("chapter.openVerseA11y", { verse: item.verse_number })}
       />
     );
   };
@@ -130,7 +132,7 @@ export default function ChapterDetailScreen() {
   if (!chapter) {
     return (
       <SafeAreaView style={chapterScreenStyles.container}>
-        <Text>Chapter not found</Text>
+        <Text>{t("chapter.notFound")}</Text>
       </SafeAreaView>
     );
   }
@@ -142,14 +144,14 @@ export default function ChapterDetailScreen() {
     >
       <Stack.Screen
         options={{
-          headerTitle: `Chapter ${chapter.id}`,
+          headerTitle: t("chapter.header", { chapter: chapter.id }),
           headerShown: true,
           headerStyle: {
             backgroundColor: colors.background,
           },
-          headerTintColor: colors.primary,
+          headerTintColor: colors.brandText,
           headerTitleStyle: {
-            color: colors.primary,
+            color: colors.brandText,
             fontSize: 18,
             fontFamily: "PlayfairDisplay_700Bold",
           },
@@ -212,13 +214,16 @@ export default function ChapterDetailScreen() {
                 </View>
               </View>
               <Pressable
+                onPressIn={haptics.light}
                 onPress={() => {
-                  Haptics.selectionAsync();
+                  haptics.selection();
                   setIsContextExpanded((v) => !v);
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={
-                  isContextExpanded ? "Collapse chapter description" : "Expand chapter description"
+                  isContextExpanded
+                    ? t("chapter.collapseDescA11y")
+                    : t("chapter.expandDescA11y")
                 }
               >
                 <Text
@@ -228,13 +233,13 @@ export default function ChapterDetailScreen() {
                   {chapterDescription}
                 </Text>
                 <View style={chapterPageStyles.contextActions}>
-                  <Text style={[chapterPageStyles.contextActionText, { color: colors.primary }]}>
-                    {isContextExpanded ? "Show less" : "Read full context"}
+                  <Text style={[chapterPageStyles.contextActionText, { color: colors.brandText }]}>
+                    {isContextExpanded ? t("chapter.showLess") : t("chapter.readFullContext")}
                   </Text>
                   <Ionicons
                     name={isContextExpanded ? "chevron-up" : "chevron-down"}
                     size={14}
-                    color={colors.primary}
+                    color={colors.brandText}
                   />
                 </View>
               </Pressable>
@@ -245,7 +250,7 @@ export default function ChapterDetailScreen() {
                   style={[chapterPageStyles.contextActions, { marginTop: 8 }]}
                 >
                   <Text style={[chapterPageStyles.contextActionText, { color: colors.textMuted }]}>
-                    Jump to verses
+                    {t("chapter.jumpToVerses")}
                   </Text>
                   <Ionicons name="arrow-down" size={14} color={colors.textMuted} />
                 </Pressable>
@@ -258,20 +263,23 @@ export default function ChapterDetailScreen() {
             <GoldCard compact style={chapterPageStyles.progressCard}>
               <View style={chapterPageStyles.progressTopRow}>
                 <View style={chapterPageStyles.progressMeta}>
-                  <Ionicons name="book-outline" size={16} color={colors.primary} />
+                  <Ionicons name="book-outline" size={16} color={colors.brandText} />
                   <Text
                     style={[
                       chapterPageStyles.progressValue,
-                      { color: chapterDone ? colors.primary : colors.text },
+                      { color: chapterDone ? colors.brandText : colors.text },
                     ]}
                   >
                     {chapterDone
-                      ? "Chapter complete"
-                      : `${coveredVerses} of ${totalVerses} verses read`}
+                      ? t("chapter.complete")
+                      : t("chapter.versesRead", {
+                          covered: coveredVerses,
+                          total: totalVerses,
+                        })}
                   </Text>
                 </View>
                 {chapterDone && (
-                  <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
+                  <Ionicons name="checkmark-circle" size={16} color={colors.brandText} />
                 )}
               </View>
 
@@ -317,7 +325,7 @@ export default function ChapterDetailScreen() {
             )}
 
             <Text style={[chapterPageStyles.versesHeading, { color: colors.text }]}>
-              Verses
+              {t("chapter.verses")}
             </Text>
           </View>
         }
@@ -439,8 +447,10 @@ const chapterPageStyles = StyleSheet.create({
     zIndex: 1,
   },
   journeyFill: {
+    width: "100%",
     height: "100%",
     borderRadius: 999,
+    transformOrigin: "left",
   },
   journeyMarkerWrap: {
     position: "absolute",

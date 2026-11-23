@@ -13,7 +13,8 @@ import {
 interface LanguageContextType {
   language: ContentLanguage;
   languageOption: ContentLanguageOption;
-  setLanguage: (language: ContentLanguage) => void;
+  /** Resolves after the choice is persisted, so dependent work reads it back. */
+  setLanguage: (language: ContentLanguage) => Promise<void>;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);

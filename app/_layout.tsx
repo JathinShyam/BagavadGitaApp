@@ -14,6 +14,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   useFonts as usePlayfair,
   PlayfairDisplay_400Regular,
+  PlayfairDisplay_400Regular_Italic,
   PlayfairDisplay_600SemiBold,
   PlayfairDisplay_700Bold,
 } from "@expo-google-fonts/playfair-display";
@@ -28,6 +29,8 @@ import { getVerseForDate } from "@/lib/daily-verse";
 import { scheduleNextDailyVerseNotification } from "@/lib/daily-verse-notifications";
 import { shouldLoadExpoNotifications } from "@/lib/notification-availability";
 import { syncDailyVerseWidget } from "@/lib/widget-data";
+import { setHapticsEnabled } from "@/lib/haptics";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { ROUTES } from "@/constants/routes";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
 
@@ -49,13 +52,22 @@ function NavigationThemeProvider({ children }: { children: ReactNode }) {
 export default function RootLayout() {
   const [playfairLoaded] = usePlayfair({
     PlayfairDisplay_400Regular,
+    PlayfairDisplay_400Regular_Italic,
     PlayfairDisplay_600SemiBold,
     PlayfairDisplay_700Bold,
   });
   const [isOnboardingComplete, setIsOnboardingComplete] = useState<boolean | null>(null);
+  // Reduce Motion also silences haptics — the system setting means "no
+  // unsolicited feedback", not only "no movement" (BUG-027 §D).
+  const reducedMotion = useReducedMotion();
+  useEffect(() => {
+    setHapticsEnabled(!reducedMotion);
+  }, [reducedMotion]);
   // Web starts without the splash so static HTML and the client agree; the
   // effect below opts in on the first visit to "/" in a browser session.
+  // Native plays the intro once per install, not on every cold start.
   const [showLaunchIntro, setShowLaunchIntro] = useState(Platform.OS !== "web");
+  const [introChecked, setIntroChecked] = useState(Platform.OS === "web");
 
   useEffect(() => {
     if (Platform.OS !== "web") return;
@@ -71,10 +83,32 @@ export default function RootLayout() {
     }
   }, []);
 
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    let mounted = true;
+    AsyncStorage.getItem(STORAGE_KEYS.LAUNCH_INTRO_SHOWN)
+      .then((value) => {
+        if (!mounted) return;
+        if (value === "true") {
+          setShowLaunchIntro(false);
+        } else {
+          // Mark as seen immediately: a kill during the intro must not replay it.
+          AsyncStorage.setItem(STORAGE_KEYS.LAUNCH_INTRO_SHOWN, "true").catch(() => {});
+        }
+        setIntroChecked(true);
+      })
+      .catch(() => {
+        if (mounted) setIntroChecked(true);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const loaded = playfairLoaded;
   const pendingNavigationPathRef = useRef<string | null>(null);
 
-  const isNavigationReady = loaded && isOnboardingComplete !== null;
+  const isNavigationReady = loaded && isOnboardingComplete !== null && introChecked;
 
   const flushPendingNavigation = useCallback(() => {
     if (!isNavigationReady) return;
@@ -104,14 +138,14 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (loaded && isOnboardingComplete !== null) {
+    if (loaded && isOnboardingComplete !== null && introChecked) {
       // Reveal the animated intro underneath; native splash disappears cleanly.
       SplashScreen.hideAsync().catch(() => {});
       if (!isOnboardingComplete) {
         router.replace(ROUTES.onboarding);
       }
     }
-  }, [loaded, isOnboardingComplete]);
+  }, [loaded, isOnboardingComplete, introChecked]);
 
   useEffect(() => {
     flushPendingNavigation();
@@ -250,7 +284,7 @@ export default function RootLayout() {
     return () => sub.remove();
   }, []);
 
-  if (!loaded || isOnboardingComplete === null) {
+  if (!loaded || isOnboardingComplete === null || !introChecked) {
     return null;
   }
 

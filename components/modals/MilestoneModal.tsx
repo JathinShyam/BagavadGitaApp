@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { View, StyleSheet, Dimensions, Pressable } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, StyleSheet, Dimensions, Pressable, Modal } from "react-native";
 import { Text } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, {
@@ -10,29 +10,25 @@ import Animated, {
   withSequence,
   Easing,
 } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
 
+import { haptics } from "@/lib/haptics";
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { Type } from "@/theme/design-tokens";
+import { Duration, Spring } from "@/theme/motion";
 import type { StreakMilestone } from "@/constants/milestones";
+import { useTranslation } from "@/hooks/useTranslation";
+import type { TranslationKey } from "@/lib/i18n";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const MILESTONE_COPY: Record<
   StreakMilestone,
-  { title: string; body: string }
+  { title: TranslationKey; body: TranslationKey }
 > = {
-  7: {
-    title: "7 days of practice",
-    body: "A full week of showing up. The Gita is becoming part of your rhythm.",
-  },
-  21: {
-    title: "21-day habit",
-    body: "Three weeks of returning to wisdom. This is how character is shaped.",
-  },
-  108: {
-    title: "108 days",
-    body: "A sacred count completed. Your dedication honors the path itself.",
-  },
+  7: { title: "milestone.7.title", body: "milestone.7.body" },
+  21: { title: "milestone.21.title", body: "milestone.21.body" },
+  108: { title: "milestone.108.title", body: "milestone.108.body" },
 };
 
 type Props = {
@@ -44,22 +40,34 @@ type Props = {
 
 export default function MilestoneModal({ visible, days, onClose, onShare }: Props) {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
+  const reducedMotion = useReducedMotion();
+  const [rendered, setRendered] = useState(visible);
   const scale = useSharedValue(0.8);
   const opacity = useSharedValue(0);
 
   useEffect(() => {
     if (visible && days) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      opacity.value = withTiming(1, { duration: 220 });
-      scale.value = withSequence(
-        withSpring(1.05, { damping: 12 }),
-        withSpring(1, { damping: 14 })
-      );
+      setRendered(true);
+      haptics.success();
+      opacity.value = withTiming(1, { duration: Duration.base });
+      scale.value = reducedMotion
+        ? 1
+        : withSequence(
+            withSpring(1.05, Spring.bouncy),
+            withSpring(1, Spring.bouncy)
+          );
     } else {
-      opacity.value = withTiming(0, { duration: 160 });
-      scale.value = withTiming(0.9, { duration: 160, easing: Easing.out(Easing.quad) });
+      opacity.value = withTiming(0, { duration: Duration.fast });
+      scale.value = withTiming(reducedMotion ? 1 : 0.9, {
+        duration: Duration.fast,
+        easing: Easing.out(Easing.quad),
+      });
+
+      const timer = setTimeout(() => setRendered(false), Duration.fast);
+      return () => clearTimeout(timer);
     }
-  }, [visible, days, opacity, scale]);
+  }, [visible, days, reducedMotion, opacity, scale]);
 
   const backdropStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
   const cardStyle = useAnimatedStyle(() => ({
@@ -67,12 +75,24 @@ export default function MilestoneModal({ visible, days, onClose, onShare }: Prop
     transform: [{ scale: scale.value }],
   }));
 
-  if (!visible || !days) return null;
+  if (!days || (!visible && !rendered)) return null;
 
   const copy = MILESTONE_COPY[days];
 
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+    <Modal
+      transparent
+      visible={rendered}
+      onRequestClose={onClose}
+      animationType="none"
+      statusBarTranslucent
+    >
+      <View
+        style={StyleSheet.absoluteFill}
+        pointerEvents="box-none"
+        accessibilityViewIsModal
+        onAccessibilityEscape={onClose}
+      >
       <Animated.View
         style={[styles.backdrop, backdropStyle, { backgroundColor: "#000000aa" }]}
       >
@@ -87,30 +107,35 @@ export default function MilestoneModal({ visible, days, onClose, onShare }: Prop
           ]}
         >
           <View style={[styles.badge, { backgroundColor: colors.primary + "22" }]}>
-            <Ionicons name="flame" size={36} color={colors.primary} />
+            <Ionicons name="flame" size={36} color={colors.brandText} />
           </View>
-          <Text style={[styles.days, { color: colors.primary }]}>{days}</Text>
-          <Text style={[styles.title, { color: colors.text }]}>{copy.title}</Text>
-          <Text style={[styles.body, { color: colors.textMuted }]}>{copy.body}</Text>
+          <Text style={[styles.days, { color: colors.brandText }]}>{days}</Text>
+          <Text style={[styles.title, { color: colors.text }]}>{t(copy.title)}</Text>
+          <Text style={[styles.body, { color: colors.textMuted }]}>{t(copy.body)}</Text>
           <View style={styles.actions}>
             {onShare && (
               <Pressable
                 onPress={onShare}
                 style={[styles.secondary, { borderColor: colors.outline }]}
               >
-                <Text style={{ color: colors.text, fontWeight: "700" }}>Share</Text>
+                <Text style={{ color: colors.text, fontWeight: "700" }}>
+                  {t("milestone.share")}
+                </Text>
               </Pressable>
             )}
             <Pressable
               onPress={onClose}
-              style={[styles.primary, { backgroundColor: colors.primary }]}
+              style={[styles.primary, { backgroundColor: colors.brandText }]}
             >
-              <Text style={{ color: colors.onPrimary, fontWeight: "700" }}>Continue</Text>
+              <Text style={{ color: colors.onPrimary, fontWeight: "700" }}>
+                {t("milestone.continue")}
+              </Text>
             </Pressable>
           </View>
         </Animated.View>
       </View>
-    </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -140,19 +165,20 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   days: {
-    fontSize: 48,
-    fontWeight: "800",
+    fontFamily: "PlayfairDisplay_700Bold",
+    fontSize: 56,
+    lineHeight: 60,
     marginBottom: 4,
   },
   title: {
-    fontSize: 20,
-    fontWeight: "700",
+    fontFamily: "PlayfairDisplay_600SemiBold",
+    fontSize: 22,
+    lineHeight: 28,
     textAlign: "center",
     marginBottom: 8,
   },
   body: {
-    fontSize: 14,
-    lineHeight: 21,
+    ...Type.bodySm,
     textAlign: "center",
     marginBottom: 20,
   },

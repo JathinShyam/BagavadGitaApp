@@ -49,7 +49,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
             { backgroundColor: colors.primary + "20" },
           ]}
         >
-          <Ionicons name={icon} size={64} color={colors.primary} />
+          <Ionicons name={icon} size={64} color={colors.brandText} />
         </Animated.View>
       </View>
 
@@ -67,7 +67,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
         <Animated.View entering={FadeIn.duration(250)}>
           <Pressable
             onPress={onAction}
-            style={[styles.actionButton, { backgroundColor: colors.primary }]}
+            style={[styles.actionButton, { backgroundColor: colors.brandText }]}
           >
             <Text style={[styles.actionText, { color: colors.onPrimary }]}>
               {actionLabel}

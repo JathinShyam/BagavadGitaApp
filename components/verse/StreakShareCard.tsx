@@ -3,6 +3,9 @@ import { View, StyleSheet } from "react-native";
 import { Text } from "react-native-paper";
 import { LinearGradient } from "expo-linear-gradient";
 
+import { useTranslation } from "@/hooks/useTranslation";
+import { getAppTitle } from "@/constants/languages";
+
 type Props = {
   streakDays: number;
   longestStreak: number;
@@ -10,20 +13,24 @@ type Props = {
 };
 
 export function StreakShareCard({ streakDays, longestStreak, insight }: Props) {
+  const { t, language } = useTranslation();
+
   return (
     <LinearGradient colors={["#1B1302", "#3D2E0A", "#0D1B2A"]} style={styles.card}>
-      <Text style={styles.appName}>Bhagavad Gita</Text>
-      <Text style={styles.eyebrow}>Daily practice</Text>
+      <Text style={styles.appName}>{getAppTitle(language)}</Text>
+      <Text style={styles.eyebrow}>{t("streakShare.eyebrow")}</Text>
       <Text style={styles.streak}>{streakDays}</Text>
-      <Text style={styles.streakLabel}>day streak</Text>
-      <Text style={styles.best}>Best · {longestStreak} days</Text>
+      <Text style={styles.streakLabel}>{t("streakShare.dayStreak")}</Text>
+      <Text style={styles.best}>
+        {t("streakShare.best", { count: longestStreak })}
+      </Text>
       {!!insight && (
         <View style={styles.insightBox}>
-          <Text style={styles.insightTitle}>Today’s insight</Text>
+          <Text style={styles.insightTitle}>{t("streakShare.insightTitle")}</Text>
           <Text style={styles.insightBody}>{insight}</Text>
         </View>
       )}
-      <Text style={styles.footer}>Keep showing up · one verse a day</Text>
+      <Text style={styles.footer}>{t("streakShare.footer")}</Text>
     </LinearGradient>
   );
 }

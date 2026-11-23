@@ -8,4 +8,5 @@ export type {
   VerseNotes,
   ActiveReadingPath,
   MilestonesSeen,
+  StreakFreezeState,
 } from "./reading-progress";

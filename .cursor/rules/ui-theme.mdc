@@ -9,6 +9,9 @@ alwaysApply: false
 - Colors: `useAppTheme()` → `colors.*`. Tokens in `theme/design-tokens.ts`.
 - Light primary `#B8860B`, dark primary `#E6B74A`, light bg `#FFF8E7`.
 - Headings: Playfair (`PlayfairDisplay_700Bold` / `_600SemiBold` / `_400Regular`). Body: system font.
+- Use the eight `Type` tokens (`display`, `title`, `heading`, `sloka`, `body`, `bodySm`, `label`, `caption`) instead of ad-hoc sizes.
+- Sloka font: `getScriptureFont(language)` from `lib/scripture-font.ts` — Playfair Italic for English, platform serif for Indic.
+- **Tracking is Latin-only.** Never put `letterSpacing` on a style that can render scripture or localized content — it splits Indic conjuncts (BUG-026).
 - Reuse `GoldCard`, `OrnamentalDivider`, `DiamondDivider`, `IOSToggle`, `ScreenCornerArt` before inventing new chrome.
 - Shared layout styles: `theme/screen-styles.ts`.
 - Tint silhouette ornaments with `colors.primary` unless the asset is meant to stay full-color (`tint={false}`).

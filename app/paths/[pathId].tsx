@@ -1,13 +1,26 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { View, StyleSheet, Pressable, ScrollView, Alert } from "react-native";
 import { Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
+import Animated, {
+  cancelAnimation,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 
+import { haptics } from "@/lib/haptics";
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { Duration, Ease } from "@/theme/motion";
 import { useContentLanguage } from "@/context/language-context";
+import { useTranslation } from "@/hooks/useTranslation";
+import { tracking } from "@/lib/i18n";
 import { ROUTES } from "@/constants/routes";
 import { getRouteParam } from "@/lib/route-params";
 import {
@@ -24,12 +37,111 @@ import {
 } from "@/lib/reading-paths";
 import { useToast } from "@/components/ui/Toast";
 
+/** Gold connector that fills as days are completed, from the top down. */
+function TimelineConnector({
+  filled,
+  index,
+  idleColor,
+  fillColor,
+}: {
+  filled: boolean;
+  index: number;
+  idleColor: string;
+  fillColor: string;
+}) {
+  const fill = useSharedValue(0);
+
+  useEffect(() => {
+    fill.value = withDelay(
+      index * 40,
+      withTiming(filled ? 1 : 0, {
+        duration: Duration.slow,
+        easing: Ease.standard,
+      })
+    );
+  }, [filled, index, fill]);
+
+  const fillStyle = useAnimatedStyle(() => ({
+    transform: [{ scaleY: fill.value }],
+  }));
+
+  return (
+    <View style={[styles.timelineLine, { backgroundColor: idleColor }]}>
+      <Animated.View
+        style={[
+          styles.timelineLineFill,
+          { backgroundColor: fillColor },
+          fillStyle,
+        ]}
+      />
+    </View>
+  );
+}
+
+/** Timeline dot: checked when done, breathing when it is the next day. */
+function TimelineDot({
+  done,
+  isNext,
+  activeColor,
+  idleColor,
+  onPrimary,
+}: {
+  done: boolean;
+  isNext: boolean;
+  activeColor: string;
+  idleColor: string;
+  onPrimary: string;
+}) {
+  const reducedMotion = useReducedMotion();
+  const pulse = useSharedValue(1);
+
+  useEffect(() => {
+    if (!isNext || reducedMotion) {
+      pulse.value = 1;
+      return;
+    }
+
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(1.16, { duration: Duration.ritual, easing: Ease.inOut }),
+        withTiming(1, { duration: Duration.ritual, easing: Ease.inOut })
+      ),
+      -1,
+      false
+    );
+
+    return () => cancelAnimation(pulse);
+  }, [isNext, reducedMotion, pulse]);
+
+  const pulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulse.value }],
+  }));
+
+  const active = done || isNext;
+
+  return (
+    <Animated.View
+      style={[
+        styles.timelineDot,
+        {
+          backgroundColor: active ? activeColor : idleColor,
+          borderColor: active ? activeColor : idleColor,
+        },
+        pulseStyle,
+      ]}
+    >
+      {done && <Ionicons name="checkmark" size={10} color={onPrimary} />}
+    </Animated.View>
+  );
+}
+
 export default function PathDetailScreen() {
   const { pathId } = useLocalSearchParams<{ pathId: string }>();
   const id = getRouteParam(pathId);
   const path = getReadingPathById(id);
   const { colors } = useAppTheme();
   const { language } = useContentLanguage();
+  const { t } = useTranslation();
   const router = useRouter();
   const { showToast } = useToast();
   const [active, setActive] = useState<ActiveReadingPath | null>(null);
@@ -62,24 +174,24 @@ export default function PathDetailScreen() {
   if (!path) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-        <Stack.Screen options={{ title: "Path" }} />
-        <Text style={{ color: colors.text, padding: 24 }}>Path not found.</Text>
+        <Stack.Screen options={{ title: t("paths.fallbackTitle") }} />
+        <Text style={{ color: colors.text, padding: 24 }}>{t("paths.notFound")}</Text>
       </SafeAreaView>
     );
   }
 
   const startPath = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    haptics.medium();
     const next = await setActivePath(path.id);
     setActive(next);
-    showToast("Path started", "success", "map");
+    showToast(t("paths.startedToast"), "success", "map");
   };
 
   const abandonPath = () => {
-    Alert.alert("Leave this path?", "You can start again anytime.", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("paths.leaveTitle"), t("paths.leaveBody"), [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "Leave",
+        text: t("paths.leaveConfirm"),
         style: "destructive",
         onPress: async () => {
           await clearActivePath();
@@ -106,7 +218,7 @@ export default function PathDetailScreen() {
         options={{
           title: pathTitle,
           headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.primary,
+          headerTintColor: colors.brandText,
           headerTitleStyle: {
             color: colors.text,
             fontFamily: "PlayfairDisplay_700Bold",
@@ -121,48 +233,61 @@ export default function PathDetailScreen() {
         <Text style={[styles.desc, { color: colors.textMuted }]}>{pathDescription}</Text>
 
         <Text style={[styles.meta, { color: colors.textMuted }]}>
-          {path.days.length} days
-          {isThisActive ? ` · ${doneCount} complete` : ""}
+          {t("common.daysN", { count: path.days.length })}
+          {isThisActive
+            ? ` · ${t("paths.completeCount", { count: doneCount })}`
+            : ""}
         </Text>
 
         {completed && (
           <Text style={[styles.completeBanner, { color: colors.success }]}>
-            Path complete — beautiful work.
+            {t("paths.completedBanner")}
           </Text>
         )}
 
         {!isThisActive && (
           <Pressable
+            onPressIn={haptics.light}
             onPress={startPath}
-            style={[styles.primaryCta, { backgroundColor: colors.primary }]}
+            style={[styles.primaryCta, { backgroundColor: colors.brandText }]}
           >
             <Text style={[styles.primaryCtaText, { color: colors.onPrimary }]}>
-              Start this path
+              {t("paths.start")}
             </Text>
           </Pressable>
         )}
 
         {isThisActive && nextDay && !completed && (
           <Pressable
+            onPressIn={haptics.light}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               openDayVerse(nextDay.verseIds[0]);
             }}
-            style={[styles.primaryCta, { backgroundColor: colors.primary }]}
+            style={[styles.primaryCta, { backgroundColor: colors.brandText }]}
           >
-            <Text style={[styles.nextEyebrow, { color: colors.onPrimary + "CC" }]}>
-              Up next
+            <Text
+              style={[
+                styles.nextEyebrow,
+                { color: colors.onPrimary + "CC", letterSpacing: tracking(language, 1.2) },
+              ]}
+            >
+              {t("paths.upNext")}
             </Text>
             <Text style={[styles.primaryCtaText, { color: colors.onPrimary }]}>
-              Day {nextDay.day}: {getPathDayTitle(nextDay, language)}
+              {t("paths.dayTitle", {
+                day: nextDay.day,
+                title: getPathDayTitle(nextDay, language),
+              })}
             </Text>
             <Text style={[styles.continueHint, { color: colors.onPrimary + "CC" }]}>
-              Continue reading →
+              {t("paths.continue")}
             </Text>
           </Pressable>
         )}
 
-        <Text style={[styles.daysHeading, { color: colors.text }]}>Days</Text>
+        <Text style={[styles.daysHeading, { color: colors.text }]}>
+          {t("paths.daysHeading")}
+        </Text>
 
         {path.days.map((day, index) => {
           const done = isThisActive && !!active?.completedDayIds.includes(day.id);
@@ -172,33 +297,19 @@ export default function PathDetailScreen() {
           return (
             <View key={day.id} style={styles.timelineRow}>
               <View style={styles.timelineRail}>
-                <View
-                  style={[
-                    styles.timelineDot,
-                    {
-                      backgroundColor: done
-                        ? colors.primary
-                        : isNext
-                          ? colors.primary
-                          : colors.outline + "66",
-                      borderColor: done || isNext ? colors.primary : colors.outline + "66",
-                    },
-                  ]}
-                >
-                  {done && (
-                    <Ionicons name="checkmark" size={10} color={colors.onPrimary} />
-                  )}
-                </View>
+                <TimelineDot
+                  done={done}
+                  isNext={isNext}
+                  activeColor={colors.brandText}
+                  idleColor={colors.outline + "66"}
+                  onPrimary={colors.onPrimary}
+                />
                 {!isLast && (
-                  <View
-                    style={[
-                      styles.timelineLine,
-                      {
-                        backgroundColor: done
-                          ? colors.primary + "55"
-                          : colors.outline + "33",
-                      },
-                    ]}
+                  <TimelineConnector
+                    filled={done}
+                    index={index}
+                    idleColor={colors.outline + "33"}
+                    fillColor={colors.primary + "55"}
                   />
                 )}
               </View>
@@ -214,16 +325,23 @@ export default function PathDetailScreen() {
                   <Text
                     style={[
                       styles.dayNum,
-                      { color: isNext || done ? colors.primary : colors.textMuted },
+                      {
+                        color: isNext || done ? colors.brandText : colors.textMuted,
+                        letterSpacing: tracking(language, 0.4),
+                      },
                     ]}
                   >
-                    Day {day.day}
+                    {t("common.dayN", { day: day.day })}
                   </Text>
                   {done && (
-                    <Text style={[styles.doneLabel, { color: colors.success }]}>Done</Text>
+                    <Text style={[styles.doneLabel, { color: colors.success }]}>
+                      {t("paths.done")}
+                    </Text>
                   )}
                   {isNext && (
-                    <Text style={[styles.doneLabel, { color: colors.primary }]}>Now</Text>
+                    <Text style={[styles.doneLabel, { color: colors.brandText }]}>
+                      {t("paths.now")}
+                    </Text>
                   )}
                 </View>
                 <Text style={[styles.dayTitle, { color: colors.text }]}>
@@ -232,12 +350,13 @@ export default function PathDetailScreen() {
                 {day.verseIds.map((vid) => (
                   <Pressable
                     key={vid}
+                    onPressIn={haptics.light}
                     onPress={() => openDayVerse(vid)}
                     style={styles.verseLink}
                     hitSlop={4}
                   >
                     <Text style={{ color: colors.textMuted, fontSize: 14 }}>
-                      Verse {vid}
+                      {t("paths.verseN", { ref: vid })}
                     </Text>
                     <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
                   </Pressable>
@@ -249,7 +368,9 @@ export default function PathDetailScreen() {
 
         {isThisActive && (
           <Pressable onPress={abandonPath} style={styles.leaveBtn}>
-            <Text style={{ color: colors.danger, fontWeight: "600" }}>Leave path</Text>
+            <Text style={{ color: colors.danger, fontWeight: "600" }}>
+              {t("paths.leave")}
+            </Text>
           </Pressable>
         )}
       </ScrollView>
@@ -286,7 +407,6 @@ const styles = StyleSheet.create({
   nextEyebrow: {
     fontSize: 11,
     fontWeight: "700",
-    letterSpacing: 1.2,
     textTransform: "uppercase",
     marginBottom: 6,
   },
@@ -331,6 +451,10 @@ const styles = StyleSheet.create({
     marginBottom: 0,
     minHeight: 12,
   },
+  timelineLineFill: {
+    ...StyleSheet.absoluteFillObject,
+    transformOrigin: "top",
+  },
   dayBody: {
     flex: 1,
     paddingBottom: 18,
@@ -345,7 +469,6 @@ const styles = StyleSheet.create({
   dayNum: {
     fontSize: 12,
     fontWeight: "700",
-    letterSpacing: 0.4,
     textTransform: "uppercase",
   },
   doneLabel: {

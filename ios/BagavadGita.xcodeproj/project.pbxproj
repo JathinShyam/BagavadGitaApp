@@ -14,7 +14,37 @@
 		A59B65BF90ED9CE9FAA8DBC9 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AE81F3DF617FC88B5944A32 /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
+		D1A100002E1A4C000000000A /* DailyVerseWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A100002E1A4C000000000F /* DailyVerseWidget.swift */; };
+		D1A100002E1A4C000000000B /* DailyVerseWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D1A100002E1A4C0000000010 /* DailyVerseWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		D1A100002E1A4C000000000C /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D1A100002E1A4C0000000011 /* WidgetKit.framework */; };
+		D1A100002E1A4C000000000D /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D1A100002E1A4C0000000012 /* SwiftUI.framework */; };
+		D1A100002E1A4C000000000E /* WidgetDataModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A100002E1A4C0000000013 /* WidgetDataModule.swift */; };
+		D1A100002E1A4C0000000022 /* WidgetDataModuleBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = D1A100002E1A4C0000000021 /* WidgetDataModuleBridge.m */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		D1A100002E1A4C000000001D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D1A100002E1A4C0000000017;
+			remoteInfo = DailyVerseWidget;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		D1A100002E1A4C000000001B /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				D1A100002E1A4C000000000B /* DailyVerseWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		0AE81F3DF617FC88B5944A32 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-BagavadGita/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
@@ -30,6 +60,14 @@
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = BagavadGita/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* BagavadGita-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "BagavadGita-Bridging-Header.h"; path = "BagavadGita/BagavadGita-Bridging-Header.h"; sourceTree = "<group>"; };
+		D1A100002E1A4C000000000F /* DailyVerseWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyVerseWidget.swift; sourceTree = "<group>"; };
+		D1A100002E1A4C0000000010 /* DailyVerseWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DailyVerseWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		D1A100002E1A4C0000000011 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		D1A100002E1A4C0000000012 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		D1A100002E1A4C0000000013 /* WidgetDataModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WidgetDataModule.swift; path = BagavadGita/WidgetDataModule.swift; sourceTree = "<group>"; };
+		D1A100002E1A4C0000000014 /* DailyVerseWidget-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "DailyVerseWidget-Info.plist"; sourceTree = "<group>"; };
+		D1A100002E1A4C0000000015 /* DailyVerseWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DailyVerseWidget.entitlements; sourceTree = "<group>"; };
+		D1A100002E1A4C0000000021 /* WidgetDataModuleBridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = WidgetDataModuleBridge.m; path = BagavadGita/WidgetDataModuleBridge.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -41,6 +79,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D1A100002E1A4C0000000019 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D1A100002E1A4C000000000C /* WidgetKit.framework in Frameworks */,
+				D1A100002E1A4C000000000D /* SwiftUI.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -48,6 +95,8 @@
 			isa = PBXGroup;
 			children = (
 				F11748412D0307B40044C1D9 /* AppDelegate.swift */,
+				D1A100002E1A4C0000000013 /* WidgetDataModule.swift */,
+				D1A100002E1A4C0000000021 /* WidgetDataModuleBridge.m */,
 				F11748442D0722820044C1D9 /* BagavadGita-Bridging-Header.h */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
@@ -72,6 +121,8 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
+				D1A100002E1A4C0000000011 /* WidgetKit.framework */,
+				D1A100002E1A4C0000000012 /* SwiftUI.framework */,
 				682AD38978070A0359CD193A /* libPods-BagavadGita.a */,
 			);
 			name = Frameworks;
@@ -88,6 +139,7 @@
 			isa = PBXGroup;
 			children = (
 				13B07FAE1A68108700A75B9A /* BagavadGita */,
+				D1A100002E1A4C0000000016 /* DailyVerseWidget */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
@@ -103,6 +155,7 @@
 			isa = PBXGroup;
 			children = (
 				13B07F961A680F5B00A75B9A /* BagavadGita.app */,
+				D1A100002E1A4C0000000010 /* DailyVerseWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -132,6 +185,16 @@
 			name = BagavadGita;
 			sourceTree = "<group>";
 		};
+		D1A100002E1A4C0000000016 /* DailyVerseWidget */ = {
+			isa = PBXGroup;
+			children = (
+				D1A100002E1A4C000000000F /* DailyVerseWidget.swift */,
+				D1A100002E1A4C0000000014 /* DailyVerseWidget-Info.plist */,
+				D1A100002E1A4C0000000015 /* DailyVerseWidget.entitlements */,
+			);
+			path = DailyVerseWidget;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -147,15 +210,34 @@
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
 				B901C61F2F807DC978BE66F2 /* [CP] Embed Pods Frameworks */,
+				D1A100002E1A4C000000001B /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				D1A100002E1A4C000000001C /* PBXTargetDependency */,
 			);
 			name = BagavadGita;
 			productName = BagavadGita;
 			productReference = 13B07F961A680F5B00A75B9A /* BagavadGita.app */;
 			productType = "com.apple.product-type.application";
+		};
+		D1A100002E1A4C0000000017 /* DailyVerseWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D1A100002E1A4C000000001E /* Build configuration list for PBXNativeTarget "DailyVerseWidget" */;
+			buildPhases = (
+				D1A100002E1A4C0000000018 /* Sources */,
+				D1A100002E1A4C0000000019 /* Frameworks */,
+				D1A100002E1A4C000000001A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DailyVerseWidget;
+			productName = DailyVerseWidget;
+			productReference = D1A100002E1A4C0000000010 /* DailyVerseWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -167,6 +249,9 @@
 				TargetAttributes = {
 					13B07F861A680F5B00A75B9A = {
 						LastSwiftMigration = 1250;
+					};
+					D1A100002E1A4C0000000017 = {
+						CreatedOnToolsVersion = 15.0;
 					};
 				};
 			};
@@ -184,6 +269,7 @@
 			projectRoot = "";
 			targets = (
 				13B07F861A680F5B00A75B9A /* BagavadGita */,
+				D1A100002E1A4C0000000017 /* DailyVerseWidget */,
 			);
 		};
 /* End PBXProject section */
@@ -197,6 +283,13 @@
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
 				9A8269AF828722D0ADBAF432 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D1A100002E1A4C000000001A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -332,11 +425,29 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
+				D1A100002E1A4C000000000E /* WidgetDataModule.swift in Sources */,
+				D1A100002E1A4C0000000022 /* WidgetDataModuleBridge.m in Sources */,
 				A59B65BF90ED9CE9FAA8DBC9 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D1A100002E1A4C0000000018 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D1A100002E1A4C000000000A /* DailyVerseWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		D1A100002E1A4C000000001C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D1A100002E1A4C0000000017 /* DailyVerseWidget */;
+			targetProxy = D1A100002E1A4C000000001D /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
@@ -523,6 +634,53 @@
 			};
 			name = Release;
 		};
+		D1A100002E1A4C000000001F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = DailyVerseWidget/DailyVerseWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 3;
+				INFOPLIST_FILE = DailyVerseWidget/DailyVerseWidget-Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bhagavadgita.ios.DailyVerseWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D1A100002E1A4C0000000020 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = DailyVerseWidget/DailyVerseWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 3;
+				INFOPLIST_FILE = DailyVerseWidget/DailyVerseWidget-Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bhagavadgita.ios.DailyVerseWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -540,6 +698,15 @@
 			buildConfigurations = (
 				83CBBA201A601CBA00E9B192 /* Debug */,
 				83CBBA211A601CBA00E9B192 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D1A100002E1A4C000000001E /* Build configuration list for PBXNativeTarget "DailyVerseWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D1A100002E1A4C000000001F /* Debug */,
+				D1A100002E1A4C0000000020 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
