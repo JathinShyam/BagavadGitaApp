@@ -178,13 +178,19 @@ jobs:
           EAS_ACCESS_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
           EXPO_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
 
+      - name: 🔧 Setup Git
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git init
+          git add .
+          git commit -m "chore: prepare for release" || true
+
       - name: 📃 Create GitHub Release
-        # PR builds still verify the APK, but only a tag push publishes one.
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
+          tag_name: v${{ github.run_number }}
+          name: Release v${{ github.run_number }}
           body: |
             ## Android build
             - **app.apk** – Direct install (sideload)
